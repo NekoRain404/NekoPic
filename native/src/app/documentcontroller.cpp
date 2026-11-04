@@ -1,0 +1,371 @@
+#include "documentcontroller.h"
+#include "core/adjustments.h"
+#include "core/imageio.h"
+
+#include <QFileInfo>
+#include <QFutureWatcher>
+#include <QSet>
+#include <QTransform>
+#include <QtConcurrentRun>
+#include <algorithm>
+#include <cmath>
+
+DocumentController::DocumentController(QObject *parent) : QObject(parent) {}
+DocumentController::~DocumentController() = default;
+QString DocumentController::fileName() const { return path_.isEmpty() ? tr("Untitled") : QFileInfo(path_).fileName(); }
+QUrl DocumentController::imageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/current?revision=%1").arg(revision_)) : QUrl(); }
+bool DocumentController::busy() const { return busy_; }
+bool DocumentController::adjusting() const { return adjusting_; }
+bool DocumentController::adjustmentInteractive() const { return adjusting_ && !adjustmentFinishing_; }
+QVariantMap DocumentController::adjustmentValues() const
+{
+    return {{"exposure", parameters_.exposure * 50.0}, {"brightness", parameters_.brightness * 100.0},
+            {"contrast", parameters_.contrast * 100.0}, {"saturation", parameters_.saturation * 100.0}};
+}
+QString DocumentController::errorMessage() const { return error_; }
+bool DocumentController::hasImage() const { return !image_.isNull(); }
+int DocumentController::imageWidth() const { return image_.width(); }
+int DocumentController::imageHeight() const { return image_.height(); }
+bool DocumentController::dirty() const { return hasImage() && currentState_ != savedState_; }
+bool DocumentController::canUndo() const { return !undo_.isEmpty(); }
+bool DocumentController::canRedo() const { return !redo_.isEmpty(); }
+QStringList DocumentController::readableImagePatterns() const
+{
+    QStringList patterns;
+    for (const auto &format : NekoPic::ImageIO::supportedReadFormats()) {
+        const auto extension = QString::fromLatin1(format).toLower();
+        patterns.append(QStringLiteral("*.") + extension);
+        patterns.append(QStringLiteral("*.") + extension.toUpper());
+    }
+    patterns.removeDuplicates();
+    return patterns;
+}
+QImage DocumentController::image() const { return image_; }
+
+void DocumentController::setBusy(bool busy)
+{
+    if (busy_ == busy) return;
+    busy_ = busy;
+    emit busyChanged();
+}
+
+void DocumentController::setError(const QString &error)
+{
+    if (error_ == error) return;
+    error_ = error;
+    emit errorChanged();
+}
+
+void DocumentController::clearError() { setError({}); }
+
+void DocumentController::beginAdjustment(const QString &key)
+{
+    if (busy_ || !hasImage()) return;
+    if (key != "exposure" && key != "brightness" && key != "contrast" && key != "saturation") return;
+    adjustmentSource_ = image_;
+    pendingParameters_ = parameters_;
+    adjustmentKey_ = key;
+    adjustmentValue_ = 0.0;
+    adjustmentFinishing_ = false;
+    adjusting_ = true;
+    setError({});
+    setBusy(true);
+    emit adjustingChanged();
+    emit adjustmentInteractiveChanged();
+}
+
+void DocumentController::previewAdjustment(const QString &key, double value)
+{
+    queueAdjustment(key, value, false);
+}
+
+void DocumentController::finishAdjustment(const QString &key, double value)
+{
+    queueAdjustment(key, value, true);
+}
+
+void DocumentController::resetAdjustments()
+{
+    if (busy_ || !hasImage()) return;
+    if (parameters_.exposure == 0.0 && parameters_.brightness == 0.0
+        && parameters_.contrast == 0.0 && parameters_.saturation == 0.0) return;
+    applyEdit(baseImage_, baseImage_, {});
+}
+
+void DocumentController::queueAdjustment(const QString &key, double value, bool finish)
+{
+    if (!adjusting_ || adjustmentFinishing_ || key != adjustmentKey_) return;
+    adjustmentValue_ = std::isfinite(value) ? std::clamp(value, -100.0, 100.0) : 0.0;
+    if (key == "exposure") pendingParameters_.exposure = adjustmentValue_ / 50.0;
+    else if (key == "brightness") pendingParameters_.brightness = adjustmentValue_ / 100.0;
+    else if (key == "contrast") pendingParameters_.contrast = adjustmentValue_ / 100.0;
+    else if (key == "saturation") pendingParameters_.saturation = adjustmentValue_ / 100.0;
+    adjustmentFinishing_ = finish;
+    ++adjustmentSequence_;
+    if (finish) emit adjustmentInteractiveChanged();
+    if (!adjustmentWorkerRunning_) startAdjustmentWorker();
+}
+
+void DocumentController::startAdjustmentWorker()
+{
+    const auto source = baseImage_;
+    const auto parameters = pendingParameters_;
+    const auto sequence = adjustmentSequence_;
+    adjustmentWorkerRunning_ = true;
+    auto *watcher = new QFutureWatcher<QImage>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, sequence] {
+        QImage result;
+        bool failed = false;
+        try { result = watcher->result(); } catch (...) { failed = true; }
+        watcher->deleteLater();
+        adjustmentWorkerRunning_ = false;
+        if (sequence != adjustmentSequence_) {
+            startAdjustmentWorker();
+            return;
+        }
+        if (failed || result.isNull()) {
+            endAdjustment({}, true);
+        } else if (adjustmentFinishing_) {
+            endAdjustment(result, false);
+        } else {
+            image_ = std::move(result);
+            ++revision_;
+            emit documentChanged();
+        }
+    });
+    watcher->setFuture(QtConcurrent::run([source, parameters] {
+        return NekoPic::Adjustments::apply(source, parameters);
+    }));
+}
+
+void DocumentController::endAdjustment(const QImage &result, bool failed)
+{
+    const bool wasInteractive = adjustmentInteractive();
+    image_ = adjustmentSource_;
+    adjustmentSource_ = {};
+    adjusting_ = false;
+    adjustmentFinishing_ = false;
+    adjustmentKey_.clear();
+    if (wasInteractive) emit adjustmentInteractiveChanged();
+    const bool changed = parameters_.exposure != pendingParameters_.exposure
+        || parameters_.brightness != pendingParameters_.brightness
+        || parameters_.contrast != pendingParameters_.contrast
+        || parameters_.saturation != pendingParameters_.saturation;
+    if (!failed && changed) {
+        applyEdit(result, baseImage_, pendingParameters_);
+    } else {
+        ++revision_;
+        emit documentChanged();
+        if (failed) setError(tr("Could not adjust the image."));
+    }
+    emit adjustingChanged();
+    setBusy(false);
+}
+
+void DocumentController::openImage(const QUrl &url)
+{
+    if (busy_) return;
+    if (dirty()) { setError(tr("Save or discard your changes before opening another image.")); return; }
+    openImageDiscardingChanges(url);
+}
+
+void DocumentController::openImageDiscardingChanges(const QUrl &url)
+{
+    if (busy_) return;
+    if (!url.isLocalFile()) { setError(tr("Please choose a local image file.")); return; }
+    const auto path = url.toLocalFile();
+    setError({});
+    setBusy(true);
+    auto *watcher = new QFutureWatcher<NekoPic::ImageIO::LoadResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path] {
+        const auto result = watcher->result();
+        watcher->deleteLater();
+        if (!result.error.isEmpty()) setError(result.error);
+        else {
+            image_ = result.image;
+            baseImage_ = result.image;
+            parameters_ = {};
+            path_ = path;
+            undo_.clear();
+            redo_.clear();
+            currentState_ = savedState_ = ++nextState_;
+            ++revision_;
+            emit documentChanged();
+        }
+        setBusy(false);
+    });
+    watcher->setFuture(QtConcurrent::run([path] { return NekoPic::ImageIO::load(path); }));
+}
+
+void DocumentController::saveImage()
+{
+    // Avoid lossy re-encoding an unchanged file.
+    if (hasImage() && !dirty()) return;
+    if (path_.isEmpty()) { setError(tr("Choose a destination with Save As.")); return; }
+    const auto suffix = QFileInfo(path_).suffix().toLower();
+    saveAs(QUrl::fromLocalFile(path_), suffix == "jpg" ? QStringLiteral("jpeg") : suffix);
+}
+
+void DocumentController::saveAs(const QUrl &url, const QString &format)
+{
+    if (busy_) return;
+    if (!hasImage()) { setError(tr("There is no image to save.")); return; }
+    if (!url.isLocalFile()) { setError(tr("Please choose a local destination.")); return; }
+    if (format != "png" && format != "jpeg") { setError(tr("Please select PNG or JPEG format.")); return; }
+    auto path = url.toLocalFile();
+    const auto suffix = QFileInfo(path).suffix().toLower();
+    if (suffix.isEmpty()) {
+        path += format == "png" ? QStringLiteral(".png") : QStringLiteral(".jpg");
+        if (QFileInfo::exists(path)) {
+            setError(tr("The destination already exists. Enter its full filename to confirm replacement."));
+            return;
+        }
+    } else if ((format == "png" && suffix != "png") || (format == "jpeg" && suffix != "jpg" && suffix != "jpeg")) {
+        setError(tr("The filename extension does not match the selected format."));
+        return;
+    }
+    const auto image = image_;
+    setError({});
+    setBusy(true);
+    auto *watcher = new QFutureWatcher<NekoPic::ImageIO::SaveResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path] {
+        const auto result = watcher->result();
+        watcher->deleteLater();
+        if (!result.success) setError(result.error);
+        else { path_ = path; savedState_ = currentState_; emit documentChanged(); }
+        setBusy(false);
+    });
+    watcher->setFuture(QtConcurrent::run([path, image, format] {
+        NekoPic::ImageIO::SaveOptions options;
+        options.format = format.toLatin1();
+        return NekoPic::ImageIO::save(path, image, options);
+    }));
+}
+
+void DocumentController::trimHistory()
+{
+    constexpr qsizetype maxHistoryBytes = 256 * 1024 * 1024;
+    const auto historyBytes = [this] {
+        QSet<qint64> seen;
+        qsizetype bytes = 0;
+        const auto count = [&seen, &bytes](const QImage &image) {
+            if (!image.isNull() && !seen.contains(image.cacheKey())) {
+                seen.insert(image.cacheKey());
+                bytes += image.sizeInBytes();
+            }
+        };
+        for (const auto &entry : undo_) { count(entry.image); count(entry.base); }
+        for (const auto &entry : redo_) { count(entry.image); count(entry.base); }
+        return bytes;
+    };
+    while (historyBytes() > maxHistoryBytes && !undo_.isEmpty()) {
+        undo_.removeFirst();
+    }
+}
+
+void DocumentController::applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters)
+{
+    if (image.isNull() || base.isNull()) { setError(tr("Could not transform the image.")); return; }
+    undo_.append({image_, baseImage_, parameters_, currentState_});
+    redo_.clear();
+    image_ = std::move(image);
+    baseImage_ = std::move(base);
+    parameters_ = parameters;
+    currentState_ = ++nextState_;
+    trimHistory();
+    ++revision_;
+    setError({});
+    emit documentChanged();
+}
+
+void DocumentController::rotateClockwise()
+{
+    startTransform(Transform::RotateClockwise);
+}
+
+void DocumentController::rotateCounterClockwise()
+{
+    startTransform(Transform::RotateCounterClockwise);
+}
+
+void DocumentController::flipHorizontal()
+{
+    startTransform(Transform::FlipHorizontal);
+}
+
+void DocumentController::flipVertical()
+{
+    startTransform(Transform::FlipVertical);
+}
+
+void DocumentController::startTransform(Transform transform)
+{
+    if (busy_ || !hasImage()) return;
+    const auto source = image_;
+    const auto base = baseImage_;
+    setError({});
+    setBusy(true);
+    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
+        try {
+            auto result = watcher->result();
+            applyEdit(std::move(result.first), std::move(result.second), parameters_);
+        } catch (...) {
+            setError(tr("Could not transform the image."));
+        }
+        watcher->deleteLater();
+        setBusy(false);
+    });
+    watcher->setFuture(QtConcurrent::run([source, base, transform] {
+        const auto applyTransform = [transform](const QImage &source) -> QImage {
+        switch (transform) {
+        case Transform::RotateClockwise:
+            return source.transformed(QTransform().rotate(90));
+        case Transform::RotateCounterClockwise:
+            return source.transformed(QTransform().rotate(-90));
+        case Transform::FlipHorizontal:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+            return source.flipped(Qt::Horizontal);
+#else
+            return source.mirrored(true, false);
+#endif
+        case Transform::FlipVertical:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+            return source.flipped(Qt::Vertical);
+#else
+            return source.mirrored(false, true);
+#endif
+        }
+        return {};
+        };
+        auto transformed = applyTransform(source);
+        auto transformedBase = source.cacheKey() == base.cacheKey() ? transformed : applyTransform(base);
+        return qMakePair(std::move(transformed), std::move(transformedBase));
+    }));
+}
+
+void DocumentController::undo()
+{
+    if (busy_ || undo_.isEmpty()) return;
+    redo_.append({image_, baseImage_, parameters_, currentState_});
+    auto previous = undo_.takeLast();
+    image_ = std::move(previous.image);
+    baseImage_ = std::move(previous.base);
+    parameters_ = previous.parameters;
+    currentState_ = previous.state;
+    ++revision_;
+    emit documentChanged();
+}
+
+void DocumentController::redo()
+{
+    if (busy_ || redo_.isEmpty()) return;
+    undo_.append({image_, baseImage_, parameters_, currentState_});
+    auto next = redo_.takeLast();
+    image_ = std::move(next.image);
+    baseImage_ = std::move(next.base);
+    parameters_ = next.parameters;
+    currentState_ = next.state;
+    ++revision_;
+    emit documentChanged();
+}

@@ -1,0 +1,106 @@
+#pragma once
+
+#include <QImage>
+#include <QObject>
+#include <QStringList>
+#include <QUrl>
+#include <QList>
+#include <QVariantMap>
+#include "core/adjustments.h"
+
+class DocumentController final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QString fileName READ fileName NOTIFY documentChanged)
+    Q_PROPERTY(QUrl imageUrl READ imageUrl NOTIFY documentChanged)
+    Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
+    Q_PROPERTY(bool adjusting READ adjusting NOTIFY adjustingChanged)
+    Q_PROPERTY(bool adjustmentInteractive READ adjustmentInteractive NOTIFY adjustmentInteractiveChanged)
+    Q_PROPERTY(QVariantMap adjustmentValues READ adjustmentValues NOTIFY documentChanged)
+    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorChanged)
+    Q_PROPERTY(bool hasImage READ hasImage NOTIFY documentChanged)
+    Q_PROPERTY(int imageWidth READ imageWidth NOTIFY documentChanged)
+    Q_PROPERTY(int imageHeight READ imageHeight NOTIFY documentChanged)
+    Q_PROPERTY(bool dirty READ dirty NOTIFY documentChanged)
+    Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
+    Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
+    Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
+
+public:
+    explicit DocumentController(QObject *parent = nullptr);
+    ~DocumentController() override;
+    QString fileName() const;
+    QUrl imageUrl() const;
+    bool busy() const;
+    bool adjusting() const;
+    bool adjustmentInteractive() const;
+    QVariantMap adjustmentValues() const;
+    QString errorMessage() const;
+    bool hasImage() const;
+    int imageWidth() const;
+    int imageHeight() const;
+    bool dirty() const;
+    bool canUndo() const;
+    bool canRedo() const;
+    QStringList readableImagePatterns() const;
+    QImage image() const;
+
+    Q_INVOKABLE void openImage(const QUrl &url);
+    Q_INVOKABLE void openImageDiscardingChanges(const QUrl &url);
+    Q_INVOKABLE void saveImage();
+    Q_INVOKABLE void saveAs(const QUrl &url, const QString &format);
+    Q_INVOKABLE void clearError();
+    Q_INVOKABLE void rotateClockwise();
+    Q_INVOKABLE void rotateCounterClockwise();
+    Q_INVOKABLE void flipHorizontal();
+    Q_INVOKABLE void flipVertical();
+    Q_INVOKABLE void undo();
+    Q_INVOKABLE void redo();
+    Q_INVOKABLE void beginAdjustment(const QString &key);
+    Q_INVOKABLE void previewAdjustment(const QString &key, double value);
+    Q_INVOKABLE void finishAdjustment(const QString &key, double value);
+    Q_INVOKABLE void resetAdjustments();
+
+signals:
+    void documentChanged();
+    void busyChanged();
+    void adjustingChanged();
+    void adjustmentInteractiveChanged();
+    void errorChanged();
+
+private:
+    enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };
+    void startTransform(Transform transform);
+    void setBusy(bool busy);
+    void setError(const QString &error);
+    void applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters);
+    void trimHistory();
+    void queueAdjustment(const QString &key, double value, bool finish);
+    void startAdjustmentWorker();
+    void endAdjustment(const QImage &result, bool failed);
+    struct HistoryEntry {
+        QImage image;
+        QImage base;
+        NekoPic::Adjustments::Parameters parameters;
+        quint64 state;
+    };
+    QImage image_;
+    QImage baseImage_;
+    NekoPic::Adjustments::Parameters parameters_;
+    NekoPic::Adjustments::Parameters pendingParameters_;
+    QString path_;
+    QString error_;
+    bool busy_ = false;
+    bool adjusting_ = false;
+    bool adjustmentWorkerRunning_ = false;
+    bool adjustmentFinishing_ = false;
+    QString adjustmentKey_;
+    QImage adjustmentSource_;
+    double adjustmentValue_ = 0.0;
+    quint64 adjustmentSequence_ = 0;
+    quint64 revision_ = 0;
+    quint64 currentState_ = 0;
+    quint64 savedState_ = 0;
+    quint64 nextState_ = 0;
+    QList<HistoryEntry> undo_;
+    QList<HistoryEntry> redo_;
+};

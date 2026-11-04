@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light"><title>NekoPic</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23e8b392'/%3E%3Cpath d='M10 27V12l10 9 10-9v15' fill='none' stroke='%23202727' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="ui-preview.css"><link rel="stylesheet" href="color-ui.css"><script src="app.js" defer></script><script src="ui-preview.js" defer></script><script src="color-ui.js" defer></script>
+</head>
+<body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M4 18V5l8 7 8-7v13M8 18v-4m8 4v-4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h12l4 4v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7 3v6h10V3M7 21v-8h10v8"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m5 19 14-14M8 5h11v11"/></symbol>
+  <symbol id="i-select" viewBox="0 0 24 24"><path d="m5 3 15 10-7 1-3 7Z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V5a2 2 0 0 1 4 0v7-9a2 2 0 0 1 4 0v9-6a2 2 0 0 1 4 0v9c0 5-3 7-7 7-2 0-4-1-6-4l-4-6a2 2 0 0 1 3-2l2 2"/></symbol>
+  <symbol id="i-adjust" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></symbol>
+  <symbol id="i-brush" viewBox="0 0 24 24"><path d="m13 12 7-8a2 2 0 0 0-3-3l-7 9M13 12l-3-2M4 15c3-3 7 0 5 3-1 2-6 3-7 3 2-2 1-4 2-6Z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6V3h16v3M12 3v18M8 21h8"/></symbol>
+  <symbol id="i-shape" viewBox="0 0 24 24"><path d="M3 3h12v12H3Z"/><circle cx="16" cy="16" r="6"/></symbol>
+  <symbol id="i-polygon" viewBox="0 0 24 24"><path d="m12 3 9 7-4 11H6L3 10Z"/></symbol>
+  <symbol id="i-rect" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="1"/></symbol>
+  <symbol id="i-ellipse" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="7"/></symbol>
+  <symbol id="i-line" viewBox="0 0 24 24"><path d="m4 20 16-16"/></symbol>
+  <symbol id="i-mosaic" viewBox="0 0 24 24"><path d="M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z"/></symbol>
+  <symbol id="i-dropper" viewBox="0 0 24 24"><path d="m14 5 5 5M12 7l5 5-9 9H3v-5Zm3-1 3-3a2 2 0 0 1 3 3l-3 3"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14M3 21 21 3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 3v7h7"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="m8 4-5 5 5 5M3 9h11a7 7 0 0 1 7 7v4"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 4 5 5-5 5M21 9H10a7 7 0 0 0-7 7v4"/></symbol>
+  <symbol id="i-compare" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 2v20M6 15l3-3 3 3m3-5h3"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M3 8V3h5m8 0h5v5M3 16v5h5m8 0h5v-5"/><rect x="7" y="7" width="10" height="10" rx="1"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></symbol>
+</defs></svg>
+
+<div class="menu-bar" role="menubar">
+  <div class="menu-brand" aria-label="NekoPic"><span class="menu-brand-mark"><svg><use href="#i-logo"/></svg></span><span>NekoPic</span></div>
+  <div class="menu-host"><button class="menu-trigger" role="menuitem" aria-haspopup="true" aria-expanded="false">文件<span>F</span></button><div class="dropdown" role="menu" hidden>
+    <button data-action="open">打开图片…<kbd>Ctrl O</kbd></button><button data-action="paste">从剪贴板粘贴<kbd>Ctrl V</kbd></button><button data-action="recent">最近打开的图片<kbd>›</kbd></button><hr><button data-action="save">保存<kbd>Ctrl S</kbd></button><button data-action="save-as">另存为…<kbd>Ctrl Shift S</kbd></button><button data-action="copy-result">复制合并图像<kbd>Ctrl Shift C</kbd></button><hr><button data-action="close-image">关闭图片<kbd>Ctrl W</kbd></button>
+  </div></div>
+  <div class="menu-host"><button class="menu-trigger" role="menuitem" aria-haspopup="true" aria-expanded="false">编辑<span>E</span></button><div class="dropdown" role="menu" hidden>
+    <button data-action="undo">撤销<kbd>Ctrl Z</kbd></button><button data-action="redo">重做<kbd>Ctrl Shift Z</kbd></button><hr><button data-action="duplicate">复制选中对象<kbd>Ctrl D</kbd></button><button data-action="delete">删除选中对象<kbd>Del</kbd></button><button data-action="select-all">选择所有对象<kbd>Ctrl A</kbd></button>
+  </div></div>
+  <div class="menu-host"><button class="menu-trigger" role="menuitem" aria-haspopup="true" aria-expanded="false">图像<span>I</span></button><div class="dropdown" role="menu" hidden>
+    <button data-action="rotate-left">逆时针旋转 90°</button><button data-action="rotate-right">顺时针旋转 90°</button><button data-action="flip-x">水平翻转</button><button data-action="flip-y">垂直翻转</button><hr><button data-action="resize">修改图片尺寸…</button><button data-action="canvas-size">修改画布尺寸…</button><button data-action="crop">裁剪图片<kbd>C</kbd></button>
+  </div></div>
+  <div class="menu-host"><button class="menu-trigger" role="menuitem" aria-haspopup="true" aria-expanded="false">视图<span>V</span></button><div class="dropdown" role="menu" hidden>
+    <button data-action="fit">适应窗口<kbd>Ctrl 0</kbd></button><button data-action="actual">实际大小 · 100%<kbd>Ctrl 1</kbd></button><button data-action="grid">显示 / 隐藏网格</button><button data-action="snap">开关中心吸附</button><button data-action="theme">切换深浅主题</button>
+  </div></div>
+  <div class="menu-host"><button class="menu-trigger" role="menuitem" aria-haspopup="true" aria-expanded="false">帮助<span>H</span></button><div class="dropdown" role="menu" hidden><button data-action="shortcuts">键盘快捷键<kbd>?</kbd></button><button data-action="about">关于这个原型</button></div></div>
+  <span class="menu-spacer"></span><span class="local-indicator"><i></i>本地编辑 · 图片不上传</span>
+</div>
+
+<div class="command-bar">
+  <button class="text-button" data-action="open"><svg><use href="#i-folder"/></svg>打开图片</button><span class="divider"></span>
+  <button class="icon-button" id="undo-button" data-action="undo" title="撤销 · Ctrl+Z" aria-label="撤销"><svg><use href="#i-undo"/></svg></button><button class="icon-button" id="redo-button" data-action="redo" title="重做 · Ctrl+Shift+Z" aria-label="重做"><svg><use href="#i-redo"/></svg></button><span class="divider"></span>
+  <button class="text-button" data-action="rotate-left" title="整张图片与对象一起旋转"><svg><use href="#i-rotate"/></svg><span class="hide-small">旋转</span></button><button class="text-button" data-action="crop"><svg><use href="#i-crop"/></svg><span class="hide-small">裁剪</span></button>
+  <button class="text-button" data-tool="transform" title="旋转、翻转和拉直"><svg><use href="#i-adjust"/></svg><span class="hide-small">变换</span></button><button class="text-button" data-tool="canvas" title="画布尺寸与留白"><svg><use href="#i-fit"/></svg><span class="hide-small">画布</span></button>
+  <span class="command-spacer"></span><button class="command-search" id="command-search" title="搜索工具和操作 · Ctrl K">查找功能<kbd>Ctrl K</kbd></button>
+  <button class="text-button compare-button" id="compare-button" title="按住查看原图 · 按住 M"><svg><use href="#i-compare"/></svg>原图对比</button><span class="divider"></span>
+  <button class="text-button" data-action="save"><svg><use href="#i-save"/></svg>保存</button><button class="primary-button" data-action="save-as">另存为<svg><use href="#i-chevron"/></svg></button>
+</div>
+
+<main class="editor-layout">
+  <aside class="tool-rail" aria-label="编辑工具">
+    <div class="rail-group">
+      <button class="tool-button" data-tool="select" title="选择 / 移动 · V"><svg><use href="#i-select"/></svg><span>选择</span></button>
+      <button class="tool-button" data-tool="hand" title="平移 · H / 按住空格"><svg><use href="#i-hand"/></svg><span>平移</span></button>
+    </div>
+    <div class="rail-group">
+      <button class="tool-button active" data-tool="adjust" title="调色 · A"><svg><use href="#i-adjust"/></svg><span>调色</span></button>
+      <button class="tool-button" data-tool="filters" title="滤镜 · F"><svg><use href="#i-filter"/></svg><span>滤镜</span></button>
+      <button class="tool-button" data-tool="brush" title="画笔 · B"><svg><use href="#i-brush"/></svg><span>画笔</span></button>
+      <button class="tool-button" data-tool="text" title="文字 · T"><svg><use href="#i-text"/></svg><span>文字</span></button>
+      <button class="tool-button" data-tool="shape" title="形状 · U"><svg><use href="#i-shape"/></svg><span>形状</span></button>
+      <button class="tool-button" data-tool="mosaic" title="打码 · P"><svg><use href="#i-mosaic"/></svg><span>打码</span></button>
+    </div>
+    <div class="rail-group"><button class="tool-button" data-tool="crop" title="裁剪 · C"><svg><use href="#i-crop"/></svg><span>裁剪</span></button><button class="tool-button" data-tool="eyedropper" title="吸管 · I"><svg><use href="#i-dropper"/></svg><span>取色</span></button></div>
+    <div class="rail-group"><button class="tool-button" data-tool="border" title="边框与留白"><svg><use href="#i-rect"/></svg><span>边框</span></button><button class="tool-button" data-tool="history" title="查看编辑历史"><svg><use href="#i-undo"/></svg><span>历史</span></button></div>
+    <div class="rail-bottom"><button class="foreground-chip" id="rail-color" title="设置前景色" aria-label="设置前景色"></button><span class="rail-caption">前景色</span></div>
+  </aside>
+
+  <section class="workspace" aria-label="图片画布">
+    <div class="document-strip"><span class="document-tab"><svg><use href="#i-folder"/></svg><span id="tab-name">山间来信.jpg</span><span id="dirty-dot" class="dirty-dot" title="尚未保存" aria-label="尚未保存" hidden></span><span class="tab-format" id="tab-format">JPG</span><button data-action="close-image" class="tab-close" title="关闭图片" aria-label="关闭图片">×</button></span><span class="workspace-label">工作区</span></div>
+    <div class="viewport" id="viewport">
+      <div class="workspace-top-note"><span class="mini-badge">示例照片</span><span id="workspace-hint">调一点光，让照片靠近记忆。</span></div>
+      <div class="canvas-stage" id="canvas-stage"><canvas id="photo-canvas" aria-label="可编辑图片"></canvas><canvas id="overlay-canvas" aria-label="绘图与对象操作层" tabindex="0"></canvas></div>
+      <div class="canvas-empty" id="canvas-empty" hidden><svg><use href="#i-folder"/></svg><h2>从一张图片开始</h2><p>拖入照片，或从剪贴板粘贴</p><button class="primary-button" data-action="open">打开图片</button></div>
+      <div class="canvas-caption" id="canvas-caption"><span>LUCA BRAVO / UNSPLASH</span><span>留一点时间，给眼前的风景。</span></div>
+      <div class="canvas-hint" id="tool-hint">滚轮缩放<span>·</span>空格拖动平移<span>·</span>按住 M 对比原图</div>
+      <div id="compare-label" class="compare-label" hidden>原始图片</div><div class="drop-overlay" id="drop-overlay" hidden>松开以打开图片</div>
+      <div class="loupe" id="loupe" hidden><canvas id="loupe-canvas" width="120" height="120"></canvas><span id="loupe-color">#FFFFFF</span></div>
+    </div>
+    <div class="workspace-footer"><span class="footer-left"><span class="canvas-dot"></span><span id="workspace-state">画布已就绪</span></span><div class="zoom-controls"><button class="icon-button" data-action="zoom-out" title="缩小" aria-label="缩小"><svg><use href="#i-minus"/></svg></button><input id="zoom-range" aria-label="画布缩放" type="range" min="5" max="300" value="50"><button class="icon-button" data-action="zoom-in" title="放大" aria-label="放大"><svg><use href="#i-plus"/></svg></button><button id="zoom-label" class="zoom-label" data-action="actual" title="切换至 100%">50%</button><span class="divider"></span><button class="icon-button" data-action="fit" title="适应窗口 · Ctrl+0" aria-label="适应窗口"><svg><use href="#i-fit"/></svg></button><button class="fit-text" data-action="fit">适应</button></div></div>
+  </section>
+
+  <aside class="inspector" aria-label="工具属性">
+    <div class="inspector-heading"><div><span class="eyebrow" id="panel-eyebrow">LIGHT & COLOR</span><h1 id="panel-title">调色</h1></div><button class="icon-button" data-action="reset-panel" title="重置当前工具设置" aria-label="重置当前工具设置"><svg><use href="#i-reset"/></svg></button></div>
+    <div class="inspector-scroll" id="inspector-content"></div>
+    <div class="inspector-bottom"><svg><use href="#i-info"/></svg><span id="inspector-note">调色只作用于底图，文字和绘图保持原色。</span></div>
+  </aside>
+</main>
+<footer class="status-bar"><div><span id="dimensions">— × — px</span><span class="status-separator">/</span><span>sRGB</span><span class="status-separator">/</span><span id="object-count">0 个对象</span></div><div><span id="recovery-status">自动恢复待命</span><span class="status-separator">·</span><button data-action="shortcuts">快捷键 <kbd>?</kbd></button></div></footer>
+
+<input id="file-input" type="file" accept="image/*" hidden><input id="global-color" type="color" value="#eeb99a" hidden>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<dialog id="export-dialog" class="export-dialog">
+  <div class="dialog-heading"><div><span class="eyebrow">SAVE A COPY</span><h2>另存为</h2></div><button class="icon-button" data-close="export-dialog" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div>
+  <p class="dialog-description">把这一刻保存下来。</p>
+  <div class="export-body"><div class="export-preview"><img id="export-preview" alt="保存效果预览"><span id="export-dimensions"></span></div><div class="export-fields">
+    <label class="field-label" for="export-name">文件名</label><input id="export-name" value="山间来信" autocomplete="off">
+    <label class="field-label">文件格式</label><div class="format-options"><button data-format="png">PNG<span>无损 · 支持透明</span></button><button data-format="jpeg" class="selected">JPEG<span>照片 · 文件更小</span></button><button data-format="webp">WebP<span>现代 · 支持透明</span></button></div>
+    <div id="quality-field"><label class="field-label" for="export-quality">图像质量 <output id="quality-label">92%</output></label><input id="export-quality" type="range" min="10" max="100" value="92"></div>
+    <label class="background-field" id="jpeg-background-field">透明区域背景色<input id="jpeg-background" type="color" value="#ffffff"></label>
+    <div class="export-detail"><span>输出色彩空间</span><strong>sRGB</strong></div><div class="export-detail"><span>EXIF / GPS 元数据</span><strong>移除</strong></div>
+  </div></div>
+  <div class="dialog-callout"><svg><use href="#i-info"/></svg><div><strong>保存为合并图片，当前窗口仍可继续编辑对象。</strong><p>关闭重开后，文字和图形无法单独编辑。原型由浏览器转换为 sRGB，不保留原图 ICC / EXIF；专业色彩链路需在桌面版验证。</p></div></div>
+  <div class="dialog-footer"><span id="save-location-note">选择保存位置，或通过浏览器下载</span><button class="secondary-button" data-close="export-dialog">取消</button><button class="primary-button" id="export-confirm"><svg><use href="#i-save"/></svg>保存图片</button></div>
+</dialog>
+
+<dialog id="size-dialog" class="small-dialog"><div class="dialog-heading"><div><span class="eyebrow" id="size-eyebrow">IMAGE SIZE</span><h2 id="size-title">修改图片尺寸</h2></div><button class="icon-button" data-close="size-dialog" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><p class="dialog-description" id="size-description"></p><div class="size-inputs"><label>宽度<input id="size-width" type="number" min="1" max="8192"><span>px</span></label><span>×</span><label>高度<input id="size-height" type="number" min="1" max="8192"><span>px</span></label></div><label class="checkbox-line" id="aspect-field"><input id="size-aspect" type="checkbox" checked>锁定宽高比</label><div id="canvas-options" hidden><label class="field-label">原图位置</label><div class="anchor-grid" id="anchor-grid"></div><label class="checkbox-line"><input id="canvas-transparent" type="checkbox" checked>扩展区域透明</label><label class="background-field">扩展背景色<input type="color" id="canvas-background" value="#ffffff"></label></div><p class="muted-text">上限：单边 8192 px，总计 3200 万像素。</p><div class="dialog-footer"><button class="secondary-button" data-close="size-dialog">取消</button><button class="primary-button" id="size-confirm">应用</button></div></dialog>
+
+<dialog id="info-dialog" class="small-dialog"><div class="dialog-heading"><div><span class="eyebrow">NEKOPIC</span><h2 id="info-title">键盘快捷键</h2></div><button class="icon-button" data-close="info-dialog" aria-label="关闭"><svg><use href="#i-close"/></svg></button></div><div id="info-content"></div><div class="dialog-footer"><button class="primary-button" data-close="info-dialog">知道了</button></div></dialog>
+<dialog id="confirm-dialog" class="small-dialog"><div class="dialog-heading"><h2>保存当前修改？</h2></div><p class="dialog-description">未保存的修改会丢失。关闭后，文字和图形将无法再单独编辑。</p><div class="dialog-footer"><button class="secondary-button" id="confirm-cancel">取消</button><button class="secondary-button" id="confirm-discard">不保存</button><button class="primary-button" id="confirm-save">保存</button></div></dialog>
+<dialog id="recovery-dialog" class="small-dialog"><div class="dialog-heading"><h2>找回上次的编辑</h2></div><p class="dialog-description">检测到尚未关闭的本机编辑快照。是否恢复图片和可编辑对象？</p><p class="muted-text">浏览器恢复是尽力保存，清理浏览器数据会移除快照。</p><div class="dialog-footer"><button class="secondary-button" id="recovery-discard">放弃快照</button><button class="primary-button" id="recovery-restore">恢复编辑</button></div></dialog>
+</body>
+</html>

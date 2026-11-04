@@ -1,0 +1,16 @@
+# Builds and generated artefacts
+/native/build*/
+/native/**/target/
+/native/.qtcreator/
+*.user
+*.autosave
+compile_commands.json
+.ninja_*
+CMakeFiles/
+CMakeCache.txt
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
