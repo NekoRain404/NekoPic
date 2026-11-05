@@ -1,4 +1,5 @@
 import QtQuick
+import "UI"
 
 Item {
     id: root
@@ -16,14 +17,60 @@ Item {
     visible: active
     enabled: active && inputEnabled
     focus: active
-    onActiveChanged: if (active) { resetSelection(); forceActiveFocus() }
+    /*! Focus ring is reserved for keyboard users; dragging is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
+
+    onActiveChanged: if (active) {
+        resetSelection()
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.OtherFocusReason)
+    }
     onImageWidthChanged: resetSelection()
     onImageHeightChanged: resetSelection()
     onAspectRatioChanged: resetSelection()
     onSelectionChanged: drawing.requestPaint()
-    Keys.onReturnPressed: function(event) { commit(); event.accepted = true }
-    Keys.onEnterPressed: function(event) { commit(); event.accepted = true }
-    Keys.onEscapePressed: function(event) { cancelled(); event.accepted = true }
+
+    function cursorForMode(mode) {
+        switch (mode) {
+        case "nw": case "se": return Qt.SizeFDiagCursor
+        case "ne": case "sw": return Qt.SizeBDiagCursor
+        case "n": case "s": return Qt.SizeVerCursor
+        case "e": case "w": return Qt.SizeHorCursor
+        case "move": return Qt.OpenHandCursor
+        default: return Qt.CrossCursor
+        }
+    }
+
+    Keys.onReturnPressed: function(event) {
+        root._keyboardFocus = true
+        commit()
+        event.accepted = true
+    }
+    Keys.onEnterPressed: function(event) {
+        root._keyboardFocus = true
+        commit()
+        event.accepted = true
+    }
+    Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
+        cancelled()
+        event.accepted = true
+    }
 
     function commit() {
         if (active && inputEnabled && selection.width >= 1 && selection.height >= 1)
@@ -108,23 +155,44 @@ Item {
             for (const p of handles) c.fillRect(p[0] - 3, p[1] - 3, 6, 6)
         }
     }
+    Rectangle {
+        objectName: "cropFocusRing"
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: Theme.radiusXs
+        color: "transparent"
+        border.width: Theme.focusRingWidth
+        border.color: Theme.focusRing
+        visible: root.activeFocus && root.enabled && root._keyboardFocus
+    }
+
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
         preventStealing: true
         hoverEnabled: true
-        cursorShape: !pressed ? Qt.CrossCursor : mode === "move" ? Qt.ClosedHandCursor : Qt.CrossCursor
         property string mode: ""
         property point start
         property rect initial
+        property real hoverX: -1
+        property real hoverY: -1
+        cursorShape: {
+            if (pressed)
+                return mode === "move" ? Qt.ClosedHandCursor : root.cursorForMode(mode)
+            if (hoverX < 0)
+                return Qt.CrossCursor
+            return root.cursorForMode(root.hitTest(hoverX, hoverY))
+        }
         onWheel: function(event) { event.accepted = false }
         onPressed: function(mouse) {
-            root.forceActiveFocus()
+            root.takeMouseFocus()
             mode = root.hitTest(mouse.x, mouse.y)
             start = root.pointAt(mouse.x, mouse.y)
             initial = root.selection
         }
         onPositionChanged: function(mouse) {
+            hoverX = mouse.x
+            hoverY = mouse.y
             if (!pressed) return
             const p = root.pointAt(mouse.x, mouse.y), s = initial
             if (mode === "move") {

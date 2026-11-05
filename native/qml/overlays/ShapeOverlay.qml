@@ -122,6 +122,22 @@ Item {
     property point _current: Qt.point(0, 0)
     property bool _drawing: false
     property bool _shift: false
+    /*! Focus ring is reserved for keyboard users; drawing is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
 
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Shape drawing")
@@ -222,7 +238,7 @@ Item {
     function _press(mouse) {
         if (!usable)
             return false
-        forceActiveFocus(Qt.MouseFocusReason)
+        takeMouseFocus()
         _anchor = pointAt(mouse.x, mouse.y)
         _shift = (mouse.modifiers & Qt.ShiftModifier) !== 0
         _current = _constrainPoint(_anchor, _anchor, _shift)
@@ -271,8 +287,12 @@ Item {
     // ── Lifecycle ───────────────────────────────────────────────────────────
     onActiveChanged: {
         reset()
-        if (active)
+        if (active) {
+            _keyboardFocus = false
+            _mouseFocusRequest = true
             forceActiveFocus(Qt.OtherFocusReason)
+            Qt.callLater(function() { _mouseFocusRequest = false })
+        }
     }
     onUsableChanged: if (!usable) reset()
     onWidthChanged: preview.requestPaint()
@@ -289,6 +309,7 @@ Item {
     onCornerRadiusChanged: preview.requestPaint()
 
     Keys.onEscapePressed: function(event) {
+        _keyboardFocus = true
         if (usable) {
             _cancel()
             event.accepted = true
@@ -421,14 +442,16 @@ Item {
         }
     }
 
-    // Visible focus indicator for keyboard users.
+    // Subtle focus indicator for keyboard users only.
     Rectangle {
         objectName: "shapeFocusRing"
         anchors.fill: preview
+        anchors.margins: 1
+        radius: Theme.radiusXs
         color: "transparent"
         border.width: Theme.focusRingWidth
         border.color: Theme.focusRing
-        visible: root.activeFocus && root.usable
+        visible: root.activeFocus && root.usable && root._keyboardFocus
     }
 
     MouseArea {

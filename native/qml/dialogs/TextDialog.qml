@@ -135,6 +135,12 @@ NekoDialog {
 
     property bool _ready: false
     property bool _resolved: false
+
+    /*! Keeps the styling body above the fixed error line and action row. */
+    readonly property real _scrollMaxHeight: {
+        const host = root.parent && root.parent.height > 0 ? root.parent.height : 700
+        return Math.max(180, host - 250)
+    }
     property bool _attempted: false
     readonly property bool showValidation: _attempted && !canAccept
 
@@ -359,11 +365,31 @@ NekoDialog {
         close()
     }
 
-    // Everything lives in one inner layout so the dialog stays compact at
-    // 900×700 while still exposing the full styling surface.
+    // The styling surface scrolls; the error line and actions stay fixed so
+    // the dialog always fits a 860×600 window.
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacingSm
+
+        Flickable {
+            id: textScroller
+            objectName: "text-dialog-scroll"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(textColumn.implicitHeight, root._scrollMaxHeight)
+            contentWidth: width
+            contentHeight: textColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: NekoScrollBar {
+                objectName: "text-dialog-scrollbar"
+                policy: ScrollBar.AsNeeded
+                accessibleName: qsTr("Text style options scroll")
+            }
+
+            ColumnLayout {
+                id: textColumn
+                width: textScroller.width
+                spacing: Theme.spacingSm
 
         Item {
             Layout.fillWidth: true
@@ -918,6 +944,9 @@ NekoDialog {
                     font.pixelSize: Theme.fontCaption
                     elide: Text.ElideRight
                 }
+            }
+        }
+
             }
         }
 

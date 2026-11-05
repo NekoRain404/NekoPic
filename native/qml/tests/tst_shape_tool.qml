@@ -115,6 +115,26 @@ TestCase {
 
     // ── Coordinate mapping ──────────────────────────────────────────────────
 
+    function test_focusRingOnlyForKeyboardFocus() {
+        overlay.active = true
+        const ring = findChild(overlay, "shapeFocusRing")
+        verify(ring !== null)
+        verify(overlay.activeFocus)
+
+        // A mouse press grabs focus without a keyboard ring.
+        mouseClick(overlay, 50, 50)
+        compare(ring.visible, false)
+
+        canvasPan.forceActiveFocus()
+        verify(!overlay.activeFocus)
+        overlay.forceActiveFocus(Qt.TabFocusReason)
+        verify(overlay.activeFocus)
+        compare(ring.visible, true)
+
+        mouseClick(overlay, 100, 100)
+        compare(ring.visible, false)
+    }
+
     function test_mappingUnderZoomAndPan() {
         compare(overlay.width, 250)
         compare(overlay.height, 125)

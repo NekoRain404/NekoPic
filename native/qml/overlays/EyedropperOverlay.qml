@@ -267,34 +267,59 @@ Item {
         _sampleAt(p.x, p.y, true)
     }
 
+    /*! Focus ring is reserved for keyboard users; sampling is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
+
     onActiveChanged: {
         reset()
-        if (active)
+        if (active) {
+            _keyboardFocus = false
+            _mouseFocusRequest = true
             forceActiveFocus(Qt.OtherFocusReason)
+            Qt.callLater(function() { _mouseFocusRequest = false })
+        }
     }
     onUsableChanged: if (!usable) reset()
     onImageWidthChanged: if (active) reset()
     onImageHeightChanged: if (active) reset()
 
     Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
         if (usable) {
             cancel()
             event.accepted = true
         }
     }
     Keys.onReturnPressed: function(event) {
+        root._keyboardFocus = true
         if (usable) {
             _pickCurrent()
             event.accepted = true
         }
     }
     Keys.onEnterPressed: function(event) {
+        root._keyboardFocus = true
         if (usable) {
             _pickCurrent()
             event.accepted = true
         }
     }
     Keys.onPressed: function(event) {
+        root._keyboardFocus = true
         if (!usable)
             return
         let dx = 0, dy = 0
@@ -350,6 +375,17 @@ Item {
         }
     }
 
+    Rectangle {
+        objectName: "eyedropperFocusRing"
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: Theme.radiusXs
+        color: "transparent"
+        border.width: Theme.focusRingWidth
+        border.color: Theme.focusRing
+        visible: root.activeFocus && root.usable && root._keyboardFocus
+    }
+
     MouseArea {
         id: pointer
         anchors.fill: parent
@@ -363,7 +399,7 @@ Item {
         onPressed: function(mouse) {
             if (!root.usable)
                 return
-            root.forceActiveFocus(Qt.MouseFocusReason)
+            root.takeMouseFocus()
             if (mouse.button === Qt.RightButton) {
                 root.cancel()
                 mouse.accepted = true

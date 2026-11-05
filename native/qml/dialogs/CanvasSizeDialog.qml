@@ -70,6 +70,12 @@ NekoDialog {
     property bool _ready: false
     property bool _resolved: false
 
+    /*! Keeps the option body above the fixed error line and action row. */
+    readonly property real _scrollMaxHeight: {
+        const host = root.parent && root.parent.height > 0 ? root.parent.height : 700
+        return Math.max(180, host - 260)
+    }
+
     signal canvasResizeRequested(int width, int height, int anchor, color background)
 
     title: qsTr("Canvas size")
@@ -124,6 +130,26 @@ NekoDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacingMd
+
+        Flickable {
+            id: canvasScroller
+            objectName: "canvas-scroll"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(canvasColumn.implicitHeight, root._scrollMaxHeight)
+            contentWidth: width
+            contentHeight: canvasColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: NekoScrollBar {
+                objectName: "canvas-scrollbar"
+                policy: ScrollBar.AsNeeded
+                accessibleName: qsTr("Canvas size options scroll")
+            }
+
+            ColumnLayout {
+                id: canvasColumn
+                width: canvasScroller.width
+                spacing: Theme.spacingMd
 
         Text {
             objectName: "canvas-original"
@@ -279,6 +305,8 @@ NekoDialog {
             color: Theme.textPrimary
             font.pixelSize: Theme.fontSmall
             wrapMode: Text.WordWrap
+        }
+            }
         }
 
         Text {

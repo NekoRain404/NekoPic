@@ -49,6 +49,28 @@ TestCase {
         keyClick(Qt.Key_Escape)
         compare(cancels.count, 1)
     }
+    function test_focusRingOnlyForKeyboardFocus() {
+        const overlay = findChild(canvas, "cropOverlay")
+        verify(overlay !== null)
+        const ring = findChild(overlay, "cropFocusRing")
+        verify(ring !== null)
+
+        // Activating the tool focuses it, but that is not a keyboard cue yet.
+        verify(overlay.activeFocus)
+        compare(ring.visible, false)
+
+        // Focus arriving from elsewhere (Tab / programmatic keyboard reason)
+        // shows the ring; grabbing focus with the mouse hides it again.
+        canvas.forceActiveFocus()
+        verify(!overlay.activeFocus)
+        overlay.forceActiveFocus(Qt.TabFocusReason)
+        verify(overlay.activeFocus)
+        compare(ring.visible, true)
+
+        mouseDrag(overlay, 40, 40, 30, 20)
+        compare(ring.visible, false)
+    }
+
     function test_fixedRatioClampedAndDisabled() {
         canvas.cropAspectRatio = 4 / 3
         const overlay = findChild(canvas, "cropOverlay")

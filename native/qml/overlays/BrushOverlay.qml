@@ -175,10 +175,32 @@ Item {
     onUsableChanged: if (!usable) reset()
     onImageWidthChanged: reset()
     onImageHeightChanged: reset()
+    /*! Focus ring is reserved for keyboard users; painting is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+    property point _hoverDisplay: Qt.point(0, 0)
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
+
     onActiveChanged: {
         reset()
-        if (active)
+        if (active) {
+            _keyboardFocus = false
+            _mouseFocusRequest = true
             forceActiveFocus(Qt.OtherFocusReason)
+            Qt.callLater(function() { _mouseFocusRequest = false })
+        }
     }
     onWidthChanged: preview.requestPaint()
     onHeightChanged: preview.requestPaint()
@@ -187,6 +209,7 @@ Item {
     onColorChanged: preview.requestPaint()
 
     Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
         if (!usable) {
             event.accepted = false
             return
@@ -239,6 +262,35 @@ Item {
         }
     }
 
+    Rectangle {
+        objectName: "brushFocusRing"
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: Theme.radiusXs
+        color: "transparent"
+        border.width: Theme.focusRingWidth
+        border.color: Theme.focusRing
+        visible: root.activeFocus && root.usable && root._keyboardFocus
+    }
+
+    // Replace the hidden system cursor with the true brush footprint.
+    Rectangle {
+        objectName: "brushHoverRing"
+        readonly property real displayDiameter: root.imageWidth > 0
+            ? Math.max(4, root.diameter * root.width / root.imageWidth)
+            : root.diameter
+        width: displayDiameter
+        height: width
+        radius: width / 2
+        x: root._hoverDisplay.x - width / 2
+        y: root._hoverDisplay.y - height / 2
+        color: "transparent"
+        border.width: 1
+        border.color: "#ffffff"
+        opacity: 0.85
+        visible: root.usable && pointer.containsMouse && !root._drawing
+    }
+
     MouseArea {
         id: pointer
         objectName: "brushPointer"
@@ -253,7 +305,7 @@ Item {
         onPressed: function(mouse) {
             if (!root.usable)
                 return
-            root.forceActiveFocus(Qt.MouseFocusReason)
+            root.takeMouseFocus()
             const p = root.pointAt(mouse.x, mouse.y)
             root._sampleDistance = root._minimumSampleDistance()
             root._points = [Qt.point(p.x, p.y)]
@@ -264,6 +316,7 @@ Item {
             mouse.accepted = true
         }
         onPositionChanged: function(mouse) {
+            root._hoverDisplay = Qt.point(mouse.x, mouse.y)
             if (!root.usable)
                 return
             root._cursor = root.pointAt(mouse.x, mouse.y)
