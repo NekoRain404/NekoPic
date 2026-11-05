@@ -1,7 +1,5 @@
 #include "documentcontroller.h"
 
-#include "document/textobject.h"
-
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 
@@ -51,47 +49,6 @@ void DocumentController::startObjectEdit(
     watcher->setFuture(QtConcurrent::run([base, parameters, layer] {
         return DocumentController::composeImage(base, parameters, layer.get());
     }));
-}
-
-void DocumentController::addText(const QString &text, qreal x, qreal y, qreal fontSize,
-                                 const QColor &color, int alignment)
-{
-    if (text.trimmed().isEmpty()) return;
-    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(fontSize)) return;
-    if (std::abs(x) > 1e7 || std::abs(y) > 1e7) return;
-    if (busy_ || !hasImage()) return;
-
-    const qreal size = std::clamp(fontSize, 4.0, 512.0);
-    const Qt::Alignment align = static_cast<Qt::Alignment>(alignment);
-    const QColor ink = color.isValid() ? color : QColor(Qt::black);
-
-    startObjectEdit([text, x, y, size, ink, align](NekoPic::Document::ObjectLayer &layer) {
-        auto object = std::make_unique<NekoPic::Document::TextObject>(text);
-        object->setFontPointSize(size);
-        object->setColor(ink);
-        object->setAlignment(align);
-
-        // Place the selected point of the text box at the requested anchor.
-        const QRectF box = object->bounds();
-        qreal dx = 0.0;
-        if (align & Qt::AlignLeft)
-            dx = x - box.left();
-        else if (align & Qt::AlignRight)
-            dx = x - box.right();
-        else
-            dx = x - box.center().x();
-
-        qreal dy = 0.0;
-        if (align & Qt::AlignTop)
-            dy = y - box.top();
-        else if (align & Qt::AlignBottom)
-            dy = y - box.bottom();
-        else
-            dy = y - box.center().y();
-
-        object->setTranslation(QPointF(dx, dy));
-        return layer.add(std::move(object)) != NekoPic::Document::InvalidObjectId;
-    });
 }
 
 bool DocumentController::removeObject(quint64 id)

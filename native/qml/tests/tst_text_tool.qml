@@ -375,6 +375,140 @@ TestCase {
         verify(Qt.colorEqual(dialog.textColor, dialog.redColor))
     }
 
+    // ── Styled text controls ───────────────────────────────────────────────
+
+    function test_styledControlsExistAndDefaults() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        openDialog(dialog)
+
+        compare(dialog.fontFamily, "")
+        compare(dialog.bold, false)
+        compare(dialog.outlineEnabled, false)
+        compare(dialog.outlineWidth, 2)
+        compare(dialog.effectiveOutlineWidth, 0)
+        compare(dialog.lineHeight, 1.0)
+        compare(dialog.textPadding, 4)
+        compare(dialog.fontWeight, 400)
+
+        const familyBox = child(dialog, "text-dialog-font-family")
+        verify(familyBox !== null)
+        compare(familyBox.count, dialog.fontFamilyModel.length)
+        compare(dialog.fontFamilyModel.length, dialog.fontFamilies.length + 1)
+        compare(dialog.fontFamilyAt(0), "")
+
+        verify(child(dialog, "text-dialog-font-fallback-note") !== null)
+        verify(child(dialog, "text-dialog-bold") !== null)
+        verify(child(dialog, "text-dialog-outline") !== null)
+        verify(child(dialog, "text-dialog-outline-color-red") !== null)
+
+        const lineHeight = child(dialog, "text-dialog-line-height")
+        verify(lineHeight !== null)
+        compare(lineHeight.from, 0.8)
+        compare(lineHeight.to, 2.5)
+        compare(lineHeight.value, 1.0)
+
+        const padding = child(dialog, "text-dialog-padding")
+        verify(padding !== null)
+        compare(padding.from, 0)
+        compare(padding.to, 64)
+        compare(padding.value, 4)
+
+        const outlineWidth = child(dialog, "text-dialog-outline-width")
+        verify(outlineWidth !== null)
+        compare(outlineWidth.from, 0)
+        compare(outlineWidth.to, 64)
+        compare(outlineWidth.enabled, false)
+
+        mouseClick(child(dialog, "text-dialog-outline"))
+        compare(dialog.outlineEnabled, true)
+        compare(outlineWidth.enabled, true)
+        compare(dialog.effectiveOutlineWidth, 2)
+
+        mouseClick(child(dialog, "text-dialog-bold"))
+        compare(dialog.bold, true)
+        compare(dialog.fontWeight, 700)
+    }
+
+    function test_styledControlsClamp() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        openDialog(dialog)
+
+        dialog.lineHeight = 5
+        compare(dialog.lineHeight, 2.5)
+        dialog.lineHeight = 0.1
+        compare(dialog.lineHeight, 0.8)
+        dialog.lineHeight = 1.25
+        compare(dialog.lineHeight, 1.25)
+        compare(child(dialog, "text-dialog-line-height").value, 1.25)
+
+        dialog.textPadding = -8
+        compare(dialog.textPadding, 0)
+        dialog.textPadding = 200
+        compare(dialog.textPadding, 64)
+        dialog.textPadding = 18
+        compare(dialog.textPadding, 18)
+        compare(child(dialog, "text-dialog-padding").value, 18)
+
+        dialog.outlineWidth = 100
+        compare(dialog.outlineWidth, 64)
+        dialog.outlineWidth = -4
+        compare(dialog.outlineWidth, 0)
+        dialog.outlineWidth = 6
+        compare(dialog.outlineWidth, 6)
+        compare(child(dialog, "text-dialog-outline-width").value, 6)
+    }
+
+    function test_styledSignalPayload() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500,
+                                    anchorX: 120, anchorY: 240 })
+        openDialog(dialog)
+
+        const styled = createTemporaryObject(spyComponent, testCase,
+                                             { target: dialog, signalName: "styledTextRequested" })
+        const legacy = createTemporaryObject(spyComponent, testCase,
+                                             { target: dialog, signalName: "textRequested" })
+        verify(styled !== null && legacy !== null)
+
+        dialog.text = "  Styled world  "
+        dialog.fontSize = 64
+        dialog.bold = true
+        if (dialog.fontFamilies.length > 0)
+            dialog.fontFamily = dialog.fontFamilies[0]
+        dialog.lineHeight = 1.6
+        dialog.textPadding = 12
+        mouseClick(child(dialog, "text-dialog-outline"))
+        dialog.outlineWidth = 6
+        mouseClick(child(dialog, "text-dialog-outline-color-red"))
+        mouseClick(child(dialog, "text-color-black"))
+        mouseClick(child(dialog, "text-align-8"))
+
+        compare(dialog.canAccept, true)
+        mouseClick(child(dialog, "text-dialog-accept"))
+
+        compare(styled.count, 1)
+        const args = styled.signalArguments[0]
+        compare(args[0], "Styled world")
+        compare(args[1], 120)
+        compare(args[2], 240)
+        if (dialog.fontFamilies.length > 0)
+            compare(args[3], dialog.fontFamilies[0])
+        else
+            compare(args[3], "")
+        compare(args[4], 700)
+        compare(args[5], 64)
+        verify(Qt.colorEqual(args[6], "#000000"))
+        compare(args[7], Qt.AlignRight | Qt.AlignBottom)
+        verify(Qt.colorEqual(args[8], dialog.redColor))
+        compare(args[9], 6)
+        verify(Math.abs(args[10] - 1.6) < 0.001)
+        compare(args[11], 12)
+
+        // The legacy signal still fires for the six-argument controller path.
+        compare(legacy.count, 1)
+        compare(legacy.signalArguments[0][0], "Styled world")
+        compare(legacy.signalArguments[0][3], 64)
+    }
+
     function test_signalPayload() {
         const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500,
                                     anchorX: 120, anchorY: 240 })
@@ -420,6 +554,11 @@ TestCase {
         compare(accept.enabled, false)
         compare(input.enabled, false)
         compare(child(dialog, "text-dialog-font-size").enabled, false)
+        compare(child(dialog, "text-dialog-font-family").enabled, false)
+        compare(child(dialog, "text-dialog-line-height").enabled, false)
+        compare(child(dialog, "text-dialog-padding").enabled, false)
+        compare(child(dialog, "text-dialog-outline").enabled, false)
+        compare(child(dialog, "text-dialog-bold").enabled, false)
 
         dialog.busy = false
         compare(accept.enabled, true)
@@ -444,5 +583,15 @@ TestCase {
         verify(dialog.width <= testCase.width)
         verify(dialog.height <= testCase.height)
         verify(dialog.width >= Theme.controlMinWidth)
+
+        // The densest styling state (outline, bold, maximum spacing) still fits.
+        dialog.text = "Styled"
+        mouseClick(child(dialog, "text-dialog-outline"))
+        mouseClick(child(dialog, "text-dialog-bold"))
+        dialog.lineHeight = 2.5
+        dialog.textPadding = 64
+        verify(dialog.height <= testCase.height)
+        compare(dialog.canAccept, true)
+        compare(dialog.height, dialog.implicitHeight)
     }
 }

@@ -104,6 +104,11 @@ public:
     Q_INVOKABLE void blurStroke(const QVariantList &points, int radius);
     Q_INVOKABLE void addText(const QString &text, qreal x, qreal y, qreal fontSize,
                              const QColor &color, int alignment);
+    Q_INVOKABLE void addTextStyled(const QString &text, qreal x, qreal y,
+                                   const QString &fontFamily, int fontWeight,
+                                   qreal fontSize, const QColor &color, int alignment,
+                                   const QColor &outlineColor, qreal outlineWidth,
+                                   qreal lineHeight, qreal padding);
     Q_INVOKABLE bool removeObject(quint64 id);
     Q_INVOKABLE void clearObjects();
     Q_INVOKABLE void moveObject(quint64 id, qreal dx, qreal dy);
