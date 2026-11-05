@@ -154,6 +154,13 @@ if(UNIX AND NOT APPLE)
         DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
     install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/nekopic.svg"
         DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps")
+    # PNG sizes keep the icon visible in launchers, package managers and AppDir
+    # tools that do not rasterize SVG. Regenerate with scripts/generate-icons.sh.
+    foreach(nekopic_icon_size 16 24 32 48 64 128 256 512)
+        install(FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/icons/hicolor/${nekopic_icon_size}x${nekopic_icon_size}/apps/nekopic.png"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${nekopic_icon_size}x${nekopic_icon_size}/apps")
+    endforeach()
 
     install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/../README.md"
