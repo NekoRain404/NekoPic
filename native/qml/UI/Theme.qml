@@ -32,7 +32,7 @@ QtObject {
 
     readonly property color textPrimary: dark ? "#e9e9e6" : "#303734"
     readonly property color textSecondary: dark ? "#9aa19c" : "#5f6862"
-    readonly property color textTertiary: dark ? "#6e7673" : "#8b938b"
+    readonly property color textTertiary: dark ? "#858d89" : "#626c65"
 
     readonly property color border: dark ? "#343638" : "#d6d7d1"
     readonly property color separator: dark ? "#2a2c2e" : "#e0e1db"
