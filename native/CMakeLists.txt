@@ -17,7 +17,8 @@ qt_standard_project_setup()
 add_library(nekopic_core STATIC
     src/core/adjustments.cpp src/core/adjustments.h
     src/core/mosaic.cpp src/core/mosaic.h
-    src/core/histogram.cpp src/core/histogram.h)
+    src/core/histogram.cpp src/core/histogram.h
+    src/core/autoenhance.cpp src/core/autoenhance.h)
 target_include_directories(nekopic_core PUBLIC src src/core)
 target_link_libraries(nekopic_core PUBLIC Qt6::Core Qt6::Gui)
 
@@ -132,6 +133,7 @@ if(BUILD_TESTING)
     nekopic_add_test(adjustments tests/tst_adjustments.cpp nekopic_core)
     nekopic_add_test(mosaic tests/tst_mosaic.cpp nekopic_core)
     nekopic_add_test(histogram tests/tst_histogram.cpp nekopic_core)
+    nekopic_add_test(autoenhance tests/tst_autoenhance.cpp nekopic_core)
     nekopic_add_test(history tests/tst_history.cpp nekopic_document)
     nekopic_add_test(formatregistry tests/tst_formatregistry.cpp nekopic_io)
     nekopic_add_test(documentcontroller tests/documentcontroller_test.cpp nekopic_app)
