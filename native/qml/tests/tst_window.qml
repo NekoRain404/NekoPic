@@ -520,7 +520,7 @@ TestCase {
         tryCompare(dialog, "currentCategory", "recovery")
         compare(dialog.recoveryAvailable, true)
         tryCompare(settingsChild(dialog, "settings-recovery-status"), "text",
-                   "发现可恢复的快照")
+                   qsTranslate("RecoveryPage", "Recovery snapshot available"))
 
         const discard = settingsChild(dialog, "settings-recovery-discard")
         verify(discard !== null && discard.visible)

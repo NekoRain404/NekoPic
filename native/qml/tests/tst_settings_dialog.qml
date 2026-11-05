@@ -138,8 +138,8 @@ TestCase {
             verify(button.text.length > 0)
             verify(button.Accessible.name.length > 0)
         }
-        compare(categoryButton(dialog, "appearance").text, "外观")
-        compare(categoryButton(dialog, "recovery").text, "恢复与安全")
+        compare(categoryButton(dialog, "appearance").text, qsTranslate("SettingsDialog", "Appearance"))
+        compare(categoryButton(dialog, "recovery").text, qsTranslate("SettingsDialog", "Recovery & Safety"))
 
         const sections = ["appearance", "editing", "export", "language", "recovery", "about"]
         for (let i = 0; i < sections.length; ++i) {
@@ -147,12 +147,12 @@ TestCase {
             verify(header !== null, "missing section " + sections[i])
             verify(header.text.length > 0)
         }
-        compare(child(dialog, "settings-section-appearance").text, "外观")
-        compare(child(dialog, "settings-section-editing").text, "编辑")
-        compare(child(dialog, "settings-section-export").text, "导出")
-        compare(child(dialog, "settings-section-language").text, "语言")
-        compare(child(dialog, "settings-section-recovery").text, "恢复与安全")
-        compare(child(dialog, "settings-section-about").text, "关于")
+        compare(child(dialog, "settings-section-appearance").text, qsTranslate("AppearancePage", "Appearance"))
+        compare(child(dialog, "settings-section-editing").text, qsTranslate("EditingPage", "Editing"))
+        compare(child(dialog, "settings-section-export").text, qsTranslate("ExportPage", "Export"))
+        compare(child(dialog, "settings-section-language").text, qsTranslate("LanguagePage", "Language"))
+        compare(child(dialog, "settings-section-recovery").text, qsTranslate("RecoveryPage", "Recovery & Safety"))
+        compare(child(dialog, "settings-section-about").text, qsTranslate("AboutPage", "About"))
 
         const controls = [
             "settings-theme", "settings-reduce-motion", "settings-gpu-preview",
@@ -340,7 +340,7 @@ TestCase {
 
         compare(defaultToggle.checked, true)
         compare(slider.enabled, false)
-        compare(value.text, "Codec default")
+        compare(value.text, qsTranslate("ExportPage", "Codec default"))
 
         dialog.exportQuality = 250
         compare(dialog.exportQuality, 100)
@@ -353,7 +353,7 @@ TestCase {
         compare(dialog.exportQuality, -1)
         compare(defaultToggle.checked, true)
         compare(slider.enabled, false)
-        compare(value.text, "Codec default")
+        compare(value.text, qsTranslate("ExportPage", "Codec default"))
 
         dialog.exportQuality = 90
         compare(defaultToggle.checked, false)
@@ -418,8 +418,11 @@ TestCase {
     }
 
     // ── Language ────────────────────────────────────────────────────────────
+    // qsTranslate() carries the component context explicitly, so these
+    // assertions hold both without a translator (English sources) and when
+    // the suite is run with a zh_CN/ja_JP/de_DE .qm file.
 
-    function test_localeSelectionEmitsAndRelocalises() {
+    function test_localeSelectionEmitsForEveryLanguage() {
         const dialog = make()
         openDialog(dialog)
         activateCategory(dialog, "language")
@@ -427,7 +430,7 @@ TestCase {
         const localeSpy = makeSpy(dialog, "localeSelected")
         const english = child(dialog, "settings-locale-en")
 
-        compare(child(dialog, "settings-section-appearance").text, "外观")
+        compare(child(dialog, "settings-section-appearance").text, qsTranslate("AppearancePage", "Appearance"))
         scrollTo(dialog, english)
         mouseClick(english)
 
@@ -435,8 +438,8 @@ TestCase {
         compare(localeSpy.count, 1)
         compare(localeSpy.signalArguments[0][0], "en")
         compare(settingValue(settingSpy, "locale"), "en")
-        compare(child(dialog, "settings-section-appearance").text, "Appearance")
-        compare(categoryButton(dialog, "recovery").text, "Recovery & Safety")
+        compare(child(dialog, "settings-section-appearance").text, qsTranslate("AppearancePage", "Appearance"))
+        compare(categoryButton(dialog, "recovery").text, qsTranslate("SettingsDialog", "Recovery & Safety"))
 
         const chinese = child(dialog, "settings-locale-zh_CN")
         scrollTo(dialog, chinese)
@@ -483,7 +486,7 @@ TestCase {
         const status = child(dialog, "settings-recovery-status")
         const details = child(dialog, "settings-recovery-details")
         const discard = child(dialog, "settings-recovery-discard")
-        compare(status.text, "发现可恢复的快照")
+        compare(status.text, qsTranslate("RecoveryPage", "Recovery snapshot available"))
         verify(details.text.indexOf("shot.png") >= 0)
         verify(details.text.indexOf("640 × 480 px") >= 0)
         compare(discard.visible, true)
@@ -513,7 +516,7 @@ TestCase {
         const dialog = make()
         openDialog(dialog)
         activateCategory(dialog, "recovery")
-        compare(child(dialog, "settings-recovery-status").text, "当前没有恢复快照")
+        compare(child(dialog, "settings-recovery-status").text, qsTranslate("RecoveryPage", "No recovery snapshot available"))
         compare(child(dialog, "settings-recovery-details").visible, false)
         compare(child(dialog, "settings-recovery-discard").visible, false)
     }
@@ -534,7 +537,8 @@ TestCase {
 
         verify(child(dialog, "settings-about-version").text.indexOf("NekoPic") === 0)
         compare(child(dialog, "settings-about-formats").text,
-                "Reads 12 formats · writes 6 formats")
+                qsTranslate("AboutPage", "Reads %1 formats · writes %2 formats")
+                    .arg(12).arg(6))
 
         const spy = makeSpy(dialog, "shortcutsRequested")
         const shortcuts = child(dialog, "settings-shortcuts")

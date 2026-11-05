@@ -21,8 +21,10 @@ import "../settings"
     components receive only the values they display and report user intent
     through signals; validation and persistence stay here.
 
-    Localised labels follow `localeId` directly so the page reads correctly in
-    both shipped languages even before translation catalogues are regenerated.
+    All user-visible strings use qsTr with English sources so lupdate collects
+    them; the active catalogue is installed by LanguageManager and the page is
+    retranslated when the interface language changes. `localeId` still drives
+    the selected language chip and validation.
 */
 NekoDialog {
     id: root
@@ -62,25 +64,25 @@ NekoDialog {
     property string currentCategory: "appearance"
 
     readonly property var categories: [
-        { id: "appearance", label: root._tr("外观", "Appearance") },
-        { id: "editing", label: root._tr("编辑", "Editing") },
-        { id: "export", label: root._tr("导出", "Export") },
-        { id: "language", label: root._tr("语言", "Language") },
-        { id: "recovery", label: root._tr("恢复与安全", "Recovery & Safety") },
-        { id: "about", label: root._tr("关于", "About") }
+        { id: "appearance", label: qsTr("Appearance") },
+        { id: "editing", label: qsTr("Editing") },
+        { id: "export", label: qsTr("Export") },
+        { id: "language", label: qsTr("Language") },
+        { id: "recovery", label: qsTr("Recovery & Safety") },
+        { id: "about", label: qsTr("About") }
     ]
 
     readonly property var startupToolOptions: [
-        { id: "adjust", label: root._tr("调色", "Adjust") },
-        { id: "filters", label: root._tr("滤镜", "Filters") },
-        { id: "select", label: root._tr("选择", "Select") },
-        { id: "pan", label: root._tr("平移", "Pan") },
-        { id: "brush", label: root._tr("画笔", "Brush") },
-        { id: "text", label: root._tr("文字", "Text") },
-        { id: "shapes", label: root._tr("形状", "Shapes") },
-        { id: "mosaic", label: root._tr("马赛克", "Mosaic") },
-        { id: "eye", label: root._tr("吸管", "Eyedropper") },
-        { id: "crop", label: root._tr("裁剪", "Crop") }
+        { id: "adjust", label: qsTr("Adjust") },
+        { id: "filters", label: qsTr("Filters") },
+        { id: "select", label: qsTr("Select") },
+        { id: "pan", label: qsTr("Pan") },
+        { id: "brush", label: qsTr("Brush") },
+        { id: "text", label: qsTr("Text") },
+        { id: "shapes", label: qsTr("Shapes") },
+        { id: "mosaic", label: qsTr("Mosaic") },
+        { id: "eye", label: qsTr("Eyedropper") },
+        { id: "crop", label: qsTr("Crop") }
     ]
 
     /*! Emitted for every user-driven change; the parent persists `value`. */
@@ -117,12 +119,11 @@ NekoDialog {
         return Math.min(640, hostHeight - Theme.spacing2xl)
     }
 
-    title: root._tr("偏好设置", "Settings")
-    description: root._tr("更改会立即应用并自动保存。",
-                          "Changes apply immediately and are saved automatically.")
-    acceptText: root._tr("完成", "Done")
+    title: qsTr("Settings")
+    description: qsTr("Changes apply immediately and are saved automatically.")
+    acceptText: qsTr("Done")
     acceptObjectName: "settings-done"
-    accessibleName: root._tr("偏好设置", "Settings")
+    accessibleName: qsTr("Settings")
     showCloseButton: true
     bodyFillHeight: true
 
@@ -134,9 +135,6 @@ NekoDialog {
     }
 
     // ── Localisation and validation helpers ────────────────────────────────
-    function _tr(zh, en) {
-        return root.localeId === "zh_CN" ? zh : en
-    }
 
     function _themeIndex(mode) {
         for (let i = 0; i < root._themeModes.length; ++i) {
@@ -318,7 +316,7 @@ NekoDialog {
             spacing: Theme.spacingXs
 
             Accessible.role: Accessible.PageTabList
-            Accessible.name: root._tr("设置分类", "Settings categories")
+            Accessible.name: qsTr("Settings categories")
 
             Repeater {
                 id: categoryRepeater
@@ -438,7 +436,7 @@ NekoDialog {
             ScrollBar.vertical: NekoScrollBar {
                 objectName: "settings-scrollbar"
                 policy: ScrollBar.AlwaysOff
-                accessibleName: root._tr("设置内容滚动", "Settings content scroll")
+                accessibleName: qsTr("Settings content scroll")
             }
 
             ColumnLayout {

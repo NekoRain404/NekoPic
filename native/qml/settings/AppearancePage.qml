@@ -27,10 +27,6 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Theme.spacingLg
 
-    function _tr(zh, en) {
-        return page.localeId === "zh_CN" ? zh : en
-    }
-
     function _themeIndex(mode) {
         for (let i = 0; i < page.themeModes.length; ++i) {
             if (page.themeModes[i] === mode)
@@ -52,7 +48,7 @@ ColumnLayout {
     NekoSectionHeader {
         objectName: "settings-section-appearance"
         Layout.fillWidth: true
-        text: page._tr("外观", "Appearance")
+        text: qsTr("Appearance")
         eyebrow: true
         showDivider: true
     }
@@ -63,15 +59,14 @@ ColumnLayout {
 
         Text {
             Layout.fillWidth: true
-            text: page._tr("主题", "Theme")
+            text: qsTr("Theme")
             color: Theme.textPrimary
             font.pixelSize: Theme.fontBody
             font.weight: Theme.fontWeightMedium
         }
         Text {
             Layout.fillWidth: true
-            text: page._tr("跟随系统，或选择浅色、深色与四套精选调色板。",
-                           "Follow the system, or pick light, dark and four curated palettes.")
+            text: qsTr("Follow the system, or pick light, dark and four curated palettes.")
             color: Theme.textTertiary
             font.pixelSize: Theme.fontCaption
             lineHeight: Theme.lineHeightNormal
@@ -83,15 +78,15 @@ ColumnLayout {
             objectName: "settings-theme"
             Layout.fillWidth: true
             enabled: !page.busy
-            accessibleName: page._tr("主题", "Theme")
+            accessibleName: qsTr("Theme")
             model: [
-                page._tr("系统", "System"),
-                page._tr("浅色", "Light"),
-                page._tr("深色", "Dark"),
-                page._tr("午夜", "Midnight"),
-                page._tr("暖纸", "Warm paper"),
-                page._tr("石墨", "Graphite"),
-                page._tr("高对比", "Contrast")
+                qsTr("System"),
+                qsTr("Light"),
+                qsTr("Dark"),
+                qsTr("Midnight"),
+                qsTr("Warm paper"),
+                qsTr("Graphite"),
+                qsTr("Contrast")
             ]
 
             onActivated: function(index) {
@@ -106,16 +101,15 @@ ColumnLayout {
     }
 
     SettingRow {
-        label: page._tr("减少动效", "Reduce motion")
-        hint: page._tr("关闭界面动画和过渡效果。",
-                       "Turn off interface animations and transitions.")
+        label: qsTr("Reduce motion")
+        hint: qsTr("Turn off interface animations and transitions.")
 
         NekoToggle {
             id: reduceMotionToggle
             objectName: "settings-reduce-motion"
             checked: false
             enabled: !page.busy
-            accessibleName: page._tr("减少动效", "Reduce motion")
+            accessibleName: qsTr("Reduce motion")
             onClicked: page.reduceMotionToggled(checked)
         }
     }
