@@ -91,7 +91,7 @@ Rectangle {
     signal filterIntensityFinished(real value)
 
     color: Theme.panel
-    implicitWidth: 292
+    implicitWidth: 320
 
     ColumnLayout {
         anchors.fill: parent

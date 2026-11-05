@@ -3,6 +3,8 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
+#include <limits>
+
 namespace {
 QImage canvas()
 {
@@ -35,6 +37,38 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
         QVERIFY(!controller.hasObjects());
         QCOMPARE(controller.image(), original);
+    }
+
+    void brushOpacityAndSoftnessAffectRenderedInk()
+    {
+        QTemporaryDir dir;
+        QVERIFY(canvas().save(dir.filePath(QStringLiteral("source.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("source.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+        const QVariantList points{QPointF(60, 80), QPointF(180, 80)};
+        controller.addBrushStroke(points, 24.0, Qt::black, 0.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(controller.objectIds().size(), 1);
+        const QImage hard = controller.image();
+        const QRgb hardCentre = hard.pixel(120, 80);
+        controller.undo();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QVERIFY(!controller.hasObjects());
+
+        controller.addBrushStroke(points, 24.0, QColor(0, 0, 0, 96), 1.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(controller.objectIds().size(), 1);
+        const QImage soft = controller.image();
+        const QRgb softCentre = soft.pixel(120, 80);
+        const QRgb softRim = soft.pixel(120, 69);
+
+        QVERIFY2(qRed(softCentre) > qRed(hardCentre),
+                 "ink opacity must lighten the stroke over the white canvas");
+        QVERIFY(qRed(softCentre) < 255);
+        QVERIFY2(qRed(softRim) > qRed(softCentre),
+                 "softness must feather the stroke towards its edge");
     }
 
     void shapesRenderAndUndo()
@@ -89,6 +123,10 @@ private slots:
         QVERIFY(!controller.busy());
         controller.addBrushStroke(QVariantList{QPointF(1, 1)}, 0, Qt::black);
         QVERIFY(!controller.busy());
+        controller.addBrushStroke(QVariantList{QPointF(2, 2)}, 10, Qt::black,
+                            std::numeric_limits<double>::quiet_NaN());
+        QVERIFY(!controller.busy());
+        QVERIFY(!controller.hasObjects());
         controller.addShape(QStringLiteral("triangle"), QRectF(0, 0, 10, 10), Qt::red, Qt::black, 2, 0);
         QVERIFY(!controller.busy());
         controller.addShape(QStringLiteral("rectangle"), QRectF(0, 0, 0, 10), Qt::red, Qt::black, 2, 0);

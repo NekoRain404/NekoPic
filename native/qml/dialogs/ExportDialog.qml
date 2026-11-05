@@ -20,6 +20,8 @@ NekoDialog {
 
     property string formatId: "jpeg"
     property string formatLabel: ""
+    /*! Preferred suffix for this format, e.g. "jpg" for jpeg. */
+    property string formatSuffix: ""
     property string fileName: ""
     property bool supportsQuality: true
     property int initialQuality: 90
@@ -34,7 +36,52 @@ NekoDialog {
     /*! Current background; alpha is forced to 1. */
     property color backgroundColor: "#ffffff"
 
-    readonly property bool fileNameValid: fileName.trim().length > 0
+    /*! File name with surrounding whitespace removed. */
+    readonly property string trimmedFileName: fileName.trim()
+    /*! Lower-case extension without the dot, or "" when there is none. */
+    readonly property string _extension: {
+        const name = trimmedFileName
+        const dot = name.lastIndexOf(".")
+        return dot >= 0 ? name.substring(dot + 1).toLowerCase() : ""
+    }
+    /*! Extensions accepted for the selected format. */
+    readonly property var _acceptedExtensions: {
+        const id = formatId.toLowerCase()
+        switch (id) {
+        case "jpeg":
+        case "jpg": return ["jpg", "jpeg", "jpe", "jfif"]
+        case "tiff": return ["tif", "tiff"]
+        case "heic": return ["heic", "heif"]
+        case "heif": return ["heif", "heic"]
+        default: {
+            const list = []
+            if (formatSuffix.length > 0)
+                list.push(formatSuffix.toLowerCase())
+            if (id.length > 0)
+                list.push(id)
+            return list
+        }
+        }
+    }
+    /*! A path separator would escape the Save As folder. */
+    readonly property bool _nameHasSeparator: /[\\/]/.test(trimmedFileName)
+                                               || trimmedFileName === "."
+                                               || trimmedFileName === ".."
+    /*! An omitted extension is allowed; the controller appends the suffix. */
+    readonly property bool _extensionMatches: _extension.length === 0
+            || _acceptedExtensions.length === 0
+            || _acceptedExtensions.indexOf(_extension) >= 0
+    readonly property bool fileNameValid: trimmedFileName.length > 0
+            && !_nameHasSeparator && _extensionMatches
+    readonly property string fileNameError: {
+        if (trimmedFileName.length === 0)
+            return qsTr("Enter a file name.")
+        if (_nameHasSeparator)
+            return qsTr("Use a file name only; the Save As folder is kept.")
+        if (!_extensionMatches)
+            return qsTr("Use an extension that matches the selected format.")
+        return ""
+    }
     readonly property bool canAccept: !busy && fileNameValid
 
     /* Sample backgrounds are content values, not design tokens. */
@@ -54,7 +101,8 @@ NekoDialog {
     signal exportRequested(string format, int quality, color background)
 
     title: qsTr("Export image")
-    description: qsTr("Save a copy with a fixed set of options. The editor document is not changed.")
+    description: qsTr("Save a copy with a fixed set of options. The editor document is not changed. " +
+                      "The editable name sets the destination inside the folder chosen in Save As.")
     focus: true
 
     onQualityChanged: {
@@ -208,6 +256,7 @@ NekoDialog {
                     selectByMouse: true
 
                     Accessible.name: qsTr("File name")
+                    Accessible.description: root.fileNameError
 
                     onTextEdited: root.fileName = text
 
@@ -218,6 +267,26 @@ NekoDialog {
                         border.color: fileNameInput.activeFocus ? Theme.accent
                         : root.fileNameValid ? Theme.border : Theme.danger
                     }
+                }
+
+                Text {
+                    objectName: "export-file-name-error"
+                    Layout.fillWidth: true
+                    visible: !root.fileNameValid
+                    text: root.fileNameError
+                    color: Theme.danger
+                    font.pixelSize: Theme.fontCaption
+                    wrapMode: Text.WordWrap
+                }
+
+                Text {
+                    objectName: "export-file-name-note"
+                    Layout.fillWidth: true
+                    text: qsTr("The folder is inherited from Save As. Changing the name " +
+                               "exports into that folder; an omitted extension uses the format suffix.")
+                    color: Theme.textTertiary
+                    font.pixelSize: Theme.fontCaption
+                    wrapMode: Text.WordWrap
                 }
 
                 RowLayout {

@@ -12,7 +12,7 @@ TestCase {
 
     Inspector {
         id: inspector
-        width: 292
+        width: 320
         height: 680
         theme: ({ panel: "#222222", raised: "#333333", hover: "#444444",
                   background: "#181818", border: "#555555", text: "#ffffff", muted: "#aaaaaa", accent: "#edbc9d" })
@@ -207,6 +207,24 @@ TestCase {
         compare(inspector.adjustTab, 2)
         keyClick(Qt.Key_Home)
         compare(inspector.adjustTab, 0)
+    }
+
+    function test_tabStripUsesTwoRowsAtWideWidth() {
+        compare(inspector.implicitWidth, 320)
+        const bar = findChild(inspector, "adjust-subtabs")
+        verify(bar !== null)
+        const tabs = []
+        for (let i = 0; i < 5; ++i)
+            tabs.push(findChild(inspector, "adjust-subtab-" + i))
+
+        // Three tabs share the first row, the remaining two the second.
+        verify(Math.abs(tabs[0].y - tabs[1].y) < 1)
+        verify(Math.abs(tabs[1].y - tabs[2].y) < 1)
+        verify(Math.abs(tabs[3].y - tabs[4].y) < 1)
+        verify(tabs[3].y > tabs[0].y + tabs[0].height - 1,
+               "fourth tab should start the second row")
+        verify(tabs[3].height > 1 && tabs[4].height > 1)
+        verify(bar.width > 260)
     }
 
     function test_basicSlidersEmitKeyAndOneGestureEach() {

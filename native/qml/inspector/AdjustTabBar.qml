@@ -5,12 +5,16 @@ import QtQuick.Layouts
 import "../UI"
 
 /*!
-    AdjustTabBar — compact five-segment sub-tab strip for the Adjust workspace.
+    AdjustTabBar — H5-style two-row five-segment sub-tab strip.
+
+    The five Adjust destinations are arranged as three tabs on the first row
+    and two on the second, mirroring the H5 inspector's two-row tab strip.
+    The strip keeps the same fixed labels as before ("基础", HSL, "曲线",
+    "色彩分级", "细节/效果") so the wider 320 px inspector never has to elide
+    them to ambiguity.
 
     Selection is owned by the caller: clicking or using the keyboard emits
-    activated(index) and the bound `currentIndex` refreshes the indicator. The
-    control is intentionally narrow so "色彩分级" and "细节/效果" fit inside
-    the 292 px inspector without eliding to ambiguity.
+    activated(index) and the bound `currentIndex` refreshes the indicator.
 */
 Item {
     id: root
@@ -22,7 +26,8 @@ Item {
 
     signal activated(int index)
 
-    implicitHeight: Theme.controlHeightSm
+    implicitHeight: Theme.controlHeightSm * 2 + Theme.segmentInset * 2
+                    + Theme.spacingXs
     activeFocusOnTab: true
 
     Accessible.role: Accessible.PageTabList
@@ -49,7 +54,7 @@ Item {
             root.activate(0)
             event.accepted = true
         } else if (event.key === Qt.Key_End) {
-            root.activate(root.count - 1)
+            root.activate(count - 1)
             event.accepted = true
         }
     }
@@ -62,10 +67,12 @@ Item {
         border.color: Theme.separator
     }
 
-    RowLayout {
+    GridLayout {
         anchors.fill: parent
         anchors.margins: Theme.segmentInset
-        spacing: 0
+        columns: 6
+        rowSpacing: Theme.spacingXs
+        columnSpacing: Theme.spacingXs
 
         Repeater {
             model: root.model
@@ -77,6 +84,8 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.preferredHeight: Theme.controlHeightSm
+                Layout.columnSpan: index < 3 ? 2 : 3
                 objectName: "adjust-subtab-" + index
                 enabled: true
                 hoverEnabled: true
@@ -117,6 +126,16 @@ Item {
                             easing.type: Motion.decelerateEasing
                         }
                     }
+
+                    Rectangle {
+                        visible: tab.index === root.currentIndex
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        width: Math.max(0, parent.width - Theme.spacingLg)
+                        height: Theme.indicatorWidth
+                        radius: height / 2
+                        color: Theme.accent
+                    }
                 }
 
                 contentItem: Text {
@@ -136,30 +155,6 @@ Item {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    // Selected-segment underline; a quiet native counterpart to the H5 tab bar.
-    Rectangle {
-        visible: root.count > 0
-        width: Math.max(0, (root.width - Theme.segmentInset * 2) / Math.max(root.count, 1) - Theme.spacingSm)
-        height: Theme.indicatorWidth
-        radius: height / 2
-        x: Theme.segmentInset + root.currentIndex * (root.width - Theme.segmentInset * 2)
-           / Math.max(root.count, 1) + Theme.spacingXs
-        y: root.height - height - Theme.borderWidth
-        color: Theme.accent
-        Behavior on x {
-            NumberAnimation {
-                duration: Motion.duration(Motion.standard)
-                easing.type: Motion.emphasizedEasing
-            }
-        }
-        Behavior on width {
-            NumberAnimation {
-                duration: Motion.duration(Motion.standard)
-                easing.type: Motion.emphasizedEasing
             }
         }
     }

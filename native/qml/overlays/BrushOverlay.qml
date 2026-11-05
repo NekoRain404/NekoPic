@@ -22,6 +22,10 @@ import QtQuick
       • active, inputEnabled, imageWidth, imageHeight, viewScale, visibleRect
       • diameter — brush width in image pixels (the controller clamps 1–512)
       • color    — stroke ink; invalid values are the controller's concern
+      • inkOpacity — 0–100 % ink opacity; the committed colour carries it as alpha
+      • softness — 0–100 % feather; sampled paths use the same layer model as
+                   StrokeObject (single points feather inside the same
+                   footprint) so the preview matches the committed stroke
 
     Signals:
       • strokeCommitted(var points) — exactly once per completed gesture.
@@ -72,6 +76,10 @@ Item {
     property real diameter: 24
     /*! Brush ink. */
     property color color: "#000000"
+    /*! Ink opacity in percent (0–100). */
+    property real inkOpacity: 100
+    /*! Feather strength in percent: 0 = hard edge, 100 = fully soft. */
+    property real softness: 0
 
     signal strokeCommitted(var points)
     signal cancelled()
@@ -207,6 +215,8 @@ Item {
     onVisibleRectChanged: preview.requestPaint()
     onDiameterChanged: preview.requestPaint()
     onColorChanged: preview.requestPaint()
+    onInkOpacityChanged: preview.requestPaint()
+    onSoftnessChanged: preview.requestPaint()
 
     Keys.onEscapePressed: function(event) {
         root._keyboardFocus = true
@@ -240,24 +250,48 @@ Item {
                 return
             ctx.translate(-x, -y)
             ctx.scale(root.width / root.imageWidth, root.height / root.imageHeight)
-            const inkWidth = Math.max(1, root.diameter)
-            ctx.strokeStyle = root.color
-            ctx.fillStyle = root.color
-            // Keep the surface visible over the photograph without hiding it.
-            ctx.globalAlpha = 0.65
-            ctx.lineWidth = inkWidth
             ctx.lineCap = "round"
             ctx.lineJoin = "round"
-            ctx.beginPath()
-            ctx.moveTo(root._points[0].x, root._points[0].y)
-            for (let i = 1; i < root._points.length; ++i)
-                ctx.lineTo(root._points[i].x, root._points[i].y)
-            if (root._points.length > 1) {
-                ctx.stroke()
-            } else {
-                ctx.arc(root._points[0].x, root._points[0].y, inkWidth / 2,
-                        0, Math.PI * 2)
-                ctx.fill()
+            ctx.strokeStyle = root.color
+            ctx.fillStyle = root.color
+
+            const inkWidth = Math.max(1, root.diameter)
+            const opacity = Math.max(0, Math.min(1, root.inkOpacity / 100))
+            const soft = Math.max(0, Math.min(1, root.softness / 100))
+            // Keep the surface visible over the photograph without hiding it.
+            const baseAlpha = 0.65 * opacity
+
+            function paintLayer(width, alpha) {
+                ctx.globalAlpha = Math.max(0, Math.min(1, alpha))
+                ctx.lineWidth = width
+                ctx.beginPath()
+                ctx.moveTo(root._points[0].x, root._points[0].y)
+                for (let i = 1; i < root._points.length; ++i)
+                    ctx.lineTo(root._points[i].x, root._points[i].y)
+                if (root._points.length > 1) {
+                    ctx.stroke()
+                } else {
+                    ctx.arc(root._points[0].x, root._points[0].y, width / 2,
+                            0, Math.PI * 2)
+                    ctx.fill()
+                }
+            }
+
+            if (soft <= 0) {
+                paintLayer(inkWidth, baseAlpha)
+                return
+            }
+            const layers = 10
+            const meanWeight = 0.625
+            const layerBase = Math.min(0.5,
+                    1 - Math.pow(1 - baseAlpha, 1 / layers))
+            const core = 1 - soft * 0.9
+            for (let i = 0; i < layers; ++i) {
+                const t = i / (layers - 1)
+                const width = inkWidth * (1 - (1 - core) * t)
+                const alpha = Math.min(1,
+                        layerBase * (0.25 + 0.75 * t) / meanWeight)
+                paintLayer(width, alpha)
             }
         }
     }

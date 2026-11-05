@@ -50,6 +50,16 @@ TestCase {
         property real moveDy: 0
         property int lastObjectId: 0
         property var lastObjectIds: []
+        property int exportQuality: 90
+        property color jpegBackground: "#ffffff"
+        property var writableFormats: [
+            { id: "jpeg", label: "JPEG image", suffix: "jpg", patterns: ["*.jpg", "*.jpeg"] },
+            { id: "png", label: "PNG image", suffix: "png", patterns: ["*.png"] }
+        ]
+        property url lastSaveUrl
+        property string lastSaveFormat: ""
+        signal documentChanged()
+        function objectIds() { return lastObjectIds }
         function objectSummaries() { return [] }
         function moveObjects(ids, dx, dy) { ++moveCalls; lastObjectIds = ids; moveDx = dx; moveDy = dy }
         function removeObjects(ids) { ++removeCalls; lastObjectIds = ids }
@@ -74,7 +84,7 @@ TestCase {
         function openImageDiscardingChanges(url) { ++openDiscardingCalls; lastOpenUrl = url }
         function autoEnhance() { ++autoEnhanceCalls }
         function saveImage() {}
-        function saveAs(url, format) {}
+        function saveAs(url, format) { lastSaveUrl = url; lastSaveFormat = format }
         function clearError() {}
         function objectAt(x, y) { return 7 }
         function objectBounds(id) { return Qt.rect(100, 50, 80, 40) }
@@ -120,6 +130,181 @@ TestCase {
         verify(!window.darkTheme)
         window.destroy()
     }
+    function test_sharedForegroundColourReachesAllDrawingTools() {
+        const window = createWindow()
+        try {
+            const brush = findChild(window, "brushPanel")
+            const text = findChild(window, "textPanel")
+            const shape = findChild(window, "shapePanel")
+            const swatch = findChild(window, "foreground-swatch")
+            verify(brush !== null && text !== null && shape !== null && swatch !== null)
+            compare(swatch.Accessible.role, Accessible.Button)
+            compare(swatch.Accessible.name, qsTr("Foreground colour"))
+
+            // A panel picker updates the shared ink and the other two tools.
+            brush.color = "#123456"
+            verify(Qt.colorEqual(window.foregroundColor, "#123456"))
+            verify(Qt.colorEqual(text.color, "#123456"))
+            verify(Qt.colorEqual(shape.strokeColor, "#123456"))
+
+            text.color = "#654321"
+            verify(Qt.colorEqual(window.foregroundColor, "#654321"))
+            verify(Qt.colorEqual(brush.color, "#654321"))
+            verify(Qt.colorEqual(shape.strokeColor, "#654321"))
+
+            // The rail swatch pushes to every drawing tool.
+            window.foregroundColor = "#abcdef"
+            verify(Qt.colorEqual(brush.color, "#abcdef"))
+            verify(Qt.colorEqual(text.color, "#abcdef"))
+            verify(Qt.colorEqual(shape.strokeColor, "#abcdef"))
+
+            verify(findChild(window, "foregroundColorDialog") !== null)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_statusBarCountsObjectsAndDrivesZoom() {
+        const window = createWindow()
+        try {
+            const count = findChild(window, "status-object-count")
+            const srgb = findChild(window, "status-srgb")
+            const dimensions = findChild(window, "status-dimensions")
+            const slider = findChild(window, "status-zoom-slider")
+            const zoomValue = findChild(window, "status-zoom-value")
+            verify(count !== null && srgb !== null && dimensions !== null
+                   && slider !== null && zoomValue !== null)
+
+            compare(srgb.text, "sRGB")
+            compare(dimensions.text, "— × — px")
+            compare(slider.from, 5)
+            compare(slider.to, 300)
+            editor.lastObjectIds = []
+            editor.documentChanged()
+            compare(count.text, "0 objects")
+
+            editor.lastObjectIds = [1, 2, 3]
+            editor.documentChanged()
+            compare(window.objectCount, 3)
+            compare(count.text, "3 objects")
+            editor.lastObjectIds = [9]
+            editor.documentChanged()
+            compare(count.text, "1 object")
+
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            compare(dimensions.text, "800 × 600 px")
+            const canvas = findChild(window, "editorCanvas")
+            verify(canvas !== null)
+            slider.preview(150)
+            fuzzyCompare(canvas.zoom, 1.5, 0.001)
+            compare(zoomValue.text, "150%")
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_transformAndCanvasToolbarEntries() {
+        const window = createWindow()
+        try {
+            const transform = visualChild(window.contentItem, "action-transform")
+            const canvasButton = visualChild(window.contentItem, "action-canvas")
+            verify(transform !== null && canvasButton !== null)
+            verify(!transform.enabled)
+            verify(!canvasButton.enabled)
+
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            verify(transform.enabled)
+            verify(canvasButton.enabled)
+
+            const menu = findChild(window, "transformMenu")
+            verify(menu !== null)
+            verify(findChild(menu, "transform-rotate-left") !== null)
+            verify(findChild(menu, "transform-rotate-right") !== null)
+            verify(findChild(menu, "transform-flip-horizontal") !== null)
+            verify(findChild(menu, "transform-flip-vertical") !== null)
+            transform.clicked()
+            tryVerify(function() { return menu.opened }, 1500)
+            menu.close()
+
+            canvasButton.clicked()
+            const canvasDialog = findChild(window, "canvasSizeDialog")
+            verify(canvasDialog !== null)
+            tryVerify(function() { return canvasDialog.opened }, 1500)
+            canvasDialog.close()
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_exportDestinationUsesEditedFileName() {
+        const window = createWindow()
+        try {
+            const dialog = findChild(window, "exportDialog")
+            verify(dialog !== null)
+            window.pendingExportUrl = "file:///tmp/neko/old.jpg"
+            dialog.formatSuffix = "jpg"
+
+            dialog.fileName = "new.jpg"
+            compare(window.exportDestinationUrl(), "file:///tmp/neko/new.jpg")
+
+            dialog.fileName = "renamed"
+            compare(window.exportDestinationUrl(), "file:///tmp/neko/renamed.jpg")
+
+            dialog.fileName = "sub/new.jpg"
+            compare(window.exportDestinationUrl(), "file:///tmp/neko/old.jpg")
+
+            dialog.fileName = ".."
+            compare(window.exportDestinationUrl(), "file:///tmp/neko/old.jpg")
+
+            dialog.fileName = "  "
+            compare(window.exportDestinationUrl(), "file:///tmp/neko/old.jpg")
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_layoutHoldsAtCompactWindowSize() {
+        const window = createWindow()
+        try {
+            window.width = 1100
+            window.height = 720
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            window.activeTool = "adjust"
+            wait(0)
+
+            const inspector = findChild(window, "inspector")
+            const canvas = findChild(window, "editorCanvas")
+            const zoom = findChild(window, "status-zoom-slider")
+            verify(inspector !== null && canvas !== null && zoom !== null)
+            compare(inspector.width, 320)
+            verify(canvas.width > 400, "canvas must keep usable width at 1100 px")
+            verify(zoom.width > 50)
+
+            window.activeTool = "brush"
+            wait(0)
+            const panel = findChild(window, "brushPanel")
+            verify(panel !== null && panel.visible)
+            compare(panel.width, 292)
+            verify(findChild(panel, "brush-opacity") !== null)
+            verify(findChild(panel, "brush-softness") !== null)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
     function test_cropToolRoutesAndCancels() {
         const component = Qt.createComponent("../Main.qml")
         const window = component.createObject(null)

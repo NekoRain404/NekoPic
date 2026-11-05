@@ -30,11 +30,12 @@ bool shapeKindFromString(const QString &kind, NekoPic::Document::ShapeKind &out)
 } // namespace
 
 void DocumentController::addBrushStroke(const QVariantList &points, double diameter,
-                                        const QColor &color)
+                                        const QColor &color, double softness)
 {
     if (busy_ || !hasImage() || points.isEmpty()
         || points.size() > NekoPic::Document::StrokeObject::MaxSamples
-        || !std::isfinite(diameter) || diameter <= 0.0 || diameter > 512.0)
+        || !std::isfinite(diameter) || diameter <= 0.0 || diameter > 512.0
+        || !std::isfinite(softness))
         return;
     QVector<QPointF> path;
     path.reserve(points.size());
@@ -45,11 +46,14 @@ void DocumentController::addBrushStroke(const QVariantList &points, double diame
         path.append(point);
     }
     const QColor ink = color.isValid() ? color : QColor(Qt::black);
-    startObjectEdit([path = std::move(path), diameter, ink](NekoPic::Document::ObjectLayer &layer) {
+    const qreal feather = std::clamp<qreal>(softness, 0.0, 1.0);
+    startObjectEdit([path = std::move(path), diameter, ink, feather](
+                        NekoPic::Document::ObjectLayer &layer) {
         auto object = std::make_unique<NekoPic::Document::StrokeObject>();
         object->setPoints(std::move(path));
         object->setDiameter(diameter);
         object->setColor(ink);
+        object->setSoftness(feather);
         return layer.add(std::move(object)) != NekoPic::Document::InvalidObjectId;
     });
 }
