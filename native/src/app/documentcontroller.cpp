@@ -1,6 +1,7 @@
 #include "documentcontroller.h"
 #include "core/adjustments.h"
-#include "core/imageio.h"
+#include "io/formatregistry.h"
+#include "io/imageio.h"
 
 #include <QFileInfo>
 #include <QFutureWatcher>
@@ -41,14 +42,7 @@ bool DocumentController::canUndo() const { return !undo_.isEmpty(); }
 bool DocumentController::canRedo() const { return !redo_.isEmpty(); }
 QStringList DocumentController::readableImagePatterns() const
 {
-    QStringList patterns;
-    for (const auto &format : NekoPic::ImageIO::supportedReadFormats()) {
-        const auto extension = QString::fromLatin1(format).toLower();
-        patterns.append(QStringLiteral("*.") + extension);
-        patterns.append(QStringLiteral("*.") + extension.toUpper());
-    }
-    patterns.removeDuplicates();
-    return patterns;
+    return NekoPic::Io::FormatRegistry::instance().readablePatterns();
 }
 QImage DocumentController::image() const { return image_; }
 QImage DocumentController::baseImage() const { return baseImage_; }

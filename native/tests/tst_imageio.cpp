@@ -1,4 +1,4 @@
-#include "imageio.h"
+#include "io/imageio.h"
 
 #include <QColorSpace>
 #include <QFile>

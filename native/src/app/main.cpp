@@ -1,6 +1,7 @@
 #include "documentcontroller.h"
 #include "filterpreviews.h"
 #include "languagemanager.h"
+#include "render/rendercapabilities.h"
 
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
@@ -28,15 +29,18 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
     DocumentController editor;
     FilterPreviews filterPreviews(editor);
+    NekoPic::Render::RenderCapabilities renderCapabilities;
     QQmlApplicationEngine engine;
     LanguageManager language(engine);
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
     engine.rootContext()->setContextProperty(QStringLiteral("filterPreviews"), &filterPreviews);
     engine.rootContext()->setContextProperty(QStringLiteral("language"), &language);
+    engine.rootContext()->setContextProperty(QStringLiteral("renderCapabilities"), &renderCapabilities);
     engine.addImageProvider(QStringLiteral("document"), new DocumentImageProvider(editor));
     engine.addImageProvider(QStringLiteral("filterpreview"), filterPreviews.createImageProvider().release());
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
+    renderCapabilities.probe();
     return app.exec();
 }
