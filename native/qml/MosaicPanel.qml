@@ -1,12 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "UI"
 
 Rectangle {
     id: root
-    property var theme: ({ panel: "#222426", background: "#181a1b", raised: "#2b2d2f",
-                           hover: "#343638", border: "#343638", text: "#e9e9e6",
-                           muted: "#929794", accent: "#edbc9d" })
+    property var theme: ({ panel: Theme.panel, background: Theme.background,
+                           raised: Theme.surfaceRaised, hover: Theme.hover,
+                           border: Theme.border, text: Theme.textPrimary,
+                           muted: Theme.textSecondary, accent: Theme.accent })
     property bool brushMode: true
     property real brushDiameter: 24
     property int blockSize: 12
@@ -21,25 +23,15 @@ Rectangle {
             Layout.fillWidth: true; spacing: 3
             Repeater {
                 model: [qsTr("Brush"), qsTr("Rectangle")]
-                delegate: Button {
+                delegate: NekoButton {
                     id: modeButton
                     required property int index
                     required property string modelData
                     objectName: index === 0 ? "mosaic-mode-brush" : "mosaic-mode-rectangle"
                     Layout.fillWidth: true; implicitHeight: 32
                     text: modelData
-                    checkable: true; checked: root.brushMode === (index === 0)
+                    variant: root.brushMode === (index === 0) ? "primary" : "secondary"
                     onClicked: root.brushMode = index === 0
-                    background: Rectangle {
-                        radius: 5
-                        color: modeButton.checked ? root.theme.raised : modeButton.hovered ? root.theme.hover : "transparent"
-                        border.color: modeButton.visualFocus ? root.theme.accent : "transparent"
-                    }
-                    contentItem: Label {
-                        text: modeButton.text; color: modeButton.checked ? root.theme.text : root.theme.muted
-                        horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
-                        font.pixelSize: 11; opacity: root.enabled ? 1 : 0.5
-                    }
                 }
             }
         }
@@ -51,11 +43,15 @@ Rectangle {
                 Item { Layout.fillWidth: true }
                 Label { text: Math.round(root.brushDiameter) + " px"; color: root.theme.text; font.pixelSize: 10 }
             }
-            Slider {
+            NekoSlider {
+                id: diameterSlider
                 objectName: "mosaic-brush-diameter"
                 Layout.fillWidth: true; enabled: root.brushMode
-                from: 4; to: 512; stepSize: 1; value: root.brushDiameter
-                onMoved: root.brushDiameter = Math.round(value)
+                from: 4; to: 512; stepSize: 1; defaultValue: 24
+                accessibleName: qsTr("Brush diameter")
+                onPreview: function(value) { root.brushDiameter = Math.round(value) }
+                Component.onCompleted: value = root.brushDiameter
+                Connections { target: root; function onBrushDiameterChanged() { if (!diameterSlider.dragging) diameterSlider.value = root.brushDiameter } }
             }
             RowLayout {
                 Layout.fillWidth: true; Layout.topMargin: 10
@@ -63,11 +59,15 @@ Rectangle {
                 Item { Layout.fillWidth: true }
                 Label { text: root.blockSize + " px"; color: root.theme.text; font.pixelSize: 10 }
             }
-            Slider {
+            NekoSlider {
+                id: blockSlider
                 objectName: "mosaic-block-size"
                 Layout.fillWidth: true
-                from: 2; to: 128; stepSize: 1; value: root.blockSize
-                onMoved: root.blockSize = Math.round(value)
+                from: 2; to: 128; stepSize: 1; defaultValue: 12
+                accessibleName: qsTr("Block size")
+                onPreview: function(value) { root.blockSize = Math.round(value) }
+                Component.onCompleted: value = root.blockSize
+                Connections { target: root; function onBlockSizeChanged() { if (!blockSlider.dragging) blockSlider.value = root.blockSize } }
             }
         }
         Label {

@@ -41,6 +41,19 @@ TestCase {
         return createTemporaryObject(component, this, props)
     }
 
+    function test_bipolarSliderFillsFromOrigin() {
+        const slider = createTemporaryObject(sliderComponent, this, {
+            width: 200, from: -100, to: 100, origin: 0, value: 0
+        })
+        verify(slider !== null)
+        fuzzyCompare(slider.position, 0.5, 0.001)
+        fuzzyCompare(slider.originPosition, 0.5, 0.001)
+        fuzzyCompare(slider.fillWidth, 0, 0.001)
+        slider.value = 50
+        fuzzyCompare(slider.fillFrom, 0.5, 0.001)
+        fuzzyCompare(slider.fillWidth, 0.25, 0.001)
+    }
+
     function test_singletonsAndTokens() {
         verify(Theme !== null)
         verify(Motion !== null)

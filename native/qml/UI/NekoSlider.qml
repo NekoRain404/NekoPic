@@ -17,12 +17,17 @@ Item {
     property real value: 0
     property real stepSize: 1
     property real defaultValue: 0
+    /*! Value the fill originates from. Set to 0 for bipolar controls. */
+    property real origin: from
     property int decimals: 0
     property string suffix: ""
     property string accessibleName: ""
 
     readonly property real span: Math.max(to - from, 0.0001)
     readonly property real position: Math.max(0, Math.min(1, (value - from) / span))
+    readonly property real originPosition: Math.max(0, Math.min(1, (origin - from) / span))
+    readonly property real fillFrom: Math.min(position, originPosition)
+    readonly property real fillWidth: Math.abs(position - originPosition)
     readonly property real handleSize: Theme.sliderHandleSize
     readonly property real trackStart: handleSize / 2
     readonly property real trackEnd: width - handleSize / 2
@@ -137,12 +142,19 @@ Item {
 
     Rectangle {
         id: fill
-        x: track.x
+        x: track.x + track.width * root.fillFrom
         y: track.y
-        width: track.width * root.position
+        width: track.width * root.fillWidth
         height: track.height
         radius: track.radius
         color: root.enabled ? Theme.accent : Theme.textTertiary
+        Behavior on x {
+            enabled: !root.dragging
+            NumberAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
         Behavior on width {
             enabled: !root.dragging
             NumberAnimation {
@@ -150,6 +162,17 @@ Item {
                 easing.type: Motion.decelerateEasing
             }
         }
+    }
+
+    // Subtle centre tick so bipolar controls read at a glance.
+    Rectangle {
+        visible: root.originPosition > 0.001 && root.originPosition < 0.999
+        x: track.x + track.width * root.originPosition - width / 2
+        y: (root.height - height) / 2
+        width: 1
+        height: Theme.sliderTrackHeight + 6
+        radius: 0.5
+        color: Theme.textTertiary
     }
 
     Rectangle {

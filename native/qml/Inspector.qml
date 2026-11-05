@@ -184,7 +184,7 @@ Rectangle {
                             visible: root.currentTab === 0
                             Layout.fillWidth: true
                             enabled: root.adjustmentsEnabled
-                            from: -100; to: 100; stepSize: 1; defaultValue: 0
+                            from: -100; to: 100; stepSize: 1; defaultValue: 0; origin: 0
                             accessibleName: adjustment.modelData.label
                             onBegin: root.adjustmentStarted(adjustment.modelData.key)
                             onPreview: function(value) { root.adjustmentPreview(adjustment.modelData.key, value) }
