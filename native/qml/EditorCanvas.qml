@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "effects"
 import "UI"
+import "overlays"
 
 Item {
     id: root
@@ -28,10 +29,14 @@ Item {
     property real mosaicBrushDiameter: 24
     property bool inputEnabled: true
     property bool cropActive: false
+    property bool eyedropperActive: false
+    property var colorSampler: null
     property real cropAspectRatio: 0
     readonly property rect cropSelection: cropOverlay.selection
     signal cropApplyRequested(rect area)
     signal cropCancelled()
+    signal colorPicked(color value)
+    signal eyedropperCancelled()
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
     signal recentRequested(url url)
@@ -175,6 +180,20 @@ Item {
                                              view.width, view.height)
                         onRectangleCommitted: function(area) { root.mosaicRectangleCommitted(area) }
                         onStrokeCommitted: function(points) { root.mosaicStrokeCommitted(points) }
+                    }
+                    EyedropperOverlay {
+                        objectName: "eyedropperOverlay"
+                        anchors.fill: parent
+                        active: root.eyedropperActive && root.hasImage
+                        inputEnabled: root.inputEnabled
+                        imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                        viewScale: root.zoom
+                        visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                             view.width, view.height)
+                        imageUrl: root.gpuPreviewing ? root.baseImageUrl : root.imageUrl
+                        sampler: root.colorSampler
+                        onColorPicked: function(value) { root.colorPicked(value) }
+                        onCancelled: root.eyedropperCancelled()
                     }
                 }
                 AdjustmentPreview {

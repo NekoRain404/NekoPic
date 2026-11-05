@@ -19,6 +19,7 @@ TestCase {
     SignalSpy { id: mosaicRectangles; target: canvas; signalName: "mosaicRectangleCommitted" }
     SignalSpy { id: mosaicStrokes; target: canvas; signalName: "mosaicStrokeCommitted" }
     SignalSpy { id: recentRequests; target: canvas; signalName: "recentRequested" }
+    SignalSpy { id: colorsPicked; target: canvas; signalName: "colorPicked" }
     function test_fitAndActual() {
         canvas.fitImage()
         verify(canvas.zoom < 1)
@@ -55,6 +56,26 @@ TestCase {
             canvas.fitImage()
         }
     }
+    function test_eyedropperWiring() {
+        canvas.fitting = false
+        canvas.zoom = 1
+        canvas.imageWidth = 100
+        canvas.imageHeight = 100
+        canvas.colorSampler = function(x, y) { return "#ff0000" }
+        canvas.eyedropperActive = true
+        wait(0)
+        const overlay = findChild(canvas, "eyedropperOverlay")
+        verify(overlay !== null)
+        compare(overlay.active, true)
+        compare(overlay.pickAt(10, 10), true)
+        compare(colorsPicked.count, 1)
+        canvas.eyedropperActive = false
+        canvas.colorSampler = null
+        canvas.imageWidth = 1200
+        canvas.imageHeight = 800
+        canvas.fitImage()
+    }
+
     function test_recentEntryEmitsRequest() {
         const saved = canvas.recentEntries
         canvas.hasImage = false

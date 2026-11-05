@@ -83,6 +83,7 @@ ApplicationWindow {
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }
     Action { id: flipVerticalAction; text: qsTr("Flip vertically"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipVertical() }
+    Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "eye" }
     Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "crop" }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
     Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
@@ -237,7 +238,7 @@ ApplicationWindow {
             MenuItem { action: saveAsAction }
         }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } }
+        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } MenuItem { action: eyedropperAction } }
         Menu {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
@@ -332,7 +333,7 @@ ApplicationWindow {
                                 { icon: "adjust", label: qsTr("Adjust") }, { icon: "filters", label: qsTr("Filters") },
                                 { icon: "brush", label: qsTr("Brush") }, { icon: "text", label: qsTr("Text") },
                                 { icon: "shapes", label: qsTr("Shapes") }, { icon: "mosaic", label: qsTr("Mosaic") },
-                                { icon: "crop", label: qsTr("Crop") }
+                                { icon: "eye", label: qsTr("Eyedropper") }, { icon: "crop", label: qsTr("Crop") }
                             ]
                             delegate: NekoToolButton {
                                 id: toolButton
@@ -344,7 +345,7 @@ ApplicationWindow {
                                 text: modelData.label
                                 iconName: modelData.icon
                                 accessibleName: modelData.label
-                                readonly property bool available: modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "crop"
+                                readonly property bool available: modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "eye" || modelData.icon === "crop"
                                 enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
                                 checked: available && window.activeTool === modelData.icon
                                 onClicked: window.activeTool = modelData.icon
@@ -376,6 +377,10 @@ ApplicationWindow {
                 fileName: editor.fileName; dirty: editor.dirty
                 mosaicActive: window.activeTool === "mosaic"
                 cropActive: window.activeTool === "crop"
+                eyedropperActive: window.activeTool === "eye"
+                colorSampler: function(x, y) { return editor.colorAt(x, y) }
+                onColorPicked: function(value) { window.showStatus(qsTr("Picked %1").arg(value.toString())) }
+                onEyedropperCancelled: window.activeTool = "adjust"
                 cropAspectRatio: cropPanel.aspectRatio
                 onCropApplyRequested: function(area) { window.applyCrop(area) }
                 onCropCancelled: window.activeTool = "adjust"
@@ -477,6 +482,8 @@ ApplicationWindow {
               run: function() { editor.flipVertical() } },
             { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
               run: function() { window.activeTool = "crop" } },
+            { title: eyedropperAction.text, detail: qsTr("Tools"), shortcut: "I", enabled: eyedropperAction.enabled,
+              run: function() { window.activeTool = "eye" } },
             { title: fitAction.text, detail: qsTr("View"), shortcut: "Ctrl+0", enabled: fitAction.enabled,
               run: function() { canvas.fitImage() } },
             { title: actualAction.text, detail: qsTr("View"), shortcut: "Ctrl+1", enabled: actualAction.enabled,
