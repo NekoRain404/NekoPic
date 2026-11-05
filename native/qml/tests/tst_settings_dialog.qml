@@ -113,9 +113,13 @@ TestCase {
         compare(dialog.recoveryEnabled, true)
         compare(dialog.startupTool, "adjust")
         compare(dialog.currentCategory, "appearance")
-        compare(dialog.localeOptions.length, 2)
+        compare(dialog.localeOptions.length, 4)
         compare(dialog.localeOptions[0].id, "en")
         compare(dialog.localeOptions[1].id, "zh_CN")
+        compare(dialog.localeOptions[2].id, "ja_JP")
+        compare(dialog.localeOptions[3].id, "de_DE")
+        compare(dialog.localeOptions[2].nativeName, "日本語")
+        compare(dialog.localeOptions[3].nativeName, "Deutsch")
         compare(dialog.startupToolOptions.length, 10)
         compare(dialog.categories.length, 6)
 
@@ -156,6 +160,7 @@ TestCase {
             "settings-quality-default", "settings-quality-value",
             "settings-background-white", "settings-background-black",
             "settings-background-warm-grey", "settings-locale-en", "settings-locale-zh_CN",
+            "settings-locale-ja_JP", "settings-locale-de_DE",
             "settings-recovery-enabled", "settings-recovery-status",
             "settings-recovery-details", "settings-recovery-discard",
             "settings-startup-tool-adjust", "settings-startup-tool-brush",
@@ -430,6 +435,28 @@ TestCase {
         compare(dialog.localeId, "zh_CN")
         compare(localeSpy.count, 2)
         compare(localeSpy.signalArguments[1][0], "zh_CN")
+
+        const japanese = child(dialog, "settings-locale-ja_JP")
+        verify(japanese !== null, "missing Japanese language option")
+        compare(japanese.text, "日本語")
+        settingSpy.clear()
+        scrollTo(dialog, japanese)
+        mouseClick(japanese)
+        compare(dialog.localeId, "ja_JP")
+        compare(localeSpy.count, 3)
+        compare(localeSpy.signalArguments[2][0], "ja_JP")
+        compare(settingValue(settingSpy, "locale"), "ja_JP")
+
+        const german = child(dialog, "settings-locale-de_DE")
+        verify(german !== null, "missing German language option")
+        compare(german.text, "Deutsch")
+        settingSpy.clear()
+        scrollTo(dialog, german)
+        mouseClick(german)
+        compare(dialog.localeId, "de_DE")
+        compare(localeSpy.count, 4)
+        compare(localeSpy.signalArguments[3][0], "de_DE")
+        compare(settingValue(settingSpy, "locale"), "de_DE")
     }
 
     // ── Recovery and safety ────────────────────────────────────────────────
@@ -575,6 +602,8 @@ TestCase {
 
         activateCategory(dialog, "language")
         compare(child(dialog, "settings-locale-en").enabled, false)
+        compare(child(dialog, "settings-locale-ja_JP").enabled, false)
+        compare(child(dialog, "settings-locale-de_DE").enabled, false)
 
         activateCategory(dialog, "recovery")
         compare(child(dialog, "settings-recovery-enabled").enabled, false)
@@ -660,7 +689,8 @@ TestCase {
                         "settings-startup-tool-brush"],
             "export": ["settings-quality", "settings-quality-default",
                        "settings-background-black"],
-            "language": ["settings-locale-en"],
+            "language": ["settings-locale-en", "settings-locale-ja_JP",
+                         "settings-locale-de_DE"],
             "recovery": ["settings-recovery-enabled", "settings-confirm-on-close",
                          "settings-reset"],
             "about": ["settings-shortcuts", "settings-about-formats"]

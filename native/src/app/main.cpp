@@ -12,6 +12,7 @@
 #include <QQmlContext>
 #include <QQuickImageProvider>
 #include <QQuickWindow>
+#include <QSettings>
 #include <QTextStream>
 #include <QTimer>
 #include <QVariantMap>
@@ -54,8 +55,9 @@ int main(int argc, char *argv[])
     }
     if (earlyArguments.contains(QStringLiteral("--help"))) {
         QTextStream(stdout)
-            << "Usage: nekopic [image] [--screenshot <file>]\n"
+            << "Usage: nekopic [image] [--language <locale>] [--screenshot <file>]\n"
                "  image               open an image on start\n"
+               "  --language <locale> start in en, zh_CN, ja_JP or de_DE\n"
                "  --screenshot <file> render the window to a PNG and exit\n"
                "  --version           print the version\n"
                "  --help              show this help\n";
@@ -97,11 +99,16 @@ int main(int argc, char *argv[])
     const auto arguments = app.arguments();
     QString screenshotPath;
     QString startTool;
+    QString languageOverride;
     bool openSettingsOnStart = false;
     for (int index = 1; index < arguments.size(); ++index) {
         const auto argument = arguments.at(index);
         if (argument == QLatin1String("--screenshot") && index + 1 < arguments.size()) {
             screenshotPath = arguments.at(++index);
+            continue;
+        }
+        if (argument == QLatin1String("--language") && index + 1 < arguments.size()) {
+            languageOverride = arguments.at(++index);
             continue;
         }
         if (argument == QLatin1String("--tool") && index + 1 < arguments.size()) {
@@ -121,8 +128,19 @@ int main(int argc, char *argv[])
         window->setProperty("startupTool", startTool);
         window->setProperty("activeTool", startTool);
     }
+    if (!languageOverride.isEmpty()) {
+        // Launch-time override for screenshot/i18n QA: switch for this run but
+        // keep the user's persisted language choice untouched.
+        const auto persisted = QSettings().value(QStringLiteral("ui/language"));
+        language.setLanguage(languageOverride);
+        settings.setLocale(languageOverride);
+        if (persisted.isValid())
+            QSettings().setValue(QStringLiteral("ui/language"), persisted);
+        else
+            QSettings().remove(QStringLiteral("ui/language"));
+    }
     if (openSettingsOnStart && window)
-        QMetaObject::invokeMethod(window, "openSettings");
+        QMetaObject::invokeMethod(window, "openSettings", Qt::QueuedConnection);
 
     // Development/visual-regression hook: render the window offscreen once the
     // document is idle, then exit. Never used by normal launches.

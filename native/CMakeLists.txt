@@ -86,12 +86,20 @@ if(NEKOPIC_SHADERS)
 endif()
 
 find_program(QT_LRELEASE NAMES lrelease HINTS "${QT6_INSTALL_PREFIX}/lib/qt6/bin" /usr/lib/qt6/bin REQUIRED)
-set(NEKOPIC_QM "${CMAKE_CURRENT_BINARY_DIR}/nekopic_zh_CN.qm")
-add_custom_command(OUTPUT "${NEKOPIC_QM}"
-    COMMAND "${QT_LRELEASE}" "${CMAKE_CURRENT_SOURCE_DIR}/i18n/nekopic_zh_CN.ts" -qm "${NEKOPIC_QM}"
-    DEPENDS i18n/nekopic_zh_CN.ts VERBATIM)
-set_source_files_properties("${NEKOPIC_QM}" PROPERTIES QT_RESOURCE_ALIAS "nekopic_zh_CN.qm")
-qt_add_resources(nekopic_app translations PREFIX "/i18n" FILES "${NEKOPIC_QM}")
+# Catalogue sources are listed once here; each is compiled by lrelease and
+# embedded beside the others under :/i18n. Add a locale by dropping its .ts
+# into i18n/ and appending its id to this list.
+set(NEKOPIC_LOCALES zh_CN ja_JP de_DE)
+set(NEKOPIC_QM_FILES)
+foreach(locale IN LISTS NEKOPIC_LOCALES)
+    set(qm "${CMAKE_CURRENT_BINARY_DIR}/nekopic_${locale}.qm")
+    add_custom_command(OUTPUT "${qm}"
+        COMMAND "${QT_LRELEASE}" "${CMAKE_CURRENT_SOURCE_DIR}/i18n/nekopic_${locale}.ts" -qm "${qm}"
+        DEPENDS "i18n/nekopic_${locale}.ts" VERBATIM)
+    set_source_files_properties("${qm}" PROPERTIES QT_RESOURCE_ALIAS "nekopic_${locale}.qm")
+    list(APPEND NEKOPIC_QM_FILES "${qm}")
+endforeach()
+qt_add_resources(nekopic_app translations PREFIX "/i18n" FILES ${NEKOPIC_QM_FILES})
 
 foreach(target nekopic_core nekopic_io nekopic_document nekopic_platform nekopic_render nekopic_app nekopic)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
