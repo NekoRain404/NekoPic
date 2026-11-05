@@ -11,6 +11,8 @@ ApplicationWindow {
     visible: true
     title: (editor.hasImage ? editor.fileName + (editor.dirty ? " *" : "") + " - " : "") + "NekoPic"
     property bool darkTheme: true
+    property bool followSystemTheme: false
+    readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     property bool discardConfirmed: false
     property bool closingRequested: false
     property url pendingImage
@@ -31,8 +33,8 @@ ApplicationWindow {
             if (!editor.busy) { closingRequested = true; discardDialog.open() }
         }
     }
-    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion }
-    Binding { target: Theme; property: "dark"; value: window.darkTheme }
+    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion; property alias followSystemTheme: window.followSystemTheme }
+    Binding { target: Theme; property: "dark"; value: window.followSystemTheme ? window.systemDark : window.darkTheme }
     Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
     color: theme.background
     palette.window: theme.panel
@@ -181,7 +183,8 @@ ApplicationWindow {
         Menu {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
-            MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; onTriggered: window.darkTheme = checked }
+            MenuItem { text: qsTr("Follow system theme"); checkable: true; checked: window.followSystemTheme; onTriggered: window.followSystemTheme = checked }
+            MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; enabled: !window.followSystemTheme; onTriggered: window.darkTheme = checked }
             MenuItem { text: qsTr("Reduce motion"); checkable: true; checked: window.reduceMotion; onTriggered: window.reduceMotion = checked }
             Menu {
                 title: qsTr("Language")
