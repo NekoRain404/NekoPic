@@ -20,3 +20,16 @@ function(nekopic_register_objecttools_test)
 endfunction()
 
 cmake_language(DEFER CALL nekopic_register_objecttools_test)
+
+function(nekopic_register_objectmanagement_test)
+    if(NOT BUILD_TESTING)
+        return()
+    endif()
+
+    add_executable(objectmanagement_test "${CMAKE_CURRENT_SOURCE_DIR}/tests/tst_objectmanagement.cpp")
+    target_link_libraries(objectmanagement_test PRIVATE nekopic_app Qt6::Test)
+    add_test(NAME objectmanagement COMMAND objectmanagement_test)
+    set_tests_properties(objectmanagement PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endfunction()
+
+cmake_language(DEFER CALL nekopic_register_objectmanagement_test)
