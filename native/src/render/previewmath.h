@@ -25,7 +25,7 @@ namespace NekoPic::Render::PreviewMath {
 //  - The mirror covers the shader's supported keys: exposure, brightness,
 //    contrast, saturation, highlights, shadows, whites, blacks, temperature,
 //    tint and vibrance. When any of the extended keys is active it evaluates
-//    the fused stage order of colorpipeline.cpp's applyExtended(); otherwise
+//    the fused stage order of the extended pipeline's applyExtended(); otherwise
 //    it keeps the legacy basic formula. Curves, HSL, grading, detail and
 //    effects are not mirrored.
 //  - Parameter clamping matches Adjustments::apply (exposure [-4, 4],

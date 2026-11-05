@@ -1,10 +1,7 @@
-# Extended colour pipeline and its standalone test.
+# Extended colour pipeline standalone test.
+# The pipeline translation units are part of nekopic_core; see the core source
+# list in native/CMakeLists.txt. This module only owns the standalone test.
 # Included by the parent CMakeLists.txt after nekopic_core exists.
-
-target_sources(nekopic_core PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/colorpipeline.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/colorpipeline.h"
-)
 
 # The fragment is included before include(CTest) defines BUILD_TESTING, so
 # register the test at the end of directory processing when that option and

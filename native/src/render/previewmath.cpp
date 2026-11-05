@@ -19,7 +19,7 @@ double clamp01(double value)
 
 double luma(double red, double green, double blue)
 {
-    // Same weights and evaluation order as colorpipeline.cpp's luma().
+    // Same weights and evaluation order as the extended pipeline's luma().
     return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
@@ -93,7 +93,7 @@ struct Coeffs {
         blue = level + (blue - level) * saturationFactor;
     }
 
-    // Mirrors the fused stages 1-3 of colorpipeline.cpp's applyExtended()
+    // Mirrors the fused stages 1-3 of the extended pipeline's applyExtended()
     // (white balance, tone, tonal masks, saturation, vibrance) for the keys
     // the shader supports. Intermediates are not quantized, matching the CPU
     // pass; the caller rounds once at the end.
