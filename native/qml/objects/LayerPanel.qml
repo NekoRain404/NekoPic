@@ -306,12 +306,14 @@ Rectangle {
                       label: qsTr("Align bottom edges") }
                 ]
 
-                delegate: GlyphButton {
+                delegate: NekoIconButton {
                     required property var modelData
                     objectName: "align-" + modelData.action
                     Layout.fillWidth: true
                     Layout.preferredHeight: 24
-                    glyph: modelData.glyph
+                    buttonSize: 24
+                    iconSize: 14
+                    iconName: "align-" + modelData.action
                     accessibleName: modelData.label
                     enabled: root.enabled && root._selectedValid().length > 0
                     onClicked: root._align(modelData.flag)

@@ -161,6 +161,30 @@ Canvas {
             c.moveTo(15, 12); c.arc(12, 12, 3, 0, Math.PI * 2)
             c.moveTo(4, 4); c.lineTo(20, 20)
             break
+        case "align-left":
+            c.moveTo(4, 3); c.lineTo(4, 21)
+            c.rect(7, 6, 13, 4); c.rect(7, 14, 8, 4)
+            break
+        case "align-hcenter":
+            c.moveTo(12, 3); c.lineTo(12, 21)
+            c.rect(5, 6, 14, 4); c.rect(8, 14, 8, 4)
+            break
+        case "align-right":
+            c.moveTo(20, 3); c.lineTo(20, 21)
+            c.rect(4, 6, 13, 4); c.rect(9, 14, 8, 4)
+            break
+        case "align-top":
+            c.moveTo(3, 4); c.lineTo(21, 4)
+            c.rect(6, 7, 4, 13); c.rect(14, 7, 4, 8)
+            break
+        case "align-vcenter":
+            c.moveTo(3, 12); c.lineTo(21, 12)
+            c.rect(6, 5, 4, 14); c.rect(14, 8, 4, 8)
+            break
+        case "align-bottom":
+            c.moveTo(3, 20); c.lineTo(21, 20)
+            c.rect(6, 4, 4, 13); c.rect(14, 9, 4, 8)
+            break
         default:
             // Unknown names intentionally paint nothing rather than guessing.
             break
