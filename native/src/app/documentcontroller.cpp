@@ -5,7 +5,6 @@
 
 #include <QFileInfo>
 #include <QFutureWatcher>
-#include <QSet>
 #include <QTransform>
 #include <QtConcurrentRun>
 #include <algorithm>
@@ -46,8 +45,8 @@ bool DocumentController::hasImage() const { return !image_.isNull(); }
 int DocumentController::imageWidth() const { return image_.width(); }
 int DocumentController::imageHeight() const { return image_.height(); }
 bool DocumentController::dirty() const { return hasImage() && currentState_ != savedState_; }
-bool DocumentController::canUndo() const { return !undo_.isEmpty(); }
-bool DocumentController::canRedo() const { return !redo_.isEmpty(); }
+bool DocumentController::canUndo() const { return history_.canUndo(); }
+bool DocumentController::canRedo() const { return history_.canRedo(); }
 QStringList DocumentController::readableImagePatterns() const
 {
     return NekoPic::Io::FormatRegistry::instance().readablePatterns();
@@ -268,8 +267,7 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
             baseImage_ = result.image;
             parameters_ = {};
             path_ = path;
-            undo_.clear();
-            redo_.clear();
+            history_.clear();
             currentState_ = savedState_ = ++nextState_;
             ++revision_;
             emit documentChanged();
@@ -324,37 +322,15 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
     }));
 }
 
-void DocumentController::trimHistory()
-{
-    constexpr qsizetype maxHistoryBytes = 256 * 1024 * 1024;
-    const auto historyBytes = [this] {
-        QSet<qint64> seen;
-        qsizetype bytes = 0;
-        const auto count = [&seen, &bytes](const QImage &image) {
-            if (!image.isNull() && !seen.contains(image.cacheKey())) {
-                seen.insert(image.cacheKey());
-                bytes += image.sizeInBytes();
-            }
-        };
-        for (const auto &entry : undo_) { count(entry.image); count(entry.base); }
-        for (const auto &entry : redo_) { count(entry.image); count(entry.base); }
-        return bytes;
-    };
-    while (historyBytes() > maxHistoryBytes && !undo_.isEmpty()) {
-        undo_.removeFirst();
-    }
-}
 
 void DocumentController::applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters)
 {
     if (image.isNull() || base.isNull()) { setError(tr("Could not transform the image.")); return; }
-    undo_.append({image_, baseImage_, parameters_, currentState_});
-    redo_.clear();
+    history_.record({image_, baseImage_, parameters_, currentState_});
     image_ = std::move(image);
     baseImage_ = std::move(base);
     parameters_ = parameters;
     currentState_ = ++nextState_;
-    trimHistory();
     ++revision_;
     setError({});
     emit documentChanged();
@@ -431,26 +407,26 @@ void DocumentController::startTransform(Transform transform)
 
 void DocumentController::undo()
 {
-    if (busy_ || undo_.isEmpty()) return;
-    redo_.append({image_, baseImage_, parameters_, currentState_});
-    auto previous = undo_.takeLast();
-    image_ = std::move(previous.image);
-    baseImage_ = std::move(previous.base);
-    parameters_ = previous.parameters;
-    currentState_ = previous.state;
+    if (busy_) return;
+    auto previous = history_.undo({image_, baseImage_, parameters_, currentState_});
+    if (!previous) return;
+    image_ = std::move(previous->image);
+    baseImage_ = std::move(previous->base);
+    parameters_ = previous->parameters;
+    currentState_ = previous->state;
     ++revision_;
     emit documentChanged();
 }
 
 void DocumentController::redo()
 {
-    if (busy_ || redo_.isEmpty()) return;
-    undo_.append({image_, baseImage_, parameters_, currentState_});
-    auto next = redo_.takeLast();
-    image_ = std::move(next.image);
-    baseImage_ = std::move(next.base);
-    parameters_ = next.parameters;
-    currentState_ = next.state;
+    if (busy_) return;
+    auto next = history_.redo({image_, baseImage_, parameters_, currentState_});
+    if (!next) return;
+    image_ = std::move(next->image);
+    baseImage_ = std::move(next->base);
+    parameters_ = next->parameters;
+    currentState_ = next->state;
     ++revision_;
     emit documentChanged();
 }

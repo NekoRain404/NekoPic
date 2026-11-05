@@ -10,6 +10,7 @@
 #include <QVariantList>
 #include <functional>
 #include "core/adjustments.h"
+#include "document/history.h"
 
 class DocumentController final : public QObject {
     Q_OBJECT
@@ -97,18 +98,11 @@ private:
     void setBusy(bool busy);
     void setError(const QString &error);
     void applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters);
-    void trimHistory();
     void queueAdjustment(const QString &key, double value, bool finish);
     void startAdjustmentWorker();
     void endAdjustment(const QImage &result, bool failed);
     void queueFilterIntensity(double value, bool finish);
     void startMosaic(std::function<QImage(const QImage &)> operation);
-    struct HistoryEntry {
-        QImage image;
-        QImage base;
-        NekoPic::Adjustments::Parameters parameters;
-        quint64 state;
-    };
     QImage image_;
     QImage baseImage_;
     NekoPic::Adjustments::Parameters parameters_;
@@ -127,6 +121,5 @@ private:
     quint64 currentState_ = 0;
     quint64 savedState_ = 0;
     quint64 nextState_ = 0;
-    QList<HistoryEntry> undo_;
-    QList<HistoryEntry> redo_;
+    NekoPic::Document::HistoryStore history_;
 };

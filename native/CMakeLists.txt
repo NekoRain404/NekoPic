@@ -27,6 +27,12 @@ add_library(nekopic_io STATIC
 target_include_directories(nekopic_io PUBLIC src)
 target_link_libraries(nekopic_io PUBLIC nekopic_core)
 
+# --- document: state, transactions, history ------------------------------
+add_library(nekopic_document STATIC
+    src/document/history.cpp src/document/history.h)
+target_include_directories(nekopic_document PUBLIC src)
+target_link_libraries(nekopic_document PUBLIC nekopic_core)
+
 # --- render: preview backends and GPU capability probes ------------------
 add_library(nekopic_render STATIC
     src/render/rendercapabilities.cpp src/render/rendercapabilities.h)
@@ -39,7 +45,7 @@ add_library(nekopic_app STATIC
     src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_geometry.cpp
     src/app/filterpreviews.cpp src/app/filterpreviews.h)
 target_include_directories(nekopic_app PUBLIC src)
-target_link_libraries(nekopic_app PUBLIC nekopic_io nekopic_render
+target_link_libraries(nekopic_app PUBLIC nekopic_io nekopic_document nekopic_render
     Qt6::Concurrent Qt6::Quick)
 
 qt_add_executable(nekopic src/app/main.cpp)
@@ -70,7 +76,7 @@ add_custom_command(OUTPUT "${NEKOPIC_QM}"
 set_source_files_properties("${NEKOPIC_QM}" PROPERTIES QT_RESOURCE_ALIAS "nekopic_zh_CN.qm")
 qt_add_resources(nekopic translations PREFIX "/i18n" FILES "${NEKOPIC_QM}")
 
-foreach(target nekopic_core nekopic_io nekopic_render nekopic_app nekopic)
+foreach(target nekopic_core nekopic_io nekopic_document nekopic_render nekopic_app nekopic)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
 endforeach()
 
@@ -90,6 +96,7 @@ if(BUILD_TESTING)
     nekopic_add_test(imageio tests/tst_imageio.cpp nekopic_io)
     nekopic_add_test(adjustments tests/tst_adjustments.cpp nekopic_core)
     nekopic_add_test(mosaic tests/tst_mosaic.cpp nekopic_core)
+    nekopic_add_test(history tests/tst_history.cpp nekopic_document)
     nekopic_add_test(formatregistry tests/tst_formatregistry.cpp nekopic_io)
     nekopic_add_test(documentcontroller tests/documentcontroller_test.cpp nekopic_app)
     nekopic_add_test(crop tests/tst_crop.cpp nekopic_app)
