@@ -39,9 +39,14 @@ NekoDialog {
     property alias recoveryEnabled: recoveryPage.recoveryEnabled
     property string startupTool: "adjust"
 
+    // Kept in sync with LanguageManager::kLocales. Main.qml binds this to
+    // language.availableLocales so the manager stays the single source of
+    // truth at runtime; the static list keeps the dialog usable standalone.
     property var localeOptions: [
         { id: "en", nativeName: "English" },
-        { id: "zh_CN", nativeName: "简体中文" }
+        { id: "zh_CN", nativeName: "简体中文" },
+        { id: "ja_JP", nativeName: "日本語" },
+        { id: "de_DE", nativeName: "Deutsch" }
     ]
 
     /*! Read-only capability summary supplied by the application shell. */

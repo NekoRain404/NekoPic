@@ -113,6 +113,16 @@ private slots:
         QCOMPARE(QSettings().value(QStringLiteral("ui/language")).toString(),
                  QStringLiteral("en"));
 
+        settings.setLocale(QStringLiteral("ja_JP"));
+        QCOMPARE(settings.locale(), QStringLiteral("ja_JP"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/language")).toString(),
+                 QStringLiteral("ja_JP"));
+
+        settings.setLocale(QStringLiteral("de_DE"));
+        QCOMPARE(settings.locale(), QStringLiteral("de_DE"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/language")).toString(),
+                 QStringLiteral("de_DE"));
+
         settings.setLocale(QStringLiteral("fr"));
         QCOMPARE(settings.locale(), QStringLiteral("zh_CN"));
         QCOMPARE(QSettings().value(QStringLiteral("ui/language")).toString(),

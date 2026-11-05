@@ -648,6 +648,7 @@ ApplicationWindow {
         objectName: "settingsDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
+        localeOptions: typeof language !== "undefined" ? language.availableLocales : []
         recoveryAvailable: typeof recovery !== "undefined" && recovery !== null
                            && recovery.hasRecovery
         recoverySourceName: typeof recovery !== "undefined" && recovery !== null

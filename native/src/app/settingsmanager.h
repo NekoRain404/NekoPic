@@ -38,7 +38,7 @@ public:
     int exportQuality() const;
     /*! Always valid and opaque. */
     QColor jpegBackground() const;
-    /*! "en" | "zh_CN"; stored in the same key LanguageManager uses. */
+    /*! "en" | "zh_CN" | "ja_JP" | "de_DE"; stored in the same key LanguageManager uses. */
     QString locale() const;
     bool confirmOnClose() const;
     bool showCheckerboard() const;

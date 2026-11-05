@@ -24,6 +24,16 @@ const auto kDefaultThemeMode = QStringLiteral("dark");
 const auto kDefaultLocale = QStringLiteral("zh_CN");
 const auto kDefaultStartupTool = QStringLiteral("adjust");
 
+const QStringList &supportedLocales()
+{
+    // Mirrors LanguageManager::kLocales; `ui/language` is shared by both.
+    static const QStringList locales{
+        QStringLiteral("en"), QStringLiteral("zh_CN"),
+        QStringLiteral("ja_JP"), QStringLiteral("de_DE")
+    };
+    return locales;
+}
+
 const QStringList &startupTools()
 {
     static const QStringList tools{
@@ -68,9 +78,7 @@ QString SettingsManager::normaliseThemeMode(const QString &mode)
 
 QString SettingsManager::normaliseLocale(const QString &locale)
 {
-    if (locale == QLatin1String("en") || locale == QLatin1String("zh_CN"))
-        return locale;
-    return kDefaultLocale;
+    return supportedLocales().contains(locale) ? locale : kDefaultLocale;
 }
 
 int SettingsManager::normaliseQuality(int quality)

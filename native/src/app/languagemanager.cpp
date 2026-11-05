@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QQmlEngine>
 #include <QSettings>
+#include <QDebug>
 
 LanguageManager::LanguageManager(QQmlEngine &engine, QObject *parent)
     : QObject(parent), engine_(engine)
@@ -16,34 +17,59 @@ QString LanguageManager::locale() const { return locale_; }
 
 QVariantList LanguageManager::availableLocales() const
 {
-    return {
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("en")},
-                    {QStringLiteral("nativeName"), QStringLiteral("English")}},
-        QVariantMap{{QStringLiteral("id"), QStringLiteral("zh_CN")},
-                    {QStringLiteral("nativeName"), QStringLiteral("简体中文")}},
-    };
+    QVariantList locales;
+    locales.reserve(static_cast<qsizetype>(kLocales.size()));
+    for (const auto &entry : kLocales) {
+        locales.append(QVariantMap{
+            {QStringLiteral("id"), QString::fromLatin1(entry.id)},
+            {QStringLiteral("nativeName"), QString::fromUtf8(entry.nativeName)},
+        });
+    }
+    return locales;
 }
 
 bool LanguageManager::isSupported(const QString &locale)
 {
-    return locale == QLatin1String("en") || locale == QLatin1String("zh_CN");
+    for (const auto &entry : kLocales) {
+        if (locale == QLatin1String(entry.id))
+            return true;
+    }
+    return false;
+}
+
+void LanguageManager::clearTranslator()
+{
+    if (translatorInstalled_)
+        QCoreApplication::removeTranslator(&translator_);
+    translatorInstalled_ = false;
 }
 
 void LanguageManager::setLanguage(const QString &locale)
 {
+    if (!isSupported(locale))
+        qWarning() << "LanguageManager: unsupported locale" << locale << "- falling back to English";
+
     const auto requested = isSupported(locale) ? locale : QStringLiteral("en");
-    if (requested == locale_ && !translator_.isEmpty() == (requested == QLatin1String("zh_CN")))
+    const bool needsTranslator = requested != QLatin1String("en");
+    if (requested == locale_ && translatorInstalled_ == needsTranslator)
         return;
 
-    QCoreApplication::removeTranslator(&translator_);
-    if (requested == QLatin1String("zh_CN")
-        && !translator_.load(QStringLiteral(":/i18n/nekopic_zh_CN.qm"))) {
-        // Fall back to source strings rather than leaving a half-translated UI.
-        locale_ = QStringLiteral("en");
-    } else {
-        locale_ = requested;
-        if (locale_ == QLatin1String("zh_CN"))
+    clearTranslator();
+    if (needsTranslator) {
+        const auto path = QStringLiteral(":/i18n/nekopic_%1.qm").arg(requested);
+        if (translator_.load(path)) {
             QCoreApplication::installTranslator(&translator_);
+            translatorInstalled_ = true;
+            locale_ = requested;
+        } else {
+            // Never leave a half-installed translator behind: a missing
+            // catalogue falls back to the English source strings.
+            qWarning() << "LanguageManager: missing translation catalogue" << path
+                       << "- falling back to English";
+            locale_ = QStringLiteral("en");
+        }
+    } else {
+        locale_ = QStringLiteral("en");
     }
 
     QSettings().setValue(QStringLiteral("ui/language"), locale_);
