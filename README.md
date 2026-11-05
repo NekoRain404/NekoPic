@@ -2,6 +2,20 @@
 
 接手开发请先阅读 [开发交接文档](HANDOFF.md)，其中包含需求、当前实现边界、未提交源文件、架构入口、构建测试结果与后续开发建议。
 
+## 架构与开发路线
+
+- [架构总览](docs/architecture/overview.md)：分层、线程契约、渲染/格式/Rust 边界。
+- [模块地图](docs/architecture/module-map.md)：目录职责、命名与并行所有权。
+- [路线图](docs/roadmap.md)：阶段目标与工作流。
+- [开发流程](docs/development.md)：分支、提交、校验与版本管理。
+- [架构决策](docs/adr/)：分层、Rust 边界、GPU 预览、设计系统。
+
+原生代码按 `core → io/document/render → app → QML` 单向依赖组织。一键校验：
+
+```sh
+./scripts/check.sh
+```
+
 ## 原生开发版
 
 原生 Qt Quick / C++20 首阶段位于 [`native/`](native/)，原有 HTML 原型保留。需要 Qt 6.5 以上的 Core、Gui、Quick、Quick Controls、Concurrent 和 Qt Linguist 工具，以及 CMake 和 C++20 编译器；运行 C++ 测试还需要 Qt Test。
