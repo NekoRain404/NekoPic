@@ -805,136 +805,22 @@ Item {
     }
 
     // ── Viewport-backed drawing ─────────────────────────────────────────────
-    Canvas {
+    SelectionPreview {
         id: preview
-        objectName: "selectionPreview"
-        // Keep the raster backing bounded to the visible intersection.
-        x: Math.max(0, Math.min(root.width, root.visibleRect.x))
-        y: Math.max(0, Math.min(root.height, root.visibleRect.y))
-        width: Math.max(0, Math.min(root.width, root.visibleRect.x + root.visibleRect.width) - x)
-        height: Math.max(0, Math.min(root.height, root.visibleRect.y + root.visibleRect.height) - y)
-        visible: root.usable && root._selectedIds.length > 0
-        onXChanged: requestPaint()
-        onYChanged: requestPaint()
-        onWidthChanged: requestPaint()
-        onHeightChanged: requestPaint()
-        onPaint: {
-            const c = getContext("2d")
-            c.reset()
-            if (!root.usable || root._selectedIds.length === 0)
-                return
-            c.translate(-x, -y)
-
-            // Multi-selection: keep a subtle outline per object so the
-            // individual members stay legible under the shared box.
-            if (root._selectedIds.length > 1) {
-                c.strokeStyle = Theme.alpha(Theme.accent, 0.55)
-                c.lineWidth = 1
-                for (let i = 0; i < root._selectedIds.length; ++i) {
-                    const raw = root._rawBounds(root._selectedIds[i])
-                    if (!(raw.width > 0) || !(raw.height > 0))
-                        continue
-                    const l = Math.round(raw.x * root.scaleX) + 0.5
-                    const t = Math.round(raw.y * root.scaleY) + 0.5
-                    const r = Math.round((raw.x + raw.width) * root.scaleX) - 0.5
-                    const btm = Math.round((raw.y + raw.height) * root.scaleY) - 0.5
-                    c.strokeRect(l, t, Math.max(0, r - l), Math.max(0, btm - t))
-                }
-            }
-
-            const b = root.selectionBounds
-            if (!(b.width > 0) || !(b.height > 0))
-                return
-
-            // Crisp 1px geometry on integer device-independent coordinates.
-            const left = Math.round(b.x) + 0.5
-            const top = Math.round(b.y) + 0.5
-            const right = Math.round(b.x + b.width) - 0.5
-            const bottom = Math.round(b.y + b.height) - 0.5
-            const boxWidth = Math.max(0, right - left)
-            const boxHeight = Math.max(0, bottom - top)
-
-            // Dark halo keeps the accent box legible on any photograph.
-            c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.45)
-            c.lineWidth = 3
-            c.strokeRect(left, top, boxWidth, boxHeight)
-            c.strokeStyle = Theme.accent
-            c.lineWidth = 1
-            c.strokeRect(left, top, boxWidth, boxHeight)
-
-            // Dashed ghost is the fallback until the live object crop is
-            // ready; afterwards the box itself follows the moving pixels.
-            if (root.dragging && !root.movePreviewReady) {
-                const g = root.previewBounds
-                if (g.width > 0 && g.height > 0) {
-                    const gl = Math.round(g.x) + 0.5
-                    const gt = Math.round(g.y) + 0.5
-                    const gr = Math.round(g.x + g.width) - 0.5
-                    const gb = Math.round(g.y + g.height) - 0.5
-                    const gw = Math.max(0, gr - gl)
-                    const gh = Math.max(0, gb - gt)
-                    c.fillStyle = Theme.alpha(Theme.accent, 0.10)
-                    c.fillRect(gl, gt, gw, gh)
-                    c.strokeStyle = Theme.accent
-                    c.lineWidth = 1
-                    if (typeof c.setLineDash === "function")
-                        c.setLineDash([5, 4])
-                    c.strokeRect(gl, gt, gw, gh)
-                    if (typeof c.setLineDash === "function")
-                        c.setLineDash([])
-                }
-            }
-
-            // Magnetic guides: image centre or edge, only while a drag snaps.
-            if (root._snapGuideX >= 0) {
-                const gx = root._snapGuideX * root.scaleX
-                c.beginPath()
-                c.moveTo(gx, root.visibleRect.y)
-                c.lineTo(gx, root.visibleRect.y + root.visibleRect.height)
-                c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.45)
-                c.lineWidth = 3
-                c.stroke()
-                c.strokeStyle = Theme.accent
-                c.lineWidth = 1
-                if (typeof c.setLineDash === "function")
-                    c.setLineDash([3, 4])
-                c.stroke()
-                if (typeof c.setLineDash === "function")
-                    c.setLineDash([])
-            }
-            if (root._snapGuideY >= 0) {
-                const gy = root._snapGuideY * root.scaleY
-                c.beginPath()
-                c.moveTo(root.visibleRect.x, gy)
-                c.lineTo(root.visibleRect.x + root.visibleRect.width, gy)
-                c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.45)
-                c.lineWidth = 3
-                c.stroke()
-                c.strokeStyle = Theme.accent
-                c.lineWidth = 1
-                if (typeof c.setLineDash === "function")
-                    c.setLineDash([3, 4])
-                c.stroke()
-                if (typeof c.setLineDash === "function")
-                    c.setLineDash([])
-            }
-
-            // Corner handles are visual only; resizing is a later command.
-            const handleSize = 7
-            const corners = [[b.x, b.y],
-                             [b.x + b.width, b.y],
-                             [b.x, b.y + b.height],
-                             [b.x + b.width, b.y + b.height]]
-            for (let i = 0; i < corners.length; ++i) {
-                const hx = Math.round(corners[i][0] - handleSize / 2)
-                const hy = Math.round(corners[i][1] - handleSize / 2)
-                c.fillStyle = Theme.accent
-                c.fillRect(hx, hy, handleSize, handleSize)
-                c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.65)
-                c.lineWidth = 1
-                c.strokeRect(hx + 0.5, hy + 0.5, handleSize - 1, handleSize - 1)
-            }
-        }
+        viewportWidth: root.width
+        viewportHeight: root.height
+        visibleRect: root.visibleRect
+        usable: root.usable
+        selectedIds: root._selectedIds
+        rawBounds: function(id) { return root._rawBounds(id) }
+        scaleX: root.scaleX
+        scaleY: root.scaleY
+        selectionBounds: root.selectionBounds
+        dragging: root.dragging
+        movePreviewReady: root.movePreviewReady
+        previewBounds: root.previewBounds
+        snapGuideX: root._snapGuideX
+        snapGuideY: root._snapGuideY
     }
 
     // Visible focus indicator for keyboard users.

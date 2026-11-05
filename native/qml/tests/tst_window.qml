@@ -345,7 +345,7 @@ TestCase {
             const canvas = findChild(window, "editorCanvas")
             const zoom = findChild(window, "status-zoom-slider")
             verify(inspector !== null && canvas !== null && zoom !== null)
-            compare(inspector.width, 320)
+            compare(inspector.width, 292)
             verify(canvas.width > 400, "canvas must keep usable width at 1100 px")
             verify(zoom.width > 50)
 
@@ -353,7 +353,7 @@ TestCase {
             wait(0)
             const panel = findChild(window, "brushPanel")
             verify(panel !== null && panel.visible)
-            compare(panel.width, 292)
+            compare(panel.width, inspector.width, "tool panels must share one width")
             verify(findChild(panel, "brush-opacity") !== null)
             verify(findChild(panel, "brush-softness") !== null)
         } finally {
@@ -588,6 +588,55 @@ TestCase {
 
         editor.hasImage = false
         window.destroy()
+    }
+
+    function test_everyToolKeepsASameWidthSidePanel() {
+        const window = createWindow()
+        try {
+            window.width = 1100
+            window.height = 720
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+
+            const canvas = findChild(window, "editorCanvas")
+            verify(canvas !== null)
+            const tools = ["select", "pan", "adjust", "filters", "brush",
+                           "text", "shapes", "mosaic", "eye", "crop"]
+            const panelNames = ["layerPanel", "toolInfoPanel", "inspector",
+                                "filtersToolPanel", "brushPanel", "textPanel",
+                                "shapePanel", "mosaicPanel", "cropPanel"]
+            let expectedPanelWidth = -1
+            let expectedCanvasWidth = -1
+
+            for (let i = 0; i < tools.length; ++i) {
+                window.activeTool = tools[i]
+                wait(0)
+
+                let panel = null
+                for (let j = 0; j < panelNames.length; ++j) {
+                    const candidate = findChild(window, panelNames[j])
+                    if (candidate !== null && candidate.visible) {
+                        panel = candidate
+                        break
+                    }
+                }
+                verify(panel !== null, "missing side panel for " + tools[i])
+
+                if (expectedPanelWidth < 0) {
+                    expectedPanelWidth = panel.width
+                    expectedCanvasWidth = canvas.width
+                } else {
+                    compare(panel.width, expectedPanelWidth,
+                            "side panel width changed for " + tools[i])
+                    compare(canvas.width, expectedCanvasWidth,
+                            "canvas reflowed for " + tools[i])
+                }
+            }
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
     }
 
     function test_textToolCreatesTextFromPanel() {

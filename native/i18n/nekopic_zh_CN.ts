@@ -3520,4 +3520,141 @@
         <translation>自动增强</translation>
     </message>
 </context>
+<context>
+    <name>ToolRail</name>
+    <message>
+        <source>Select</source>
+        <translation>选择</translation>
+    </message>
+    <message>
+        <source>Pan</source>
+        <translation>平移</translation>
+    </message>
+    <message>
+        <source>Adjust</source>
+        <translation>调色</translation>
+    </message>
+    <message>
+        <source>Filters</source>
+        <translation>滤镜</translation>
+    </message>
+    <message>
+        <source>Brush</source>
+        <translation>画笔</translation>
+    </message>
+    <message>
+        <source>Text</source>
+        <translation>文字</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>形状</translation>
+    </message>
+    <message>
+        <source>Mosaic</source>
+        <translation>打码</translation>
+    </message>
+    <message>
+        <source>Eyedropper</source>
+        <translation>吸管</translation>
+    </message>
+    <message>
+        <source>Crop</source>
+        <translation>裁剪</translation>
+    </message>
+    <message>
+        <source>Coming soon</source>
+        <translation>即将推出</translation>
+    </message>
+    <message>
+        <source>Foreground colour</source>
+        <translation>前景色</translation>
+    </message>
+    <message>
+        <source>Sets the shared ink for the brush, text and shape tools.</source>
+        <translation>设置画笔、文字和形状工具共用的墨色。</translation>
+    </message>
+    <message>
+        <source>Colour</source>
+        <translation>颜色</translation>
+    </message>
+</context>
+<context>
+    <name>StatusBar</name>
+    <message>
+        <source>1 object</source>
+        <translation>1 个对象</translation>
+    </message>
+    <message>
+        <source>%1 objects</source>
+        <translation>%1 个对象</translation>
+    </message>
+    <message>
+        <source>Zoom out</source>
+        <translation>缩小</translation>
+    </message>
+    <message>
+        <source>Zoom in</source>
+        <translation>放大</translation>
+    </message>
+    <message>
+        <source>Canvas zoom</source>
+        <translation>画布缩放</translation>
+    </message>
+    <message>
+        <source>100%</source>
+        <translation>100%</translation>
+    </message>
+    <message>
+        <source>Fit</source>
+        <translation>适应</translation>
+    </message>
+    <message>
+        <source>Working…</source>
+        <translation>正在处理…</translation>
+    </message>
+    <message>
+        <source>Unsaved changes</source>
+        <translation>未保存的更改</translation>
+    </message>
+    <message>
+        <source>Local editing</source>
+        <translation>本地编辑</translation>
+    </message>
+</context>
+<context>
+    <name>TopActionBar</name>
+    <message>
+        <source>Rotate</source>
+        <translation>旋转</translation>
+    </message>
+    <message>
+        <source>Transform</source>
+        <translation>变换</translation>
+    </message>
+    <message>
+        <source>Rotate and flip</source>
+        <translation>旋转与翻转</translation>
+    </message>
+    <message>
+        <source>Canvas</source>
+        <translation>画布</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>设置</translation>
+    </message>
+    <message>
+        <source>Preferences (Ctrl+,)</source>
+        <translation>偏好设置（Ctrl+,）</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <source>Command palette (Ctrl+K)</source>
+        <translation>命令面板（Ctrl+K）</translation>
+    </message>
+</context>
 </TS>

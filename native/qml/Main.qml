@@ -34,6 +34,9 @@ ApplicationWindow {
     property url pendingExportUrl
     property url lastFolder: ""
     property string activeTool: "adjust"
+    // Every tool keeps the same right-hand function area so switching tools
+    // never reflows the canvas.
+    readonly property int toolPanelWidth: window.width < 1100 ? 260 : 292
     // Temporary keyboard overrides. They never change activeTool, so the tool
     // the user had selected is restored naturally on release.
     property bool spacePanHeld: false
@@ -426,12 +429,6 @@ ApplicationWindow {
         property color ink: Theme.textSecondary
         color: ink
     }
-    component CommandButton: NekoButton {
-        id: command
-        property bool primary: false
-        variant: primary ? "primary" : "secondary"
-    }
-
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
@@ -866,156 +863,36 @@ ApplicationWindow {
         activeFocusOnTab: false
         Keys.onPressed: function(event) { window.handleCanvasKeyPress(event) }
         Keys.onReleased: function(event) { window.handleCanvasKeyRelease(event) }
-        Rectangle {
-            Layout.fillWidth: true; Layout.preferredHeight: 58; color: theme.panel
-            RowLayout {
-                anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 18; spacing: 6
-                CommandButton { action: openAction; iconName: "folder" }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 19; Layout.leftMargin: 5; Layout.rightMargin: 5; color: theme.border }
-                CommandButton { action: undoAction; text: ""; iconName: "undo"; ToolTip.visible: hovered; ToolTip.text: undoAction.text }
-                CommandButton { action: redoAction; text: ""; iconName: "redo"; ToolTip.visible: hovered; ToolTip.text: redoAction.text }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 19; Layout.leftMargin: 5; Layout.rightMargin: 5; color: theme.border }
-                CommandButton { action: rotateRightAction; text: qsTr("Rotate"); iconName: "rotate" }
-                CommandButton { action: cropAction; iconName: "crop" }
-                CommandButton {
-                    objectName: "action-transform"
-                    text: qsTr("Transform"); iconName: "rotate"
-                    enabled: editor.hasImage && !editor.busy
-                    onClicked: transformMenu.open()
-                    ToolTip.visible: hovered
-                    ToolTip.text: qsTr("Rotate and flip")
-                }
-                CommandButton {
-                    objectName: "action-canvas"
-                    text: qsTr("Canvas"); iconName: "fit"
-                    enabled: canvasSizeAction.enabled
-                    onClicked: canvasSizeAction.trigger()
-                    ToolTip.visible: hovered
-                    ToolTip.text: canvasSizeAction.text
-                }
-                Item { Layout.fillWidth: true }
-                NekoButton {
-                    objectName: "settingsButton"
-                    text: qsTr("Settings"); variant: "ghost"
-                    onClicked: window.openSettings()
-                    ToolTip.visible: hovered; ToolTip.text: qsTr("Preferences (Ctrl+,)")
-                }
-                NekoButton {
-                    text: qsTr("Search"); variant: "ghost"
-                    onClicked: commandPalette.open()
-                    ToolTip.visible: hovered; ToolTip.text: qsTr("Command palette (Ctrl+K)")
-                }
-                BusyIndicator { running: editor.busy; visible: running; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
-                CommandButton { action: saveAction; iconName: "save" }
-                CommandButton { action: saveAsAction; primary: true }
-            }
+        TopActionBar {
+            actions: ({
+                open: openAction,
+                undo: undoAction,
+                redo: redoAction,
+                rotate: rotateRightAction,
+                crop: cropAction,
+                save: saveAction,
+                saveAs: saveAsAction,
+                canvasSize: canvasSizeAction
+            })
+            hasImage: editor.hasImage
+            busy: editor.busy
+            onTransformRequested: transformMenu.open()
+            onCanvasSizeRequested: canvasSizeAction.trigger()
+            onSettingsRequested: window.openSettings()
+            onCommandPaletteRequested: commandPalette.open()
         }
         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.border }
         RowLayout {
             Layout.fillWidth: true; Layout.fillHeight: true; spacing: 0
-            Rectangle {
-                Layout.fillHeight: true; Layout.preferredWidth: 74; color: theme.panel
-                ColumnLayout {
-                    anchors.fill: parent
-                    spacing: 0
-                    Flickable {
-                        id: toolScroller
-                        Layout.fillWidth: true; Layout.fillHeight: true
-                        contentWidth: width
-                        contentHeight: tools.implicitHeight + 20
-                        clip: true; boundsBehavior: Flickable.StopAtBounds
-                        ScrollBar.vertical: NekoScrollBar { policy: ScrollBar.AsNeeded }
-                        ColumnLayout {
-                            id: tools; width: parent.width; y: 10; spacing: 3
-                            Repeater {
-                                model: [
-                                    { icon: "select", label: qsTr("Select") }, { icon: "pan", label: qsTr("Pan") },
-                                    { icon: "adjust", label: qsTr("Adjust") }, { icon: "filters", label: qsTr("Filters") },
-                                    { icon: "brush", label: qsTr("Brush") }, { icon: "text", label: qsTr("Text") },
-                                    { icon: "shapes", label: qsTr("Shapes") }, { icon: "mosaic", label: qsTr("Mosaic") },
-                                    { icon: "eye", label: qsTr("Eyedropper") }, { icon: "crop", label: qsTr("Crop") }
-                                ]
-                                delegate: NekoToolButton {
-                                    id: toolButton
-                                    required property var modelData
-                                    required property int index
-                                    Layout.alignment: Qt.AlignHCenter
-                                    Layout.topMargin: index === 2 || index === 4 ? 10 : 0
-                                    objectName: "tool-" + modelData.icon
-                                    text: modelData.label
-                                    iconName: modelData.icon
-                                    accessibleName: modelData.label
-                                    readonly property bool available: modelData.icon === "pan" || modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "brush" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "shapes" || modelData.icon === "eye" || modelData.icon === "crop"
-                                    enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
-                                    checked: available && window.activeTool === modelData.icon
-                                    onClicked: window.activeTool = modelData.icon
-                                    ToolTip.visible: hovered
-                                    ToolTip.text: available ? modelData.label : modelData.label + " · " + qsTr("Coming soon")
-                                }
-                            }
-                        }
-                    }
-                    Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.border }
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: Theme.spacingSm
-                        Layout.bottomMargin: Theme.spacingMd
-                        spacing: Theme.spacingXs
-                        AbstractButton {
-                            id: foregroundSwatch
-                            objectName: "foreground-swatch"
-                            Layout.alignment: Qt.AlignHCenter
-                            implicitWidth: 34; implicitHeight: 34
-                            hoverEnabled: true
-                            focusPolicy: Qt.StrongFocus
-                            activeFocusOnTab: true
-                            scale: down ? 0.94 : hovered ? 1.05 : 1.0
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: Motion.duration(Motion.fast)
-                                    easing.type: Motion.decelerateEasing
-                                }
-                            }
-                            Accessible.role: Accessible.Button
-                            Accessible.name: qsTr("Foreground colour")
-                            Accessible.description: qsTr("Sets the shared ink for the brush, text and shape tools.")
-                            ToolTip.visible: hovered
-                            ToolTip.text: qsTr("Foreground colour")
-                            onClicked: {
-                                foregroundColorDialog.selectedColor = window.foregroundColor
-                                foregroundColorDialog.open()
-                            }
-                            background: Rectangle {
-                                radius: Theme.radiusSm
-                                color: window.foregroundColor
-                                border.width: 3
-                                border.color: theme.panel
-                                Rectangle {
-                                    anchors.fill: parent
-                                    anchors.margins: -4
-                                    radius: Theme.radiusSm + 4
-                                    color: "transparent"
-                                    border.width: Theme.borderWidth
-                                    border.color: foregroundSwatch.hovered ? theme.muted : theme.border
-                                }
-                            }
-                            Rectangle {
-                                anchors.fill: parent
-                                anchors.margins: -Theme.focusRingOffset
-                                radius: Theme.radiusSm + Theme.focusRingOffset
-                                color: "transparent"
-                                border.width: Theme.focusRingWidth
-                                border.color: Theme.focusRing
-                                visible: foregroundSwatch.visualFocus
-                            }
-                        }
-                        Text {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: qsTr("Colour")
-                            color: theme.muted
-                            font.pixelSize: Theme.fontCaption
-                        }
-                    }
+            ToolRail {
+                activeTool: window.activeTool
+                hasImage: editor.hasImage
+                busy: editor.busy
+                foregroundColor: window.foregroundColor
+                onToolSelected: function(tool) { window.activeTool = tool }
+                onForegroundColorRequested: {
+                    foregroundColorDialog.selectedColor = window.foregroundColor
+                    foregroundColorDialog.open()
                 }
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
@@ -1162,7 +1039,7 @@ ApplicationWindow {
                 objectName: "inspector"
                 visible: window.activeTool === "adjust"
                 Layout.fillHeight: true
-                Layout.preferredWidth: 320
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
                 adjustmentsEnabled: editor.hasImage && (!editor.busy || editor.adjustmentInteractive)
                 adjustmentValues: editor.adjustmentValues
@@ -1195,7 +1072,7 @@ ApplicationWindow {
                 objectName: "filtersToolPanel"
                 visible: window.activeTool === "filters"
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 color: theme.panel
                 Flickable {
                     anchors.fill: parent
@@ -1231,7 +1108,7 @@ ApplicationWindow {
                 visible: window.activeTool === "mosaic"
                 enabled: editor.hasImage && !editor.busy
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
             }
             TextPanel {
@@ -1239,7 +1116,7 @@ ApplicationWindow {
                 objectName: "textPanel"
                 visible: window.activeTool === "text"
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
                 enabled: editor.hasImage && !editor.busy
                 busy: editor.busy
@@ -1263,7 +1140,7 @@ ApplicationWindow {
                 objectName: "layerPanel"
                 visible: window.activeTool === "select"
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
                 summaries: []
                 selectedIds: canvas.selectionIds
@@ -1288,7 +1165,7 @@ ApplicationWindow {
                 visible: window.activeTool === "brush"
                 enabled: editor.hasImage && !editor.busy
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
             }
             ShapePanel {
@@ -1296,7 +1173,7 @@ ApplicationWindow {
                 visible: window.activeTool === "shapes"
                 enabled: editor.hasImage && !editor.busy
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
             }
             CropPanel {
@@ -1304,7 +1181,7 @@ ApplicationWindow {
                 visible: window.activeTool === "crop"
                 enabled: editor.hasImage && !editor.busy
                 Layout.fillHeight: true
-                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                Layout.preferredWidth: window.toolPanelWidth
                 theme: theme
                 imageAspectRatio: editor.imageHeight > 0 ? editor.imageWidth / editor.imageHeight : 1
                 selectionWidth: canvas.cropSelection.width
@@ -1314,99 +1191,33 @@ ApplicationWindow {
                 onCancelRequested: window.activeTool = "adjust"
                 onResetRequested: canvas.resetCropSelection()
             }
-        }
-        Rectangle {
-            Layout.fillWidth: true; Layout.preferredHeight: 30; color: theme.panel
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 15; anchors.rightMargin: 15
-                spacing: Theme.spacingSm
-
-                Label {
-                    objectName: "status-dimensions"
-                    text: editor.hasImage ? editor.imageWidth + " × " + editor.imageHeight + " px" : "— × — px"
-                    color: theme.muted; font.pixelSize: Theme.fontCaption
-                }
-                Text { text: "/"; color: theme.border; font.pixelSize: Theme.fontCaption }
-                Label {
-                    objectName: "status-srgb"
-                    text: "sRGB"
-                    color: theme.muted; font.pixelSize: Theme.fontCaption
-                }
-                Text { text: "/"; color: theme.border; font.pixelSize: Theme.fontCaption }
-                Label {
-                    objectName: "status-object-count"
-                    text: window.objectCount === 1 ? qsTr("1 object")
-                                                  : qsTr("%1 objects").arg(window.objectCount)
-                    color: theme.muted; font.pixelSize: Theme.fontCaption
-                }
-                Item { Layout.fillWidth: true }
-
-                NekoIconButton {
-                    objectName: "status-zoom-out"
-                    iconName: "minus"; buttonSize: 22; iconSize: 14
-                    accessibleName: qsTr("Zoom out")
-                    enabled: editor.hasImage && canvas.zoom > 0.0501
-                    onClicked: canvas.changeZoom(1 / 1.2)
-                }
-                NekoSlider {
-                    id: statusZoomSlider
-                    objectName: "status-zoom-slider"
-                    Layout.preferredWidth: 104
-                    Layout.preferredHeight: Theme.sliderHeight
-                    from: 5; to: 300; stepSize: 1
-                    value: canvas.zoom * 100
-                    enabled: editor.hasImage
-                    accessibleName: qsTr("Canvas zoom")
-                    onPreview: function(value) { canvas.setZoomValue(value / 100) }
-                    onFinish: function(value) { canvas.setZoomValue(value / 100) }
-                    Connections {
-                        target: canvas
-                        function onZoomChanged() {
-                            if (!statusZoomSlider.dragging)
-                                statusZoomSlider.value = canvas.zoom * 100
-                        }
-                    }
-                }
-                NekoIconButton {
-                    objectName: "status-zoom-in"
-                    iconName: "plus"; buttonSize: 22; iconSize: 14
-                    accessibleName: qsTr("Zoom in")
-                    enabled: editor.hasImage && canvas.zoom < 2.999
-                    onClicked: canvas.changeZoom(1.2)
-                }
-                Label {
-                    objectName: "status-zoom-value"
-                    text: Math.round(canvas.zoom * 100) + "%"
-                    color: theme.text; font.pixelSize: Theme.fontCaption
-                    Layout.preferredWidth: 38
-                    horizontalAlignment: Text.AlignHCenter
-                }
-                NekoButton {
-                    objectName: "status-zoom-actual"
-                    text: qsTr("100%"); variant: "ghost"; implicitHeight: 22
-                    enabled: editor.hasImage
-                    onClicked: canvas.actualSize()
-                }
-                NekoButton {
-                    objectName: "status-zoom-fit"
-                    text: qsTr("Fit"); variant: "ghost"; implicitHeight: 22
-                    enabled: editor.hasImage
-                    onClicked: canvas.fitImage()
-                }
-                Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: theme.border }
-                Label {
-                    objectName: "statusMessage"
-                    text: editor.busy ? qsTr("Working…")
-                          : window.transientStatus.length > 0 ? window.transientStatus
-                          : editor.dirty ? qsTr("Unsaved changes") : qsTr("Local editing")
-                    color: theme.muted; font.pixelSize: Theme.fontCaption
-                    elide: Text.ElideRight
-                    Layout.maximumWidth: 190
-                }
-                Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
+            ToolInfoPanel {
+                objectName: "toolInfoPanel"
+                visible: window.activeTool === "pan" || window.activeTool === "eye"
+                Layout.preferredWidth: window.toolPanelWidth
+                title: window.toolLabel(window.activeTool)
+                hint: window.activeToolHint
+                iconName: window.activeTool
+                shortcut: window.activeTool === "pan" ? "H" : "I"
+                shortcutLabel: qsTr("Keyboard shortcuts")
             }
         }
+        StatusBar {
+            hasImage: editor.hasImage
+            imageWidth: editor.imageWidth
+            imageHeight: editor.imageHeight
+            objectCount: window.objectCount
+            busy: editor.busy
+            dirty: editor.dirty
+            transientStatus: window.transientStatus
+            zoom: canvas.zoom
+            onZoomOutRequested: canvas.changeZoom(1 / 1.2)
+            onZoomInRequested: canvas.changeZoom(1.2)
+            onZoomValueRequested: function(value) { canvas.setZoomValue(value) }
+            onActualSizeRequested: canvas.actualSize()
+            onFitRequested: canvas.fitImage()
+        }
+        Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
     }
 
     CommandPalette {
