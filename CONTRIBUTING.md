@@ -36,6 +36,11 @@ A change is not complete until the relevant C++ tests, QML tests and
 `git diff --check` pass. Performance-sensitive changes must also run the
 benchmark (`native/build-release/bench_pipeline --quick --jobs 1`).
 
+`./scripts/check-source-size.sh` enforces the file-size budget; CI runs it in
+warning mode for three tracked composition-root exceptions. Use `--strict`
+before a release once those are split. Packaging metadata is checked by
+`./scripts/validate-packaging.sh` (add `--strict` for a release gate).
+
 ## Code organization
 
 The dependency direction is one-way:

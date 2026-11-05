@@ -50,6 +50,8 @@ jobs:
           "$QT_ROOT_DIR/bin/qmltestrunner" -input native/qml/tests -silent
       - name: Whitespace
         run: git diff --check
+      - name: Source-size budget
+        run: ./scripts/check-source-size.sh
       - name: Packaging metadata
         run: ./scripts/validate-packaging.sh
 
