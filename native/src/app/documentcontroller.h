@@ -114,6 +114,24 @@ public:
                                    qreal fontSize, const QColor &color, int alignment,
                                    const QColor &outlineColor, qreal outlineWidth,
                                    qreal lineHeight, qreal padding);
+    // Reads editable state for a text object. Returns an empty map for
+    // unknown or non-text ids. `x`/`y` are the *anchor* in document pixels
+    // and use the same alignment convention as addTextStyled(): the horizontal
+    // and vertical alignment flags select which edge (or centre) of the text
+    // box touches the anchor. TextObject persists only the horizontal
+    // alignment component, so the reported vertical anchor is always the box
+    // centre (`alignment` includes Qt::AlignVCenter) and that is also the
+    // anchor updateText() uses when the flag is present. info -> update ->
+    // info is stable; the current box position is preserved exactly.
+    Q_INVOKABLE QVariantMap textInfo(quint64 id) const;
+    // Replaces the text, style and position of an existing text object while
+    // preserving its id and z-order. `x`/`y` are the anchor described above.
+    // One undo step. Returns false for unknown/non-text ids, invalid input,
+    // while busy, or when no image is open.
+    Q_INVOKABLE bool updateText(quint64 id, const QString &text, qreal x, qreal y,
+                                const QString &fontFamily, int fontWeight, qreal fontSize,
+                                const QColor &color, int alignment, const QColor &outlineColor,
+                                qreal outlineWidth, qreal lineHeight, qreal padding);
     Q_INVOKABLE bool removeObject(quint64 id);
     Q_INVOKABLE void clearObjects();
     Q_INVOKABLE void moveObject(quint64 id, qreal dx, qreal dy);

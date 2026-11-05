@@ -31,6 +31,9 @@ import "../UI"
         The delta is in document pixels; the controller commits one undo step.
       • removeRequested(id)     — Delete/Backspace on the selected object.
       • selectionChanged(id)    — id is 0 when the selection is cleared.
+      • doubleClicked(id)       — double click on an object, or inside the
+                                  selected object's box. The second click
+                                  never starts a move gesture.
       • cancelled()             — Esc; the selection is cleared first.
 
     Read-only:
@@ -58,6 +61,10 @@ import "../UI"
                        a ghost rectangle follows the pointer and exactly one
                        `moveRequested` is emitted on release. Mouse moves never
                        call the controller.
+      • double click   emits doubleClicked(id) for an object under the pointer
+                       (or the selected one when the pointer is inside its
+                       box). Any drag started by the second press is cancelled,
+                       so a double click never moves the object.
       • Delete / Backspace  emit removeRequested(selectedId) once and clear.
       • Esc                 clear the selection and emit cancelled().
       • arrows               nudge by 1 document pixel (Shift = 10), one
@@ -109,6 +116,7 @@ Item {
     signal moveRequested(var id, real dx, real dy)
     signal removeRequested(var id)
     signal selectionChanged(var id)
+    signal doubleClicked(var id)
     signal cancelled()
 
     // ── Geometry / enablement ───────────────────────────────────────────────
@@ -149,6 +157,10 @@ Item {
     property rect _lastRawBounds: Qt.rect(0, 0, 0, 0)
     property int _boundsRevision: 0
     property bool _dragging: false
+    // Set while a double-click is being handled so the second press never
+    // starts a move preview, regardless of the platform's event order.
+    property bool _suppressDragPress: false
+    property bool _pressActive: false
     property bool _hoverObject: false
     property bool _hoverSelected: false
     property point _pressImage: Qt.point(0, 0)
@@ -431,6 +443,31 @@ Item {
         return true
     }
 
+    /*!
+        Resolves the object a double click targets: the current selection when
+        the point is inside its box, otherwise the topmost object at the point.
+    */
+    function _doubleClickId(imageX, imageY) {
+        if (_selectedId !== 0 && _containsSelected(imageX, imageY))
+            return _selectedId
+        return _hitTest(imageX, imageY)
+    }
+
+    function _handleDoubleClick(mouse) {
+        if (!usable)
+            return 0
+        const p = pointAt(mouse.x, mouse.y)
+        const id = _doubleClickId(p.x, p.y)
+        // The second press of the sequence may already have started a drag;
+        // discard it so a double click is never reported as a move.
+        _cancelDrag()
+        if (id === 0)
+            return 0
+        _applySelection(id)
+        root.doubleClicked(id)
+        return id
+    }
+
     function _release(mouse) {
         if (!usable) {
             _cancelDrag()
@@ -648,11 +685,32 @@ Item {
         }
         onExited: root._clearHover()
         onPressed: function(mouse) {
+            if (root._suppressDragPress) {
+                mouse.accepted = true
+                return
+            }
+            root._pressActive = true
             if (root._press(mouse))
                 mouse.accepted = true
         }
-        onReleased: function(mouse) { root._release(mouse) }
-        onCanceled: root._cancelDrag()
+        onReleased: function(mouse) {
+            root._pressActive = false
+            root._suppressDragPress = false
+            root._release(mouse)
+        }
+        onDoubleClicked: function(mouse) {
+            // Only a double click that is still inside a press lifecycle can
+            // leave a drag behind; mark that press for cancellation. When the
+            // signal arrives after the release there is nothing to suppress.
+            if (root._pressActive)
+                root._suppressDragPress = true
+            root._handleDoubleClick(mouse)
+            mouse.accepted = true
+        }
+        onCanceled: function() {
+            root._pressActive = false
+            root._cancelDrag()
+        }
     }
 
     // The object layer commits asynchronously (worker render), so a lightweight
