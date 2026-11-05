@@ -1,15 +1,21 @@
 import QtQuick
 
-// GPU-rendered interactive preview for the basic adjustments.
+// GPU-rendered interactive preview for the basic and extended-basic
+// adjustments (exposure, brightness, contrast, saturation, highlights,
+// shadows, whites, blacks, temperature, tint and vibrance).
 //
 // Place this item over `sourceItem` with matching geometry (for EditorCanvas,
 // the picture item) and drive `active` while a slider is dragged. The wrapper
-// only affects what is drawn: the CPU implementation in core/adjustments.cpp
-// stays authoritative for the committed preview and for export/save.
+// only affects what is drawn: the CPU implementation in
+// core/colorpipeline.cpp and core/adjustments.cpp stays authoritative for the
+// committed preview and for export/save.
 //
 // Integration contract (see docs/adr/0003-gpu-preview.md):
 //  - Bind `active` to !RenderCapabilities.softwareFallback && sliderPressed
 //    && no filter preset is active. Filters live in the CPU path only.
+//  - Drive the properties from the pending adjustment values. Curves, HSL,
+//    colour grading, detail and effects are not implemented by the shader and
+//    must keep the CPU path in use while they are active.
 //  - `sourceItem` must be the unadjusted base image, not the CPU-adjusted one.
 //  - Keep this item's geometry equal to sourceItem's; it does not reposition
 //    the source item.
@@ -28,6 +34,13 @@ Item {
     property real brightness: 0.0
     property real contrast: 0.0
     property real saturation: 0.0
+    property real highlights: 0.0
+    property real shadows: 0.0
+    property real whites: 0.0
+    property real blacks: 0.0
+    property real temperature: 0.0
+    property real tint: 0.0
+    property real vibrance: 0.0
 
     // Overridable for tests and for builds that relocate the compiled shader.
     // The default path matches qt_add_shaders(PREFIX "/shaders") in
@@ -80,6 +93,13 @@ Item {
         property real brightness: root.brightness
         property real contrast: root.contrast
         property real saturation: root.saturation
+        property real highlights: root.highlights
+        property real shadows: root.shadows
+        property real whites: root.whites
+        property real blacks: root.blacks
+        property real temperature: root.temperature
+        property real tint: root.tint
+        property real vibrance: root.vibrance
         fragmentShader: root.shaderSource
     }
 }

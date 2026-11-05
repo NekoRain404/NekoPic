@@ -732,7 +732,44 @@ QVariantMap toUiValues(const Parameters &parameters)
 bool isGpuPreviewKey(const QString &key)
 {
     return key == QStringLiteral("exposure") || key == QStringLiteral("brightness")
-        || key == QStringLiteral("contrast") || key == QStringLiteral("saturation");
+        || key == QStringLiteral("contrast") || key == QStringLiteral("saturation")
+        || key == QStringLiteral("highlights") || key == QStringLiteral("shadows")
+        || key == QStringLiteral("whites") || key == QStringLiteral("blacks")
+        || key == QStringLiteral("temperature") || key == QStringLiteral("tint")
+        || key == QStringLiteral("vibrance");
+}
+
+bool isGpuPreviewSupported(const Parameters &input)
+{
+    const Parameters p = sanitized(input);
+
+    // Stages the shader does not implement. Neutral values are allowed so a
+    // user can drag a supported key after a curve was reset to linear, etc.
+    if (p.fade != 0.0)
+        return false;
+    for (const auto &channel : p.hsl) {
+        if (channel.hue != 0.0 || channel.saturation != 0.0
+            || channel.luminance != 0.0)
+            return false;
+    }
+    for (const auto &curve : p.curves) {
+        if (!isLinearCurve(curve))
+            return false;
+    }
+    for (const auto &zone : p.grade) {
+        // Hue alone cannot change pixels; blending/balance only shape an
+        // already-active zone.
+        if (zone.saturation != 0.0 || zone.luminance != 0.0)
+            return false;
+    }
+    if (p.texture != 0.0 || p.clarity != 0.0 || p.dehaze != 0.0
+        || p.sharpen != 0.0 || p.noise != 0.0 || p.colorNoise != 0.0
+        || p.vignette != 0.0 || p.grain != 0.0)
+        return false;
+
+    if (p.filterIntensity > 0.0 && isActivePreset(parsePreset(p.filterPreset)))
+        return false;
+    return true;
 }
 
 // ---------------------------------------------------------------------------

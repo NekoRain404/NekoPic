@@ -84,6 +84,13 @@ TestCase {
         preview.brightness = 0
         preview.contrast = 0
         preview.saturation = 0
+        preview.highlights = 0
+        preview.shadows = 0
+        preview.whites = 0
+        preview.blacks = 0
+        preview.temperature = 0
+        preview.tint = 0
+        preview.vibrance = 0
         preview.shaderSource = testCase.validShader
         wait(0)
     }
@@ -117,10 +124,24 @@ TestCase {
         preview.brightness = -0.4
         preview.contrast = 0.75
         preview.saturation = -0.5
+        preview.highlights = 0.35
+        preview.shadows = -0.25
+        preview.whites = 0.15
+        preview.blacks = -0.05
+        preview.temperature = 0.45
+        preview.tint = -0.35
+        preview.vibrance = 0.65
         compare(effect.exposure, 1.25)
         compare(effect.brightness, -0.4)
         compare(effect.contrast, 0.75)
         compare(effect.saturation, -0.5)
+        compare(effect.highlights, 0.35)
+        compare(effect.shadows, -0.25)
+        compare(effect.whites, 0.15)
+        compare(effect.blacks, -0.05)
+        compare(effect.temperature, 0.45)
+        compare(effect.tint, -0.35)
+        compare(effect.vibrance, 0.65)
         compare(effect.source, findTexture())
         // Uniform updates never disturb the source while inactive.
         verify(sourceRect.visible)
@@ -221,6 +242,53 @@ TestCase {
         preview.active = false
     }
 
+    // Same readback probe as above, but exercising the extended-basic stages
+    // (white balance, tonal masks, vibrance). GPU float ordering differs from
+    // the CPU's double math, so this check allows 4/255 per channel; a formula
+    // mismatch moves channels by far more on this saturated test colour.
+    function test_extendedShaderMatchesCpuWhenReadbackWorks() {
+        if (!testCase.gpuBackend) {
+            skip("RHI shaders are unavailable on this scene graph backend")
+            return
+        }
+        failOnWarning(/.?/)
+        preview.active = false
+        wait(50)
+        const base = grabImage(sourceRect)
+        const baseOk = Math.abs(base.red(10, 10) - 0x40) <= 4
+            && Math.abs(base.green(10, 10) - 0x80) <= 4
+            && Math.abs(base.blue(10, 10) - 0xa0) <= 4
+        if (!baseOk) {
+            skip("grabImage returned a blank frame (offscreen platform): GPU pixel readback is unreliable here")
+            return
+        }
+
+        preview.exposure = 0.3
+        preview.highlights = 0.3
+        preview.shadows = -0.2
+        preview.temperature = 0.5
+        preview.tint = -0.2
+        preview.vibrance = 0.6
+        preview.active = true
+        tryCompare(preview, "previewing", true, 3000)
+        wait(50)
+        const rendered = grabImage(preview)
+        const expected = cpuAdjustedExtended(0x40 / 255, 0x80 / 255, 0xa0 / 255,
+                                              preview.exposure, 0, 0, 0,
+                                              preview.highlights, preview.shadows,
+                                              0, 0, preview.temperature,
+                                              preview.tint, preview.vibrance)
+        const x = 40
+        const y = 30
+        verify(Math.abs(rendered.red(x, y) - expected[0]) <= 4,
+               "red " + rendered.red(x, y) + " vs CPU " + expected[0])
+        verify(Math.abs(rendered.green(x, y) - expected[1]) <= 4,
+               "green " + rendered.green(x, y) + " vs CPU " + expected[1])
+        verify(Math.abs(rendered.blue(x, y) - expected[2]) <= 4,
+               "blue " + rendered.blue(x, y) + " vs CPU " + expected[2])
+        preview.active = false
+    }
+
     // Straight-alpha CPU mirror of adjust_preview.frag, used by the visual
     // check above. Inputs and outputs are 0..1 / 0..255 respectively.
     function cpuAdjusted(red, green, blue, exposure, brightness, contrast, saturation) {
@@ -239,6 +307,70 @@ TestCase {
         b = luminance + (b - luminance) * saturationFactor
         const channel = function(value) {
             return Math.round(Math.min(1, Math.max(0, value)) * 255)
+        }
+        return [channel(r), channel(g), channel(b)]
+    }
+
+    // Extended-branch mirror: white balance, tonal masks, saturation and
+    // vibrance in the same order/clamps as colorpipeline.cpp applyExtended().
+    function cpuAdjustedExtended(red, green, blue, exposure, brightness, contrast,
+                                 saturation, highlights, shadows, whites, blacks,
+                                 temperature, tint, vibrance) {
+        const clamp01 = function(value) { return Math.min(1, Math.max(0, value)) }
+        const luma = function(r, g, b) { return 0.2126 * r + 0.7152 * g + 0.0722 * b }
+        const smoothstep = function(edge0, edge1, value) {
+            const t = clamp01((value - edge0) / (edge1 - edge0))
+            return t * t * (3 - 2 * t)
+        }
+        let r = red
+        let g = green
+        let b = blue
+        if (temperature !== 0 || tint !== 0) {
+            r *= 1 + 0.30 * temperature + 0.10 * tint
+            g *= 1 - 0.20 * tint
+            b *= 1 - 0.30 * temperature + 0.10 * tint
+        }
+        if (exposure !== 0 || brightness !== 0 || contrast !== 0) {
+            const exposureFactor = Math.pow(2, exposure)
+            const contrastFactor = 1 + contrast
+            const tone = function(value) {
+                return (value * exposureFactor - 0.5) * contrastFactor + 0.5 + brightness
+            }
+            r = tone(r)
+            g = tone(g)
+            b = tone(b)
+        }
+        r = clamp01(r); g = clamp01(g); b = clamp01(b)
+        if (highlights !== 0 || shadows !== 0 || whites !== 0 || blacks !== 0) {
+            const level = luma(r, g, b)
+            const shadowMask = 1 - smoothstep(0, 0.55, level)
+            const highlightMask = smoothstep(0.45, 1, level)
+            const blackMask = 1 - smoothstep(0, 0.25, level)
+            const whiteMask = smoothstep(0.75, 1, level)
+            const delta = 0.5 * (shadows * shadowMask + highlights * highlightMask
+                                 + blacks * blackMask + whites * whiteMask)
+            r = clamp01(r + delta); g = clamp01(g + delta); b = clamp01(b + delta)
+        }
+        if (saturation !== 0) {
+            const level = luma(r, g, b)
+            const factor = 1 + saturation
+            r = level + (r - level) * factor
+            g = level + (g - level) * factor
+            b = level + (b - level) * factor
+        }
+        if (vibrance !== 0) {
+            const maximum = Math.max(r, g, b)
+            const minimum = Math.min(r, g, b)
+            const chroma = maximum - minimum
+            const currentSaturation = maximum > 1e-9 ? chroma / maximum : 0
+            const factor = 1 + vibrance * (1 - currentSaturation) * 0.8
+            const level = luma(r, g, b)
+            r = level + (r - level) * factor
+            g = level + (g - level) * factor
+            b = level + (b - level) * factor
+        }
+        const channel = function(value) {
+            return Math.round(clamp01(value) * 255)
         }
         return [channel(r), channel(g), channel(b)]
     }

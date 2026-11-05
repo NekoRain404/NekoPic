@@ -269,6 +269,7 @@ private slots:
     void unknownKeysRejected();
     void parameterClamping();
     void gpuPreviewKeys();
+    void gpuPreviewSupport();
     void neutralExtendedParametersMatchBaseline_data();
     void neutralExtendedParametersMatchBaseline();
     void inactiveExtendedParametersStayNeutral();
@@ -392,11 +393,80 @@ void ColorPipelineTest::parameterClamping()
 
 void ColorPipelineTest::gpuPreviewKeys()
 {
-    for (const char *key : {"exposure", "brightness", "contrast", "saturation"})
-        QVERIFY(isGpuPreviewKey(QString::fromLatin1(key)));
-    for (const char *key : {"highlights", "temperature", "hsl.red.hue", "curve.RGB.0",
-                            "grade.shadows.hue", "texture", "vignette"})
-        QVERIFY(!isGpuPreviewKey(QString::fromLatin1(key)));
+    for (const char *key : {"exposure", "brightness", "contrast", "saturation",
+                            "highlights", "shadows", "whites", "blacks",
+                            "temperature", "tint", "vibrance"}) {
+        QVERIFY2(isGpuPreviewKey(QString::fromLatin1(key)), key);
+    }
+    for (const char *key : {"fade", "hsl.red.hue", "curve.RGB.0",
+                            "grade.shadows.hue", "grade.shadows.saturation",
+                            "grade.shadows.luminance", "texture", "clarity",
+                            "dehaze", "sharpen", "noise", "colorNoise",
+                            "vignette", "feather", "grain", "filter",
+                            "filter-intensity", "not-a-key"}) {
+        QVERIFY2(!isGpuPreviewKey(QString::fromLatin1(key)), key);
+    }
+}
+
+void ColorPipelineTest::gpuPreviewSupport()
+{
+    Parameters parameters;
+    QVERIFY(isGpuPreviewSupported(parameters));
+
+    // Every key the shader implements is accepted simultaneously.
+    parameters.exposure = 1.0;
+    parameters.brightness = 0.2;
+    parameters.contrast = -0.3;
+    parameters.saturation = 0.4;
+    parameters.highlights = 0.5;
+    parameters.shadows = -0.6;
+    parameters.whites = 0.3;
+    parameters.blacks = -0.2;
+    parameters.temperature = 0.7;
+    parameters.tint = -0.4;
+    parameters.vibrance = 0.8;
+    QVERIFY(isGpuPreviewSupported(parameters));
+
+    // Each unsupported stage forces the CPU path.
+    parameters = {};
+    parameters.fade = 0.5;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.hsl[0].hue = 0.1;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.curves[1].points[2] = 0.6;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.grade[0].saturation = 0.2;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.grade[2].luminance = 0.2;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.texture = 0.1;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.vignette = 0.2;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+    parameters = {};
+    parameters.filterPreset = QStringLiteral("mono");
+    parameters.filterIntensity = 1.0;
+    QVERIFY(!isGpuPreviewSupported(parameters));
+
+    // Neutral values that cannot change pixels are allowed: linear curves,
+    // grade hue/blending/balance without saturation/luminance, and feather.
+    parameters = {};
+    parameters.grade[0].hue = 200.0;
+    parameters.gradeBlending = 0.9;
+    parameters.gradeBalance = 0.5;
+    parameters.feather = 0.2;
+    QVERIFY(isGpuPreviewSupported(parameters));
+    // "none" plus any intensity is neutral.
+    parameters = {};
+    parameters.filterPreset = QStringLiteral("none");
+    parameters.filterIntensity = 1.0;
+    QVERIFY(isGpuPreviewSupported(parameters));
 }
 
 void ColorPipelineTest::neutralExtendedParametersMatchBaseline_data()

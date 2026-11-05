@@ -740,13 +740,27 @@ ApplicationWindow {
                                          && editor.adjustmentPreviewGpuEligible
                                          && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
                 previewExposure: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 50 : 0
+                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 25 : 0
                 previewBrightness: typeof editor.pendingAdjustmentValues !== "undefined"
                                    && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.brightness / 100 : 0
                 previewContrast: typeof editor.pendingAdjustmentValues !== "undefined"
                                  && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.contrast / 100 : 0
                 previewSaturation: typeof editor.pendingAdjustmentValues !== "undefined"
                                    && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.saturation / 100 : 0
+                previewHighlights: typeof editor.pendingAdjustmentValues !== "undefined"
+                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.highlights / 100 : 0
+                previewShadows: typeof editor.pendingAdjustmentValues !== "undefined"
+                                && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.shadows / 100 : 0
+                previewWhites: typeof editor.pendingAdjustmentValues !== "undefined"
+                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.whites / 100 : 0
+                previewBlacks: typeof editor.pendingAdjustmentValues !== "undefined"
+                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.blacks / 100 : 0
+                previewTemperature: typeof editor.pendingAdjustmentValues !== "undefined"
+                                    && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.temperature / 100 : 0
+                previewTint: typeof editor.pendingAdjustmentValues !== "undefined"
+                             && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.tint / 100 : 0
+                previewVibrance: typeof editor.pendingAdjustmentValues !== "undefined"
+                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.vibrance / 100 : 0
                 fileName: editor.fileName; dirty: editor.dirty
                 mosaicActive: window.activeTool === "mosaic"
                 cropActive: window.activeTool === "crop"

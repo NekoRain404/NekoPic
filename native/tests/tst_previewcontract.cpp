@@ -87,7 +87,7 @@ private slots:
         const auto before = controller.image();
         controller.beginAdjustment(QStringLiteral("highlights"));
         QVERIFY(controller.adjustmentInteractive());
-        QVERIFY(!controller.adjustmentPreviewGpuEligible());
+        QVERIFY(controller.adjustmentPreviewGpuEligible());
         controller.previewAdjustment(QStringLiteral("highlights"), 40.0);
         QCOMPARE(qRound(controller.pendingAdjustmentValues().value(QStringLiteral("highlights")).toDouble()), 40);
         controller.finishAdjustment(QStringLiteral("highlights"), 40.0);
@@ -101,9 +101,17 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
 
         controller.beginAdjustment(QStringLiteral("hsl.red.hue"));
+        QVERIFY(!controller.adjustmentPreviewGpuEligible());
         controller.finishAdjustment(QStringLiteral("hsl.red.hue"), 20.0);
         QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
         QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("hsl.red.hue")).toDouble()), 20);
+
+        // A supported drag key is still CPU-only while an unsupported stage
+        // (here HSL) is active, because the shader cannot reproduce it.
+        controller.beginAdjustment(QStringLiteral("exposure"));
+        QVERIFY(!controller.adjustmentPreviewGpuEligible());
+        controller.finishAdjustment(QStringLiteral("exposure"), 0.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
 
         controller.undo();
         QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);

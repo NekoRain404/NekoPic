@@ -335,3 +335,40 @@ Remaining bottlenecks: `QImage::convertToFormat(RGBA64)` is now a significant se
 ## 9. 2026-11-05 扩展审计
 
 高级调色与 13 款滤镜的新测量、对象编辑/内存瓶颈与优先级见 [`performance-audit.md`](performance-audit.md)。
+
+## 10. 2026-11-05 GPU interactive preview coverage
+
+The interactive RHI preview (`native/shaders/adjust_preview.frag`,
+`native/qml/effects/AdjustmentPreview.qml`) now covers eleven keys:
+
+| Stage | Keys |
+| --- | --- |
+| White balance | `temperature`, `tint` |
+| Tone | `exposure`, `brightness`, `contrast` |
+| Tonal masks | `highlights`, `shadows`, `whites`, `blacks` |
+| Colour | `saturation`, `vibrance` |
+
+`isGpuPreviewKey()` returns true for exactly this set. When any other pixel
+stage is active (HSL, curves, colour grading with saturation/luminance, texture,
+clarity, dehaze, sharpen, noise, colour noise, vignette, grain, fade, or a
+filter preset), `isGpuPreviewSupported()` returns false and the drag falls back
+to the CPU preview. Neutral values that cannot change pixels (linear curves,
+zero HSL, grade hue/blending/balance alone, feather) do not disqualify the GPU
+path.
+
+Performance expectation: this is still a single full-screen pass with the same
+one texture sample and no extra render targets. The added stages are a handful
+of ALU operations per pixel (two `smoothstep` pairs plus max/min and a division
+for vibrance), which is negligible next to texture fetch and fill rate on any
+backend that was already meeting the 16/33 ms ADR-0003 frame target. Frame
+timing is **not** measured here: the harness still times the CPU mirror, not
+GPU execution (see section 7). The practical outcome is that the CPU frames
+previously spent on highlights/shadows/white balance/vibrance during a drag are
+removed; the committed full-size CPU render on release is unchanged.
+
+Mapping note: `exposure` UI units map to shader stops via `ui / 25`
+(`ui × 0.04` is the stored stop value); the other keys use `ui / 100`.
+
+CPU/GPU parity tolerances are documented in ADR-0003: 2/255 (2/65535 at 16
+bits) for the double-precision CPU mirror, and 4/255 for GPU pixel readback
+because of 32-bit float ordering and 8-bit texture storage.

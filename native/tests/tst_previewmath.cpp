@@ -127,6 +127,7 @@ private slots:
     void parity_data();
     void parity();
     void rgba64Parity();
+    void extendedRgba64Parity();
     void alphaPreserved();
     void nullImage();
 };
@@ -138,6 +139,13 @@ void PreviewMathTest::parity_data()
     QTest::addColumn<double>("brightness");
     QTest::addColumn<double>("contrast");
     QTest::addColumn<double>("saturation");
+    QTest::addColumn<double>("highlights");
+    QTest::addColumn<double>("shadows");
+    QTest::addColumn<double>("whites");
+    QTest::addColumn<double>("blacks");
+    QTest::addColumn<double>("temperature");
+    QTest::addColumn<double>("tint");
+    QTest::addColumn<double>("vibrance");
 
     struct Case {
         const char *name;
@@ -145,18 +153,47 @@ void PreviewMathTest::parity_data()
         double brightness;
         double contrast;
         double saturation;
+        double highlights;
+        double shadows;
+        double whites;
+        double blacks;
+        double temperature;
+        double tint;
+        double vibrance;
     };
     const Case cases[]{
-        {"identity", 0.0, 0.0, 0.0, 0.0},
-        {"exposure+2", 2.0, 0.0, 0.0, 0.0},
-        {"exposure-2", -2.0, 0.0, 0.0, 0.0},
-        {"brightness+0.5", 0.0, 0.5, 0.0, 0.0},
-        {"brightness-0.75", 0.0, -0.75, 0.0, 0.0},
-        {"contrast+1", 0.0, 0.0, 1.0, 0.0},
-        {"contrast-1", 0.0, 0.0, -1.0, 0.0},
-        {"saturation-1", 0.0, 0.0, 0.0, -1.0},
-        {"saturation+1", 0.0, 0.0, 0.0, 1.0},
-        {"combined", 1.25, 0.1, 0.4, -0.6},
+        {"identity", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"exposure+2", 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"exposure-2", -2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"brightness+0.5", 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"brightness-0.75", 0.0, -0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"contrast+1", 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"contrast-1", 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"saturation-1", 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"saturation+1", 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"combined", 1.25, 0.1, 0.4, -0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        // Extended-basic stages.
+        {"highlights+1", 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"highlights-1", 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"shadows+1", 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"shadows-1", 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+        {"whites+1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
+        {"whites-1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0},
+        {"blacks+1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0},
+        {"blacks-1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0},
+        {"temperature+1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0},
+        {"temperature-1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0},
+        {"tint+1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0},
+        {"tint-1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0},
+        {"vibrance+1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0},
+        {"vibrance-1", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0},
+        {"wb+tonal", 0.5, 0.0, 0.2, 0.0, 0.6, -0.4, 0.3, -0.5, 0.8, -0.7, 0.0},
+        {"extended-combined", 1.25, 0.1, 0.4, -0.6, 0.5, -0.4, 0.2, -0.3, 0.6,
+         -0.5, 0.7},
+        {"extended-extreme", 4.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+         1.0},
+        {"extended-negative", -4.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+         -1.0, -1.0, -1.0},
     };
 
     const auto addImage = [&](const QImage &image, const char *label) {
@@ -164,7 +201,11 @@ void PreviewMathTest::parity_data()
             const QString name = QStringLiteral("%1/%2").arg(QString::fromLatin1(label),
                                                              QString::fromLatin1(item.name));
             QTest::newRow(qPrintable(name)) << image << item.exposure << item.brightness
-                                            << item.contrast << item.saturation;
+                                            << item.contrast << item.saturation
+                                            << item.highlights << item.shadows
+                                            << item.whites << item.blacks
+                                            << item.temperature << item.tint
+                                            << item.vibrance;
         }
     };
 
@@ -180,20 +221,36 @@ void PreviewMathTest::parity()
     QFETCH(double, brightness);
     QFETCH(double, contrast);
     QFETCH(double, saturation);
+    QFETCH(double, highlights);
+    QFETCH(double, shadows);
+    QFETCH(double, whites);
+    QFETCH(double, blacks);
+    QFETCH(double, temperature);
+    QFETCH(double, tint);
+    QFETCH(double, vibrance);
 
     Adjustments::Parameters parameters;
     parameters.exposure = exposure;
     parameters.brightness = brightness;
     parameters.contrast = contrast;
     parameters.saturation = saturation;
+    parameters.highlights = highlights;
+    parameters.shadows = shadows;
+    parameters.whites = whites;
+    parameters.blacks = blacks;
+    parameters.temperature = temperature;
+    parameters.tint = tint;
+    parameters.vibrance = vibrance;
 
     const QImage expected = Adjustments::apply(image, parameters);
     const QImage actual = applyRgba8(image, parameters);
 
     QCOMPARE(actual.format(), QImage::Format_RGBA8888);
     // The CPU path rounds through 16 bits and converts back; one LSB of
-    // divergence is expected. 2/255 leaves margin for rounding order without
-    // hiding a real formula mismatch.
+    // divergence is expected. Extended stages add another intermediate clamp
+    // but no extra quantization, so 2/255 still leaves margin for rounding
+    // order without hiding a real formula mismatch. GPU float precision is
+    // covered by the QML shader test, which uses a wider 4/255 tolerance.
     const int worst = maxChannelDiff(expected, actual);
     QVERIFY2(worst <= 2, qPrintable(QStringLiteral("max channel diff %1/255").arg(worst)));
 }
@@ -227,6 +284,71 @@ void PreviewMathTest::rgba64Parity()
                 }
             }
         }
+    }
+}
+
+void PreviewMathTest::extendedRgba64Parity()
+{
+    const QImage image = makeRgba64Image();
+    struct Case {
+        const char *name;
+        Adjustments::Parameters parameters;
+    };
+    Adjustments::Parameters combined;
+    combined.exposure = 1.25;
+    combined.brightness = 0.1;
+    combined.contrast = 0.4;
+    combined.saturation = -0.6;
+    combined.highlights = 0.5;
+    combined.shadows = -0.4;
+    combined.whites = 0.2;
+    combined.blacks = -0.3;
+    combined.temperature = 0.6;
+    combined.tint = -0.5;
+    combined.vibrance = 0.7;
+
+    Adjustments::Parameters extreme;
+    extreme.exposure = 4.0;
+    extreme.brightness = 1.0;
+    extreme.contrast = 1.0;
+    extreme.saturation = 1.0;
+    extreme.highlights = 1.0;
+    extreme.shadows = 1.0;
+    extreme.whites = 1.0;
+    extreme.blacks = 1.0;
+    extreme.temperature = 1.0;
+    extreme.tint = 1.0;
+    extreme.vibrance = 1.0;
+
+    Adjustments::Parameters tonal;
+    tonal.highlights = -0.8;
+    tonal.shadows = 0.9;
+    tonal.whites = -0.6;
+    tonal.blacks = 0.7;
+
+    Adjustments::Parameters whiteBalance;
+    whiteBalance.temperature = -0.9;
+    whiteBalance.tint = 0.85;
+    whiteBalance.vibrance = -0.75;
+
+    const Case cases[]{
+        {"combined", combined},
+        {"extreme", extreme},
+        {"tonal-masks", tonal},
+        {"white-balance-vibrance", whiteBalance},
+    };
+    for (const Case &item : cases) {
+        const QImage expected = Adjustments::apply(image, item.parameters);
+        const QImage actual = applyRgba64(image, item.parameters);
+        QCOMPARE(actual.format(), QImage::Format_RGBA64);
+        // Both sides use double math and the same final channel rounding. Two
+        // 16-bit units leave room for the CPU's RGBA64 conversion and the
+        // mirror's straight-alpha evaluation order; a formula mismatch would
+        // be far larger.
+        const int worst = maxChannelDiff16(expected, actual);
+        QVERIFY2(worst <= 2, qPrintable(
+            QStringLiteral("%1: max 16-bit channel diff %2")
+                .arg(QString::fromLatin1(item.name)).arg(worst)));
     }
 }
 

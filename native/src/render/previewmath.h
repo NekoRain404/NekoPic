@@ -22,8 +22,15 @@ namespace NekoPic::Render::PreviewMath {
 //    storage detail and is hidden from QImage-level comparisons.
 //  - Filter presets are deliberately not mirrored. Enabling a filter forces
 //    the CPU preview path (see ADR-0003), so the shader is never used then.
+//  - The mirror covers the shader's supported keys: exposure, brightness,
+//    contrast, saturation, highlights, shadows, whites, blacks, temperature,
+//    tint and vibrance. When any of the extended keys is active it evaluates
+//    the fused stage order of colorpipeline.cpp's applyExtended(); otherwise
+//    it keeps the legacy basic formula. Curves, HSL, grading, detail and
+//    effects are not mirrored.
 //  - Parameter clamping matches Adjustments::apply (exposure [-4, 4],
-//    brightness/contrast/saturation [-1, 1], non-finite values become 0).
+//    brightness/contrast/saturation/extended basics [-1, 1], non-finite
+//    values become 0).
 
 // Applies the preview formula to an RGBA8888 (straight alpha) image. The
 // source is converted to RGBA8888 when needed; alpha bytes are never changed.

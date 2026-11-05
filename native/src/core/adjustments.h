@@ -116,7 +116,17 @@ bool setParameter(Parameters &parameters, const QString &key, double uiValue);
 double parameterValue(const Parameters &parameters, const QString &key);
 QVariantMap toUiValues(const Parameters &parameters);
 
-// True only for the four basic keys the interactive GPU shader mirrors.
+// True only for the basic and extended-basic keys the interactive GPU shader
+// mirrors: exposure, brightness, contrast, saturation, highlights, shadows,
+// whites, blacks, temperature, tint and vibrance. Curves, HSL, colour grading,
+// detail, effects and filter presets deliberately stay CPU-only.
 bool isGpuPreviewKey(const QString &key);
+
+// True when every active parameter can be rendered by the GPU shader: the
+// supported keys above are allowed, while any active HSL, curve, grading,
+// detail, effect (including fade) or filter preset forces the CPU path.
+// Neutral parameters (linear curves, zero HSL, zero grade saturation/luminance)
+// do not disqualify a preview.
+bool isGpuPreviewSupported(const Parameters &parameters);
 
 } // namespace NekoPic::Adjustments
