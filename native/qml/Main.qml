@@ -15,6 +15,10 @@ ApplicationWindow {
     property bool darkTheme: true
     property bool followSystemTheme: false
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
+    // Letter shortcuts must not fire while the user is typing in a modal.
+    readonly property bool blockingModal: commandPalette.opened || textDialog.opened
+        || exportDialog.opened || resizeDialog.opened || canvasSizeDialog.opened
+        || shortcutsDialog.opened || aboutDialog.opened || discardDialog.opened || errorDialog.opened
     property bool discardConfirmed: false
     property bool saveBeforePending: false
     property bool closingRequested: false
@@ -98,9 +102,9 @@ ApplicationWindow {
     Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: resizeDialog.open() }
     Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: canvasSizeDialog.open() }
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
-    Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "text" }
-    Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "eye" }
-    Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "crop" }
+    Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
+    Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "eye" }
+    Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "crop" }
     Action { id: zoomInAction; text: qsTr("Zoom in"); shortcut: "Ctrl+="; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1.2) }
     Action { id: zoomOutAction; text: qsTr("Zoom out"); shortcut: "Ctrl+-"; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1 / 1.2) }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
