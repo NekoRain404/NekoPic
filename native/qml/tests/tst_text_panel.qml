@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import "../panels"
+import "../panels/FontCatalog.js" as FontCatalog
 import "../UI"
 
 /*!
@@ -57,12 +58,14 @@ TestCase {
         verify(size !== null)
         verify(align !== null)
         verify(outline !== null)
+        verify(findChild(panel, "font-picker-button") !== null)
 
         compare(size.from, 12)
         compare(size.to, 160)
         compare(size.value, 48)
         compare(outline.checked, true)
-        verify(findChild(panel, "text-panel-font-note").text.toLowerCase().indexOf("cjk") >= 0)
+        compare(font.currentLabel, panel.defaultFontFamily)
+        verify(findChild(panel, "text-panel-font-note").text.length > 0)
         verify(findChild(panel, "text-panel-scroll") !== null)
     }
 
@@ -88,28 +91,183 @@ TestCase {
         compare(panel.text, "line one\nline two")
     }
 
-    function test_fontSelectionIsCjkFirstAndReports() {
+    function test_systemFontCatalogIsExposedAndOrdered() {
+        const panel = make()
+        const system = Qt.fontFamilies()
+
+        compare(panel.hasSystemFontCatalog, true)
+        verify(panel.usesSystemFonts, "Qt.fontFamilies() should be available in Qt 6")
+        compare(panel.systemFontFamilies.length, system.length)
+        compare(panel.fontChoices[0].value, "")
+        compare(panel.fontChoices[0].label, qsTr("System default"))
+        compare(panel.fontCount, panel.fontChoices.length - 1)
+        verify(panel.fontCount > 1)
+
+        // Case-insensitive dedupe: every non-default value is unique.
+        const seen = Object.create(null)
+        const preferredKeys = Object.create(null)
+        for (let p = 0; p < panel.preferredFontFamilies.length; ++p)
+            preferredKeys[panel.preferredFontFamilies[p].toLowerCase()] = true
+
+        let sawOrdinaryFamily = false
+        for (let i = 1; i < panel.fontChoices.length; ++i) {
+            const value = panel.fontChoices[i].value
+            const key = value.toLowerCase()
+            verify(!seen[key], "duplicate font family: " + value)
+            seen[key] = true
+            if (preferredKeys[key]) {
+                verify(!sawOrdinaryFamily,
+                       "preferred family must be listed before ordinary families: " + value)
+            } else {
+                sawOrdinaryFamily = true
+            }
+        }
+
+        // Selected families outside the catalog stay visible.
+        panel.fontFamily = "NekoPic Missing Font"
+        const last = panel.fontModel[panel.fontModel.length - 1]
+        compare(last.value, "NekoPic Missing Font")
+        compare(findChild(panel, "text-panel-font").currentLabel, "NekoPic Missing Font")
+    }
+
+    function test_catalogBuilderDedupesAndFallsBack() {
+        const built = FontCatalog.build(
+            ["DejaVu Sans", "dejavu sans", "Noto Sans", "Noto Sans"],
+            "System default")
+        compare(built.length, 3)
+        compare(built[0].value, "")
+        compare(built[0].label, "System default")
+        compare(built[1].value, "Noto Sans")
+        compare(built[2].value, "DejaVu Sans")
+
+        const fallback = FontCatalog.build(FontCatalog.curatedFamilies, "System default")
+        compare(fallback.length, FontCatalog.curatedFamilies.length + 1)
+        compare(fallback[1].value, "Noto Sans CJK SC")
+        verify(fallback[2].label.indexOf("Serif CJK") >= 0)
+    }
+
+    function test_pickerFiltersWithSearch() {
+        const panel = make()
+        const picker = findChild(panel, "text-panel-font")
+        const search = findChild(panel, "font-picker-search")
+        const list = findChild(panel, "font-picker-list")
+        const empty = findChild(panel, "font-picker-empty")
+        verify(search !== null && list !== null && empty !== null)
+
+        picker.openPicker()
+        tryVerify(function() { return picker.popupVisible })
+        verify(waitForRendering(panel))
+
+        search.text = "noto"
+        tryCompare(list, "count", picker.filteredModel.length)
+        verify(picker.filteredModel.length > 0)
+        for (let i = 0; i < picker.filteredModel.length; ++i)
+            verify(picker.filteredModel[i].label.toLowerCase().indexOf("noto") >= 0)
+
+        search.text = "zzzz-no-such-font-family"
+        tryCompare(list, "count", 0)
+        compare(picker.filteredModel.length, 0)
+        verify(empty.opacity > 0)
+        tryVerify(function() { return empty.height > 0 })
+        verify(waitForRendering(panel))
+
+        search.text = ""
+        tryCompare(list, "count", panel.fontModel.length)
+        compare(empty.opacity, 0)
+        picker.closePicker()
+    }
+
+    function test_pickerSelectionEmitsStyleEdit() {
         const panel = make()
         const styles = createTemporaryObject(spyComponent, testCase,
                                              { target: panel, signalName: "styleEdited" })
-        const font = findChild(panel, "text-panel-font")
+        const picker = findChild(panel, "text-panel-font")
+        const search = findChild(panel, "font-picker-search")
+        const list = findChild(panel, "font-picker-list")
 
-        verify(panel.fontModel.length >= 5)
-        compare(panel.fontModel[0].value, "")
-        compare(panel.fontModel[1].value, "Noto Sans CJK SC")
-        verify(panel.fontModel[2].label.indexOf("Serif CJK") >= 0)
+        picker.openPicker()
+        tryVerify(function() { return picker.popupVisible })
+        search.text = panel.fontModel[1].value
+        tryCompare(list, "count", picker.filteredModel.length)
+        verify(picker.filteredModel.length > 0)
 
-        font.currentIndex = 2
-        font.activated(2)
-        compare(panel.fontFamily, "Noto Serif CJK SC")
+        const expected = picker.filteredModel[0].value
+        list.currentIndex = 0
+        search.forceActiveFocus()
+        keyClick(Qt.Key_Return)
+
+        compare(panel.fontFamily, expected)
         compare(styles.count, 1)
         compare(styles.signalArguments[0][0], "font")
-        compare(styles.signalArguments[0][1], "Noto Serif CJK SC")
+        compare(styles.signalArguments[0][1], expected)
+        tryVerify(function() { return !picker.popupVisible })
+        compare(picker.currentLabel, expected)
+    }
 
-        // An unknown document family is appended so the combo can show it.
-        panel.fontFamily = "Some Installed Family"
-        compare(panel.fontModel[panel.fontModel.length - 1].value, "Some Installed Family")
-        tryCompare(font, "currentIndex", panel.fontModel.length - 1)
+    function test_pickerKeyboardOpenClose() {
+        const panel = make()
+        const picker = findChild(panel, "text-panel-font")
+        const button = findChild(panel, "font-picker-button")
+        const search = findChild(panel, "font-picker-search")
+        verify(button !== null && search !== null)
+        compare(button.Accessible.name, qsTr("Font family"))
+        compare(button.Accessible.role, Accessible.ComboBox)
+        compare(search.Accessible.name, qsTr("Search fonts"))
+
+        button.forceActiveFocus()
+        keyClick(Qt.Key_Down)
+        tryVerify(function() { return picker.popupVisible })
+        verify(waitForRendering(panel))
+        search.forceActiveFocus()
+
+        keyClick(Qt.Key_Escape)
+        tryVerify(function() { return !picker.popupVisible })
+
+        // Return on the closed control opens the picker as well.
+        button.forceActiveFocus()
+        keyClick(Qt.Key_Return)
+        tryVerify(function() { return picker.popupVisible })
+        search.forceActiveFocus()
+
+        // Up/Down move the highlight without closing the popup.
+        keyClick(Qt.Key_Down)
+        verify(picker.popupVisible)
+        keyClick(Qt.Key_Up)
+        verify(picker.popupVisible)
+
+        keyClick(Qt.Key_Escape)
+        tryVerify(function() { return !picker.popupVisible })
+    }
+
+    function test_selectedFamilySurvivesModelRebuild() {
+        const panel = make()
+        const picker = findChild(panel, "text-panel-font")
+        const search = findChild(panel, "font-picker-search")
+        const list = findChild(panel, "font-picker-list")
+        const custom = "NekoPic Rebuild Font"
+
+        panel.fontFamily = custom
+        compare(picker.currentLabel, custom)
+        verify(panel.fontModel[panel.fontModel.length - 1].value === custom)
+
+        picker.openPicker()
+        tryVerify(function() { return picker.popupVisible })
+
+        // Rebuilding the filtered model must not drop the selected family.
+        search.text = "zzzz-no-match"
+        tryCompare(list, "count", 0)
+        compare(picker.currentLabel, custom)
+        search.text = ""
+        tryCompare(list, "count", panel.fontModel.length)
+        compare(picker.currentLabel, custom)
+
+        let found = false
+        for (let i = 0; i < panel.fontModel.length; ++i) {
+            if (panel.fontModel[i].value === custom)
+                found = true
+        }
+        verify(found)
+        picker.closePicker()
     }
 
     function test_sizeSliderRangeAndClamping() {
@@ -261,6 +419,25 @@ TestCase {
         verify(scroller.contentY > 0)
         scroller.returnToBounds()
         verify(scroller.contentY <= scroller.contentHeight - scroller.height + 1)
+    }
+
+    function test_layoutAtEditorWindowSize() {
+        // At 1100×720 the inspector is 292 px wide and full height.
+        const panel = make({ width: 292, height: 720 })
+        const scroller = findChild(panel, "text-panel-scroll")
+        const picker = findChild(panel, "text-panel-font")
+        verify(scroller !== null && picker !== null)
+        compare(scroller.width, 292 - 2 * Theme.spacing2xl)
+        verify(picker.width <= scroller.width)
+
+        picker.openPicker()
+        tryVerify(function() { return picker.popupVisible })
+        verify(waitForRendering(panel))
+        const popup = findChild(panel, "font-picker-popup")
+        verify(popup !== null)
+        verify(popup.width <= picker.width)
+        verify(popup.height <= panel.height)
+        picker.closePicker()
     }
 
     function test_editModeMarksExistingText() {
