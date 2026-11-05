@@ -75,8 +75,14 @@ NekoPic/
 
 The short version is in `CONTRIBUTING.md`: target ≤ 600 lines per C++/QML source
 file, review hard stop at 800 lines / ~30 KiB. Split by responsibility (stage,
-page, panel, tool) with tests preserved. Current large files are being reduced:
-`src/core/colorpipeline.cpp`, `qml/Main.qml`, `qml/dialogs/SettingsDialog.qml`.
+page, panel, tool) with tests preserved.
+
+Already split: `src/core/colorpipeline.cpp` into six stage units (largest 436
+lines), `SettingsDialog.qml` into `qml/settings/*` pages (shell 542 lines), and
+`Main.qml` into `qml/shell/*` (tool rail, top bar, status bar, info panel).
+`Main.qml` remains the composition root at ~1300 lines; do not add new feature
+logic there—extract a shell component or a page, and keep reducing it toward the
+800-line review stop.
 
 ## Generated files
 

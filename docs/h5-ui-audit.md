@@ -104,3 +104,26 @@
   入口。顶栏“设置”和“视图 → 偏好设置”均可打开。
 - 限制：恢复快照仍是扁平化图像；`startupTool` 只影响下一次打开图片；设置页标签
   继续使用现有 `_tr()` 内联中英文本，未新增 `.ts` 条目。
+
+## 8. 2026-11-05 主题、字体、语言与工程化
+
+- **主题**：`Theme` 从明/暗扩展为 7 个模式（系统、浅色、深色、午夜、暖纸、石墨、
+  高对比），全部通过同一组语义 token 输出；设置页外观页实时切换并持久化。
+- **字体**：文本面板改为读取 `Qt.fontFamilies()`，本机 784 个字体族 + 系统默认；
+  新增 `FontPicker`（搜索、过滤、键盘、选中项保留），文本对象继续保存字体族名。
+- **语言**：语言表扩展为 English / 简体中文 / 日本語 / Deutsch；`ja_JP` 与 `de_DE`
+  各 755 条、0 unfinished，设置页、shell、字体选择器和主题名均已进入 TS；
+  设置页测试按三套真实 `.qm` 各跑一遍。
+- **工程拆分**：`colorpipeline.cpp` 拆成 registry/tone/curves/grade/detail/dispatch
+  六个单元（最大 436 行）；`SettingsDialog.qml` 从 1114 行降到 542 行并拆出
+  `qml/settings/*`；`Main.qml` 拆出 `qml/shell/{TopActionBar,ToolRail,StatusBar,
+  ToolInfoPanel}.qml`，剩余约 1300 行仍是组合根（快捷键、菜单、对话框绑定），
+  已记录为后续拆分项。
+- **打包**：CMake install + CPack 生成 TGZ/DEB/RPM；`packaging/` 含 desktop、
+  AppStream、SVG 与 16–512 px hicolor PNG；`scripts/build-appimage.sh` 产出
+  单文件 AppImage（76 MB，包含 Qt/QML/wayland/xcb/offscreen 插件）。本机实测
+  `NekoPic-0.1.0-x86_64.AppImage` 可启动；AppRun 默认 XWayland，支持
+  `NEKOPIC_APPIMAGE_PLATFORM=wayland` 覆盖。
+- **仍未完成**：项目许可证未选择（AppStream/RPM 使用 `LicenseRef-proprietary`
+  占位）；AppStream 缺少稳定 HTTPS 截图和主页；RPM/DEB 依赖名未在
+  Fedora/Debian 目标机验证；Main.qml 仍超过体积目标；恢复快照仍为扁平化图像。
