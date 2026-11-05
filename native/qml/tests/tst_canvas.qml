@@ -18,6 +18,7 @@ TestCase {
     }
     SignalSpy { id: mosaicRectangles; target: canvas; signalName: "mosaicRectangleCommitted" }
     SignalSpy { id: mosaicStrokes; target: canvas; signalName: "mosaicStrokeCommitted" }
+    SignalSpy { id: recentRequests; target: canvas; signalName: "recentRequested" }
     function test_fitAndActual() {
         canvas.fitImage()
         verify(canvas.zoom < 1)
@@ -54,6 +55,20 @@ TestCase {
             canvas.fitImage()
         }
     }
+    function test_recentEntryEmitsRequest() {
+        const saved = canvas.recentEntries
+        canvas.hasImage = false
+        canvas.recentEntries = [{ name: "demo.jpg", url: "file:///tmp/demo.jpg" }]
+        wait(0)
+        const button = findChild(canvas, "recent-0")
+        verify(button !== null)
+        mouseClick(button)
+        compare(recentRequests.count, 1)
+        compare(recentRequests.signalArguments[0][0].toString(), "file:///tmp/demo.jpg")
+        canvas.recentEntries = saved
+        canvas.hasImage = true
+    }
+
     function test_gpuPreviewUsesBaseImageAndPendingValues() {
         const picture = findChild(canvas, "canvasPicture")
         const effect = findChild(canvas, "adjustmentPreview")

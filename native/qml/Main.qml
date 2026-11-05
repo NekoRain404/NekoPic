@@ -288,6 +288,8 @@ ApplicationWindow {
                 inputEnabled: !editor.busy
                 onMosaicRectangleCommitted: function(area) { editor.mosaicRectangle(area, mosaicPanel.blockSize) }
                 onMosaicStrokeCommitted: function(points) { editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize) }
+                recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
+                onRecentRequested: function(url) { editor.openImage(url) }
                 onOpenRequested: openDialog.open()
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }

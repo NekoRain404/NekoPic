@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "effects"
+import "UI"
 
 Item {
     id: root
@@ -33,6 +34,8 @@ Item {
     signal cropCancelled()
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
+    signal recentRequested(url url)
+    property var recentEntries: []
     signal mosaicRectangleCommitted(rect area)
     signal mosaicStrokeCommitted(var points)
 
@@ -220,12 +223,27 @@ Item {
                 }
                 Label { Layout.alignment: Qt.AlignHCenter; text: qsTr("Start with an image"); font.pixelSize: 19; font.weight: Font.DemiBold; color: root.theme ? root.theme.text : "white" }
                 Label { Layout.alignment: Qt.AlignHCenter; text: qsTr("Open a photo to begin"); color: root.theme ? root.theme.muted : "#aaa" }
-                Button {
-                    id: openButton; Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 8
-                    text: qsTr("Open image"); onClicked: root.openRequested()
-                    implicitWidth: 112; implicitHeight: 36
-                    background: Rectangle { radius: 5; color: root.theme ? (openButton.hovered ? root.theme.hover : root.theme.accent) : "#edbc9d" }
-                    contentItem: Label { text: openButton.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; color: root.theme ? (openButton.hovered ? root.theme.text : root.theme.accentInk) : "#292420"; font.pixelSize: 11; font.weight: Font.DemiBold }
+                NekoButton {
+                    Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 8
+                    text: qsTr("Open image"); variant: "primary"
+                    objectName: "openImageButton"
+                    onClicked: root.openRequested()
+                }
+                ColumnLayout {
+                    visible: root.recentEntries && root.recentEntries.length > 0
+                    Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 6; spacing: 2
+                    Label { Layout.alignment: Qt.AlignHCenter; text: qsTr("Recent"); color: Theme.textTertiary; font.pixelSize: 10 }
+                    Repeater {
+                        model: root.recentEntries ? Math.min(root.recentEntries.length, 3) : 0
+                        delegate: NekoButton {
+                            required property int index
+                            objectName: "recent-" + index
+                            Layout.alignment: Qt.AlignHCenter
+                            text: root.recentEntries[index].name
+                            variant: "ghost"
+                            onClicked: root.recentRequested(root.recentEntries[index].url)
+                        }
+                    }
                 }
             }
         }
