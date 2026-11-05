@@ -1,6 +1,7 @@
 #include "settingsmanager.h"
 
 #include <QSettings>
+#include <QStringList>
 
 namespace {
 
@@ -16,9 +17,23 @@ const auto kJpegBackgroundKey = QStringLiteral("ui/jpegBackground");
 const auto kLocaleKey = QStringLiteral("ui/language");
 const auto kConfirmOnCloseKey = QStringLiteral("ui/confirmOnClose");
 const auto kCheckerboardKey = QStringLiteral("ui/showCheckerboard");
+const auto kRecoveryEnabledKey = QStringLiteral("ui/recoveryEnabled");
+const auto kStartupToolKey = QStringLiteral("ui/startupTool");
 
 const auto kDefaultThemeMode = QStringLiteral("dark");
 const auto kDefaultLocale = QStringLiteral("zh_CN");
+const auto kDefaultStartupTool = QStringLiteral("adjust");
+
+const QStringList &startupTools()
+{
+    static const QStringList tools{
+        QStringLiteral("adjust"), QStringLiteral("filters"), QStringLiteral("select"),
+        QStringLiteral("pan"), QStringLiteral("brush"), QStringLiteral("text"),
+        QStringLiteral("shapes"), QStringLiteral("mosaic"), QStringLiteral("eye"),
+        QStringLiteral("crop")
+    };
+    return tools;
+}
 
 } // namespace
 
@@ -36,6 +51,8 @@ QColor SettingsManager::jpegBackground() const { return jpegBackground_; }
 QString SettingsManager::locale() const { return locale_; }
 bool SettingsManager::confirmOnClose() const { return confirmOnClose_; }
 bool SettingsManager::showCheckerboard() const { return showCheckerboard_; }
+bool SettingsManager::recoveryEnabled() const { return recoveryEnabled_; }
+QString SettingsManager::startupTool() const { return startupTool_; }
 
 QString SettingsManager::normaliseThemeMode(const QString &mode)
 {
@@ -56,6 +73,11 @@ QString SettingsManager::normaliseLocale(const QString &locale)
 int SettingsManager::normaliseQuality(int quality)
 {
     return qBound(-1, quality, 100);
+}
+
+QString SettingsManager::normaliseStartupTool(const QString &tool)
+{
+    return startupTools().contains(tool) ? tool : kDefaultStartupTool;
 }
 
 QColor SettingsManager::opaqueColor(const QColor &color)
@@ -92,6 +114,9 @@ void SettingsManager::load()
     locale_ = normaliseLocale(settings.value(kLocaleKey, kDefaultLocale).toString());
     confirmOnClose_ = settings.value(kConfirmOnCloseKey, true).toBool();
     showCheckerboard_ = settings.value(kCheckerboardKey, true).toBool();
+    recoveryEnabled_ = settings.value(kRecoveryEnabledKey, true).toBool();
+    startupTool_ = normaliseStartupTool(
+        settings.value(kStartupToolKey, kDefaultStartupTool).toString());
 }
 
 void SettingsManager::setThemeMode(const QString &mode)
@@ -178,6 +203,27 @@ void SettingsManager::setShowCheckerboard(bool enabled)
     emit changed();
 }
 
+void SettingsManager::setRecoveryEnabled(bool enabled)
+{
+    if (enabled == recoveryEnabled_)
+        return;
+    recoveryEnabled_ = enabled;
+    QSettings().setValue(kRecoveryEnabledKey, recoveryEnabled_);
+    emit recoveryEnabledChanged();
+    emit changed();
+}
+
+void SettingsManager::setStartupTool(const QString &tool)
+{
+    const auto normalised = normaliseStartupTool(tool);
+    if (normalised == startupTool_)
+        return;
+    startupTool_ = normalised;
+    QSettings().setValue(kStartupToolKey, startupTool_);
+    emit startupToolChanged();
+    emit changed();
+}
+
 void SettingsManager::resetToDefaults()
 {
     const bool themeChanged = themeMode_ != kDefaultThemeMode;
@@ -188,6 +234,8 @@ void SettingsManager::resetToDefaults()
     const bool localeChangedValue = locale_ != kDefaultLocale;
     const bool closeChanged = !confirmOnClose_;
     const bool checkerboardChanged = !showCheckerboard_;
+    const bool recoveryChanged = !recoveryEnabled_;
+    const bool startupPrefChanged = startupTool_ != kDefaultStartupTool;
 
     themeMode_ = kDefaultThemeMode;
     reduceMotion_ = false;
@@ -197,6 +245,8 @@ void SettingsManager::resetToDefaults()
     locale_ = kDefaultLocale;
     confirmOnClose_ = true;
     showCheckerboard_ = true;
+    recoveryEnabled_ = true;
+    startupTool_ = kDefaultStartupTool;
 
     if (themeChanged) emit themeModeChanged();
     if (motionChanged) emit reduceMotionChanged();
@@ -206,6 +256,8 @@ void SettingsManager::resetToDefaults()
     if (localeChangedValue) emit localeChanged();
     if (closeChanged) emit confirmOnCloseChanged();
     if (checkerboardChanged) emit showCheckerboardChanged();
+    if (recoveryChanged) emit recoveryEnabledChanged();
+    if (startupPrefChanged) emit startupToolChanged();
 
     // Persist defaults even when the in-memory values already matched, and
     // discard the legacy key so a future launch cannot resurrect it.
@@ -218,10 +270,13 @@ void SettingsManager::resetToDefaults()
     settings.setValue(kLocaleKey, locale_);
     settings.setValue(kConfirmOnCloseKey, confirmOnClose_);
     settings.setValue(kCheckerboardKey, showCheckerboard_);
+    settings.setValue(kRecoveryEnabledKey, recoveryEnabled_);
+    settings.setValue(kStartupToolKey, startupTool_);
     settings.remove(kLegacyDarkThemeKey);
 
     if (themeChanged || motionChanged || gpuChanged || qualityChanged || backgroundChanged
-        || localeChangedValue || closeChanged || checkerboardChanged) {
+        || localeChangedValue || closeChanged || checkerboardChanged || recoveryChanged
+        || startupPrefChanged) {
         emit changed();
     }
 }

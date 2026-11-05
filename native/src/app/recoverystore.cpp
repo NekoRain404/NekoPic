@@ -301,6 +301,21 @@ void RecoveryStore::setAutosaveDelay(int milliseconds)
 }
 int RecoveryStore::autosaveDelay() const { return autosaveDelay_; }
 
+bool RecoveryStore::autosaveEnabled() const { return autosaveEnabled_; }
+
+void RecoveryStore::setAutosaveEnabled(bool enabled)
+{
+    if (enabled == autosaveEnabled_)
+        return;
+    autosaveEnabled_ = enabled;
+    if (!enabled) {
+        debounce_.stop();
+    } else if (document_ && document_->hasImage() && document_->dirty()) {
+        scheduleAutosave();
+    }
+    emit autosaveEnabledChanged();
+}
+
 bool RecoveryStore::writeSnapshot(const QImage &image, const QString &sourcePath,
                                   const QString &sourceName,
                                   const QDateTime &capturedAt,
@@ -353,13 +368,14 @@ bool RecoveryStore::restoreRecovery()
 
 void RecoveryStore::scheduleAutosave()
 {
-    if (!document_ || !document_->hasImage() || !document_->dirty()) return;
+    if (!autosaveEnabled_ || !document_ || !document_->hasImage() || !document_->dirty())
+        return;
     debounce_.start(autosaveDelay_);
 }
 
 void RecoveryStore::startWrite()
 {
-    if (!document_) return;
+    if (!autosaveEnabled_ || !document_) return;
     if (document_->busy()) {
         // Let the current edit finish before reading image().
         debounce_.start(autosaveDelay_);

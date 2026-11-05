@@ -9,6 +9,13 @@ TestCase {
         property bool ready: false
         property double revision: 0
     }
+    // Popup content is not always reachable through findChild(dialog, ...).
+    function settingsChild(dialog, name) {
+        let found = findChild(dialog, name)
+        if (found === null && dialog.contentItem)
+            found = findChild(dialog.contentItem, name)
+        return found
+    }
     function visualChild(item, name) {
         if (item.objectName === name) return item
         for (let i = 0; i < item.children.length; ++i) {
@@ -496,6 +503,47 @@ TestCase {
         const dialog = findChild(window, "settingsDialog")
         verify(dialog !== null)
         tryVerify(function() { return dialog.opened }, 1500)
+
+        // The page opens on the first category and exposes the full surface.
+        compare(dialog.currentCategory, "appearance")
+        verify(dialog.width >= 760 && dialog.width <= 840)
+        verify(settingsChild(dialog, "settings-page") !== null)
+        verify(settingsChild(dialog, "settings-category-recovery") !== null)
+
+        recovery.hasRecovery = true
+        recovery.sourceName = "checkpoint.png"
+        recovery.capturedAtText = "2026-11-05 09:00"
+        recovery.imageSizeText = "800 × 600 px"
+
+        const recoveryCategory = settingsChild(dialog, "settings-category-recovery")
+        mouseClick(recoveryCategory)
+        tryCompare(dialog, "currentCategory", "recovery")
+        compare(dialog.recoveryAvailable, true)
+        tryCompare(settingsChild(dialog, "settings-recovery-status"), "text",
+                   "发现可恢复的快照")
+
+        const discard = settingsChild(dialog, "settings-recovery-discard")
+        verify(discard !== null && discard.visible)
+        mouseClick(discard)
+        compare(recovery.discardCalls, 1)
+
+        // The About category routes to the shared shortcuts reference.
+        const aboutCategory = settingsChild(dialog, "settings-category-about")
+        mouseClick(aboutCategory)
+        tryCompare(dialog, "currentCategory", "about")
+        const shortcuts = settingsChild(dialog, "settings-shortcuts")
+        verify(shortcuts !== null)
+        mouseClick(shortcuts)
+        const shortcutsDialog = findChild(window, "shortcutsDialog")
+        verify(shortcutsDialog !== null)
+        tryVerify(function() { return shortcutsDialog.opened }, 1500)
+        shortcutsDialog.close()
+        tryVerify(function() { return !shortcutsDialog.opened }, 1500)
+
+        recovery.hasRecovery = false
+        recovery.sourceName = ""
+        recovery.capturedAtText = ""
+        recovery.imageSizeText = ""
         dialog.close()
         window.destroy()
     }
