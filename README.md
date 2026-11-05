@@ -1,6 +1,6 @@
-# NekoPic · 桌面图片编辑器 UI 原型
+# NekoPic · Linux 桌面照片编辑器
 
-接手开发请先阅读 [开发交接文档](HANDOFF.md)，其中包含需求、当前实现边界、未提交源文件、架构入口、构建测试结果与后续开发建议。
+接手开发请先阅读 [开发交接文档](HANDOFF.md) 与 [开发规范](CONTRIBUTING.md)。原生版位于 `native/`，H5 原型仅作参考，归档在 `prototype/h5/`。
 
 ## 架构与开发路线
 
