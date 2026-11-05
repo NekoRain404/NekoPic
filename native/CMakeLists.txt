@@ -16,6 +16,13 @@ qt_standard_project_setup()
 # --- core: framework-light image algorithms -------------------------------
 add_library(nekopic_core STATIC
     src/core/adjustments.cpp src/core/adjustments.h
+    src/core/colorpipeline.h src/core/colorpipeline_internal.h
+    src/core/colorpipeline_registry.cpp
+    src/core/colorpipeline_tone.cpp
+    src/core/colorpipeline_curves.cpp
+    src/core/colorpipeline_grade.cpp
+    src/core/colorpipeline_detail.cpp
+    src/core/colorpipeline_dispatch.cpp
     src/core/mosaic.cpp src/core/mosaic.h
     src/core/histogram.cpp src/core/histogram.h
     src/core/autoenhance.cpp src/core/autoenhance.h
