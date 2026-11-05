@@ -33,6 +33,7 @@ Item {
     property bool textActive: false
     property bool selectionActive: false
     property bool compareActive: false
+    property bool panActive: false
     readonly property bool comparing: compareActive || compareButton.pressed
     property bool showCheckerboard: true
     property bool shapeActive: false
@@ -324,9 +325,10 @@ Item {
             }
             MouseArea {
                 anchors.fill: parent
-                acceptedButtons: Qt.MiddleButton
+                acceptedButtons: Qt.MiddleButton | (root.panActive ? Qt.LeftButton : Qt.NoButton)
                 enabled: root.hasImage
-                cursorShape: pressed ? Qt.ClosedHandCursor : Qt.ArrowCursor
+                cursorShape: pressed ? Qt.ClosedHandCursor
+                           : root.panActive ? Qt.OpenHandCursor : Qt.ArrowCursor
                 property real lastX: 0
                 property real lastY: 0
                 onWheel: function(event) {

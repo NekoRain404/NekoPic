@@ -43,6 +43,7 @@ NekoDialog {
         {
             title: qsTr("Tools"),
             entries: [
+                { action: qsTr("Pan"), shortcut: "H" },
                 { action: qsTr("Select"), shortcut: "V" },
                 { action: qsTr("Brush"), shortcut: "B" },
                 { action: qsTr("Shapes"), shortcut: "U" },

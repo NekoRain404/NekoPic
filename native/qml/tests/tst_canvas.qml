@@ -103,6 +103,23 @@ TestCase {
         canvas.imageUrl = ""
     }
 
+    function test_panToolDragsViewport() {
+        canvas.panActive = true
+        canvas.fitting = false
+        canvas.zoom = 2
+        canvas.imageWidth = 1200; canvas.imageHeight = 800
+        const view = findChild(canvas, "canvasView")
+        verify(view !== null)
+        view.contentX = 100; view.contentY = 80
+        mousePress(canvas, 300, 200)
+        mouseMove(canvas, 260, 170)
+        mouseRelease(canvas, 260, 170)
+        verify(view.contentX > 100 || view.contentY > 80)
+        canvas.panActive = false
+        canvas.imageWidth = 1200; canvas.imageHeight = 800
+        canvas.fitImage()
+    }
+
     function test_gpuPreviewUsesBaseImageAndPendingValues() {
         const picture = findChild(canvas, "canvasPicture")
         const effect = findChild(canvas, "adjustmentPreview")

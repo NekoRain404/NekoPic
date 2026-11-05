@@ -140,6 +140,7 @@ ApplicationWindow {
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
     Action { id: brushAction; text: qsTr("Brush"); shortcut: "B"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "brush" }
     Action { id: shapeAction; text: qsTr("Shapes"); shortcut: "U"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "shapes" }
+    Action { id: panAction; text: qsTr("Pan"); shortcut: "H"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "pan" }
     Action { id: selectAction; text: qsTr("Select"); shortcut: "V"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "select" }
     Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
     Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "eye" }
@@ -515,7 +516,7 @@ ApplicationWindow {
                                 text: modelData.label
                                 iconName: modelData.icon
                                 accessibleName: modelData.label
-                                readonly property bool available: modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "brush" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "shapes" || modelData.icon === "eye" || modelData.icon === "crop"
+                                readonly property bool available: modelData.icon === "pan" || modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "brush" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "shapes" || modelData.icon === "eye" || modelData.icon === "crop"
                                 enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
                                 checked: available && window.activeTool === modelData.icon
                                 onClicked: window.activeTool = modelData.icon
@@ -551,6 +552,7 @@ ApplicationWindow {
                 cropActive: window.activeTool === "crop"
                 eyedropperActive: window.activeTool === "eye"
                 textActive: window.activeTool === "text"
+                panActive: window.activeTool === "pan"
                 selectionActive: window.activeTool === "select"
                 shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
                 polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
@@ -753,6 +755,8 @@ ApplicationWindow {
               run: function() { editor.autoEnhance() } },
             { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
               run: function() { window.activeTool = "crop" } },
+            { title: panAction.text, detail: qsTr("Tools"), shortcut: "H", enabled: panAction.enabled,
+              run: function() { window.activeTool = "pan" } },
             { title: selectAction.text, detail: qsTr("Tools"), shortcut: "V", enabled: selectAction.enabled,
               run: function() { window.activeTool = "select" } },
             { title: brushAction.text, detail: qsTr("Tools"), shortcut: "B", enabled: brushAction.enabled,
