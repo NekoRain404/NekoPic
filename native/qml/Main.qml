@@ -493,6 +493,11 @@ ApplicationWindow {
             { title: qsTr("切换到简体中文"), detail: qsTr("Language"),
               enabled: typeof language !== "undefined",
               run: function() { if (typeof language !== "undefined") language.setLanguage("zh_CN") } }
-        ]
+        ].concat((typeof recentFiles !== "undefined" && recentFiles.entries)
+                 ? recentFiles.entries.map(function(entry) {
+                       return { title: entry.name, detail: qsTr("Recent"),
+                                run: function() { editor.openImage(entry.url) } }
+                   })
+                 : [])
     }
 }
