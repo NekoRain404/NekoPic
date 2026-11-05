@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "../UI"
+import "../settings"
 
 /*!
     SettingsDialog — the product's single, complete preferences surface.
@@ -16,6 +17,10 @@ import "../UI"
     the public properties from SettingsManager, applies changes live and
     persists every settingChanged()/localeSelected() signal immediately.
 
+    Each category body is a presentation component under qml/settings/. Those
+    components receive only the values they display and report user intent
+    through signals; validation and persistence stay here.
+
     Localised labels follow `localeId` directly so the page reads correctly in
     both shipped languages even before translation catalogues are regenerated.
 */
@@ -24,14 +29,14 @@ NekoDialog {
 
     // ── Public contract ────────────────────────────────────────────────────
     property string themeMode: "dark"
-    property alias reduceMotion: reduceMotionToggle.checked
-    property alias gpuPreviewEnabled: gpuPreviewToggle.checked
+    property alias reduceMotion: appearancePage.reduceMotion
+    property alias gpuPreviewEnabled: editingPage.gpuPreviewEnabled
     property int exportQuality: -1
     property color jpegBackground: "#ffffff"
     property string localeId: "zh_CN"
-    property alias confirmOnClose: confirmOnCloseToggle.checked
-    property alias showCheckerboard: checkerboardToggle.checked
-    property alias recoveryEnabled: recoveryToggle.checked
+    property alias confirmOnClose: recoveryPage.confirmOnClose
+    property alias showCheckerboard: editingPage.showCheckerboard
+    property alias recoveryEnabled: recoveryPage.recoveryEnabled
     property string startupTool: "adjust"
 
     property var localeOptions: [
@@ -207,10 +212,8 @@ NekoDialog {
     }
 
     function _syncQuality() {
-        if (qualitySlider && !qualitySlider.dragging)
-            qualitySlider.value = root.exportQuality >= 0 ? root.exportQuality : root._lastQuality
-        if (qualityDefaultToggle)
-            qualityDefaultToggle.checked = root.exportQuality < 0
+        if (exportPage)
+            exportPage.syncQuality()
     }
 
     function resetToDefaults() {
@@ -249,8 +252,6 @@ NekoDialog {
             root.themeMode = "dark"
             return
         }
-        if (themeControl)
-            themeControl.currentIndex = index
     }
 
     onExportQualityChanged: {
@@ -287,55 +288,11 @@ NekoDialog {
     }
 
     Component.onCompleted: {
-        if (themeControl)
-            themeControl.currentIndex = Math.max(0, root._themeIndex(root.themeMode))
         if (!root._hasCategory(root.currentCategory))
             root.currentCategory = "appearance"
         if (!root._hasStartupTool(root.startupTool))
             root.startupTool = "adjust"
         root._syncQuality()
-    }
-
-    // ── Reusable settings row ──────────────────────────────────────────────
-    // Label + explanatory hint on the left, a single control on the right.
-    // The control is the default property so rows stay declarative.
-    component SettingRow: RowLayout {
-        id: row
-        property string label: ""
-        property string hint: ""
-        default property alias controlData: controlHost.data
-
-        Layout.fillWidth: true
-        spacing: Theme.spacingLg
-
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingXs
-
-            Text {
-                Layout.fillWidth: true
-                text: row.label
-                color: Theme.textPrimary
-                font.pixelSize: Theme.fontBody
-                font.weight: Theme.fontWeightMedium
-                wrapMode: Text.WordWrap
-            }
-            Text {
-                Layout.fillWidth: true
-                text: row.hint
-                color: Theme.textTertiary
-                font.pixelSize: Theme.fontCaption
-                lineHeight: Theme.lineHeightNormal
-                wrapMode: Text.WordWrap
-            }
-        }
-
-        Item {
-            id: controlHost
-            Layout.alignment: Qt.AlignVCenter
-            implicitWidth: childrenRect.width
-            implicitHeight: childrenRect.height
-        }
     }
 
     // ── Body: category rail + scrollable content ───────────────────────────
@@ -484,629 +441,100 @@ NekoDialog {
                 width: scroller.width
                 spacing: Theme.spacingXl
 
-                // ── Appearance ─────────────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-appearance"
+                AppearancePage {
+                    id: appearancePage
                     visible: root.currentCategory === "appearance"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    themeMode: root.themeMode
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-appearance"
-                        Layout.fillWidth: true
-                        text: root._tr("外观", "Appearance")
-                        eyebrow: true
-                        showDivider: true
+                    onThemeSelected: function(mode) {
+                        if (root.busy || root.themeMode === mode)
+                            return
+                        root.themeMode = mode
+                        root.settingChanged("themeMode", mode)
                     }
-
-                    SettingRow {
-                        label: root._tr("主题", "Theme")
-                        hint: root._tr("跟随系统设置，或固定为浅色或深色。",
-                                       "Follow the system setting, or use a fixed light or dark appearance.")
-
-                        NekoSegmentedControl {
-                            id: themeControl
-                            objectName: "settings-theme"
-                            width: 210
-                            enabled: !root.busy
-                            accessibleName: root._tr("主题", "Theme")
-                            model: [
-                                root._tr("系统", "System"),
-                                root._tr("浅色", "Light"),
-                                root._tr("深色", "Dark")
-                            ]
-
-                            onActivated: function(index) {
-                                if (root.busy)
-                                    return
-                                const mode = root._themeModes[index]
-                                if (mode === undefined || root.themeMode === mode)
-                                    return
-                                root.themeMode = mode
-                                root.settingChanged("themeMode", mode)
-                            }
-                        }
-                    }
-
-                    SettingRow {
-                        label: root._tr("减少动效", "Reduce motion")
-                        hint: root._tr("关闭界面动画和过渡效果。",
-                                       "Turn off interface animations and transitions.")
-
-                        NekoToggle {
-                            id: reduceMotionToggle
-                            objectName: "settings-reduce-motion"
-                            checked: false
-                            enabled: !root.busy
-                            accessibleName: root._tr("减少动效", "Reduce motion")
-                            onClicked: root._commit("reduceMotion", checked)
-                        }
+                    onReduceMotionToggled: function(checked) {
+                        root._commit("reduceMotion", checked)
                     }
                 }
 
-                // ── Editing ────────────────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-editing"
+                EditingPage {
+                    id: editingPage
                     visible: root.currentCategory === "editing"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    startupTool: root.startupTool
+                    startupToolOptions: root.startupToolOptions
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-editing"
-                        Layout.fillWidth: true
-                        text: root._tr("编辑", "Editing")
-                        eyebrow: true
-                        showDivider: true
+                    onGpuPreviewToggled: function(checked) {
+                        root._commit("gpuPreviewEnabled", checked)
                     }
-
-                    SettingRow {
-                        label: root._tr("GPU 预览", "GPU preview")
-                        hint: root._tr("调整时使用硬件加速的实时预览；关闭后回退到 CPU。",
-                                       "Use hardware-accelerated live previews while adjusting; falls back to CPU when off.")
-
-                        NekoToggle {
-                            id: gpuPreviewToggle
-                            objectName: "settings-gpu-preview"
-                            checked: true
-                            enabled: !root.busy
-                            accessibleName: root._tr("GPU 预览", "GPU preview")
-                            onClicked: root._commit("gpuPreviewEnabled", checked)
-                        }
+                    onCheckerboardToggled: function(checked) {
+                        root._commit("showCheckerboard", checked)
                     }
-
-                    SettingRow {
-                        label: root._tr("显示透明棋盘格", "Show transparency checkerboard")
-                        hint: root._tr("在透明区域后方显示棋盘格图案。",
-                                       "Show a checkerboard pattern behind transparent areas.")
-
-                        NekoToggle {
-                            id: checkerboardToggle
-                            objectName: "settings-checkerboard"
-                            checked: true
-                            enabled: !root.busy
-                            accessibleName: root._tr("显示透明棋盘格", "Show transparency checkerboard")
-                            onClicked: root._commit("showCheckerboard", checked)
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingSm
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: root._tr("启动工具", "Startup tool")
-                            color: Theme.textPrimary
-                            font.pixelSize: Theme.fontBody
-                            font.weight: Theme.fontWeightMedium
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root._tr("打开图片后默认使用的工具；下次打开图片时生效。",
-                                           "Tool selected after an image opens; applies the next time an image is opened.")
-                            color: Theme.textTertiary
-                            font.pixelSize: Theme.fontCaption
-                            lineHeight: Theme.lineHeightNormal
-                            wrapMode: Text.WordWrap
-                        }
-
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingSm
-
-                            Repeater {
-                                model: root.startupToolOptions
-
-                                delegate: NekoButton {
-                                    required property var modelData
-                                    objectName: "settings-startup-tool-" + modelData.id
-                                    text: modelData.label
-                                    variant: root.startupTool === modelData.id ? "primary" : "secondary"
-                                    enabled: !root.busy
-                                    Accessible.checkable: true
-                                    Accessible.checked: root.startupTool === modelData.id
-                                    onClicked: root._selectStartupTool(modelData.id)
-                                }
-                            }
-                        }
+                    onStartupToolSelected: function(id) {
+                        root._selectStartupTool(id)
                     }
                 }
 
-                // ── Export ─────────────────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-export"
+                ExportPage {
+                    id: exportPage
                     visible: root.currentCategory === "export"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    exportQuality: root.exportQuality
+                    defaultQuality: root._lastQuality
+                    jpegBackground: root.jpegBackground
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-export"
-                        Layout.fillWidth: true
-                        text: root._tr("导出", "Export")
-                        eyebrow: true
-                        showDivider: true
+                    onQualityRequested: function(value) {
+                        root._setExportQuality(value)
                     }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingMd
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingXs
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("导出质量", "Export quality")
-                                color: Theme.textPrimary
-                                font.pixelSize: Theme.fontBody
-                                font.weight: Theme.fontWeightMedium
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("仅对支持质量设置的格式有效（JPEG、WebP、AVIF 等）。",
-                                               "Applies to formats that support quality (JPEG, WebP, AVIF, and others).")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                lineHeight: Theme.lineHeightNormal
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-
-                        Text {
-                            objectName: "settings-quality-value"
-                            text: root.exportQuality < 0 ? root._tr("编码器默认", "Codec default")
-                                                         : root.exportQuality + "%"
-                            color: Theme.textPrimary
-                            font.pixelSize: Theme.fontSmall
-                            font.weight: Theme.fontWeightMedium
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-
-                    NekoSlider {
-                        id: qualitySlider
-                        objectName: "settings-quality"
-                        Layout.fillWidth: true
-                        from: 0
-                        to: 100
-                        stepSize: 1
-                        defaultValue: 90
-                        enabled: !root.busy && !qualityDefaultToggle.checked
-                        accessibleName: root._tr("导出质量", "Export quality")
-                        onPreview: function(value) { root._setExportQuality(value) }
-                        onFinish: function(value) { root._setExportQuality(value) }
-                    }
-
-                    NekoToggle {
-                        id: qualityDefaultToggle
-                        objectName: "settings-quality-default"
-                        text: root._tr("使用编码器默认值", "Use codec default")
-                        checked: true
-                        enabled: !root.busy
-                        accessibleName: root._tr("使用编码器默认质量", "Use codec default quality")
-                        onClicked: {
-                            if (checked)
-                                root._setExportQuality(-1)
-                            else
-                                root._setExportQuality(root._lastQuality)
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: Theme.borderWidth
-                        color: Theme.separator
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingMd
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingXs
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("JPEG 背景", "JPEG background")
-                                color: Theme.textPrimary
-                                font.pixelSize: Theme.fontBody
-                                font.weight: Theme.fontWeightMedium
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("JPEG 不支持透明度，透明区域会填充此颜色。",
-                                               "JPEG has no transparency; transparent areas are filled with this colour.")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                lineHeight: Theme.lineHeightNormal
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-
-                        RowLayout {
-                            spacing: Theme.spacingSm
-
-                            NekoSwatch {
-                                objectName: "settings-background-white"
-                                swatchColor: root.whiteBackground
-                                selected: Qt.colorEqual(root.jpegBackground, root.whiteBackground)
-                                enabled: !root.busy
-                                accessibleName: root._tr("白色背景", "White background")
-                                onClicked: root._setBackground(root.whiteBackground)
-                            }
-
-                            NekoSwatch {
-                                objectName: "settings-background-black"
-                                swatchColor: root.blackBackground
-                                selected: Qt.colorEqual(root.jpegBackground, root.blackBackground)
-                                enabled: !root.busy
-                                accessibleName: root._tr("黑色背景", "Black background")
-                                onClicked: root._setBackground(root.blackBackground)
-                            }
-
-                            NekoSwatch {
-                                objectName: "settings-background-warm-grey"
-                                swatchColor: root.warmGreyBackground
-                                selected: Qt.colorEqual(root.jpegBackground, root.warmGreyBackground)
-                                enabled: !root.busy
-                                accessibleName: root._tr("暖灰色背景", "Warm grey background")
-                                onClicked: root._setBackground(root.warmGreyBackground)
-                            }
-                        }
+                    onBackgroundRequested: function(value) {
+                        root._setBackground(value)
                     }
                 }
 
-                // ── Language ───────────────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-language"
+                LanguagePage {
+                    id: languagePage
                     visible: root.currentCategory === "language"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    localeOptions: root.localeOptions
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-language"
-                        Layout.fillWidth: true
-                        text: root._tr("语言", "Language")
-                        eyebrow: true
-                        showDivider: true
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: root._tr("界面语言会立即切换。",
-                                       "The interface language changes immediately.")
-                        color: Theme.textTertiary
-                        font.pixelSize: Theme.fontCaption
-                        lineHeight: Theme.lineHeightNormal
-                        wrapMode: Text.WordWrap
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingSm
-
-                        Repeater {
-                            model: root.localeOptions
-
-                            delegate: NekoButton {
-                                required property var modelData
-                                objectName: "settings-locale-" + modelData.id
-                                text: modelData.nativeName
-                                variant: root.localeId === modelData.id ? "primary" : "secondary"
-                                enabled: !root.busy
-                                Accessible.checkable: true
-                                Accessible.checked: root.localeId === modelData.id
-                                onClicked: root._selectLocale(modelData.id)
-                            }
-                        }
-
-                        Item { Layout.fillWidth: true }
+                    onLocaleSelected: function(locale) {
+                        root._selectLocale(locale)
                     }
                 }
 
-                // ── Recovery and safety ────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-recovery"
+                RecoveryPage {
+                    id: recoveryPage
                     visible: root.currentCategory === "recovery"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    recoveryAvailable: root.recoveryAvailable
+                    recoverySourceName: root.recoverySourceName
+                    recoveryCapturedAt: root.recoveryCapturedAt
+                    recoveryImageSize: root.recoveryImageSize
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-recovery"
-                        Layout.fillWidth: true
-                        text: root._tr("恢复与安全", "Recovery & Safety")
-                        eyebrow: true
-                        showDivider: true
+                    onRecoveryEnabledToggled: function(checked) {
+                        root._commit("recoveryEnabled", checked)
                     }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: root._tr(
-                                  "自动恢复会在文档有未保存更改时，将渲染结果作为 PNG 快照写入本机应用数据目录。快照不会离开本设备，正常保存或正常退出后会自动删除。恢复后的文档是扁平化图像，对象不可再编辑。",
-                                  "Crash recovery writes a PNG snapshot of the rendered document to local app data while there are unsaved changes. Snapshots never leave this device and are removed after a clean save or a normal exit. A recovered document is flattened, so objects cannot be edited.")
-                        color: Theme.textSecondary
-                        font.pixelSize: Theme.fontSmall
-                        lineHeight: Theme.lineHeightNormal
-                        wrapMode: Text.WordWrap
+                    onConfirmOnCloseToggled: function(checked) {
+                        root._commit("confirmOnClose", checked)
                     }
-
-                    SettingRow {
-                        label: root._tr("自动保存恢复快照", "Save recovery snapshots")
-                        hint: root._tr("关闭后不再写入新快照，已有快照仍可恢复。",
-                                       "When off, no new snapshots are written; existing snapshots can still be recovered.")
-
-                        NekoToggle {
-                            id: recoveryToggle
-                            objectName: "settings-recovery-enabled"
-                            checked: true
-                            enabled: !root.busy
-                            accessibleName: root._tr("自动保存恢复快照", "Save recovery snapshots")
-                            onClicked: root._commit("recoveryEnabled", checked)
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: recoveryStatusColumn.implicitHeight + Theme.spacingLg * 2
-                        radius: Theme.radiusMd
-                        color: Theme.background
-                        border.width: Theme.borderWidth
-                        border.color: Theme.border
-
-                        ColumnLayout {
-                            id: recoveryStatusColumn
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingLg
-                            spacing: Theme.spacingXs
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: Theme.spacingSm
-
-                                Text {
-                                    objectName: "settings-recovery-status"
-                                    Layout.fillWidth: true
-                                    text: root.recoveryAvailable
-                                          ? root._tr("发现可恢复的快照", "Recovery snapshot available")
-                                          : root._tr("当前没有恢复快照", "No recovery snapshot available")
-                                    color: root.recoveryAvailable ? Theme.textPrimary : Theme.textSecondary
-                                    font.pixelSize: Theme.fontSmall
-                                    font.weight: Theme.fontWeightMedium
-                                    wrapMode: Text.WordWrap
-                                }
-
-                                NekoButton {
-                                    objectName: "settings-recovery-discard"
-                                    visible: root.recoveryAvailable
-                                    text: root._tr("清除快照", "Discard snapshot")
-                                    variant: "ghost"
-                                    enabled: !root.busy
-                                    onClicked: root.recoveryDiscardRequested()
-                                }
-                            }
-
-                            Text {
-                                objectName: "settings-recovery-details"
-                                Layout.fillWidth: true
-                                visible: root.recoveryAvailable
-                                text: [root.recoverySourceName, root.recoveryCapturedAt,
-                                       root.recoveryImageSize].filter(function(part) {
-                                           return part !== undefined && part !== null
-                                                  && String(part).length > 0
-                                       }).join(" · ")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                lineHeight: Theme.lineHeightNormal
-                                wrapMode: Text.WordWrap
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root.recoveryAvailable
-                                      ? root._tr("启动时会提示恢复或放弃。", "A prompt offers Restore or Discard at startup.")
-                                      : root._tr("编辑文档后，快照会在这里显示。", "Snapshots appear here after a document is edited.")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                    }
-
-                    SettingRow {
-                        label: root._tr("关闭前确认", "Confirm before closing")
-                        hint: root._tr("有未保存更改时提示确认。",
-                                       "Ask for confirmation when there are unsaved changes.")
-
-                        NekoToggle {
-                            id: confirmOnCloseToggle
-                            objectName: "settings-confirm-on-close"
-                            checked: true
-                            enabled: !root.busy
-                            accessibleName: root._tr("关闭前确认", "Confirm before closing")
-                            onClicked: root._commit("confirmOnClose", checked)
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: Theme.borderWidth
-                        color: Theme.separator
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingMd
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: Theme.spacingXs
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("恢复默认设置", "Reset to defaults")
-                                color: Theme.textPrimary
-                                font.pixelSize: Theme.fontBody
-                                font.weight: Theme.fontWeightMedium
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("将外观、编辑、导出、语言与恢复选项恢复为默认值。",
-                                               "Restore appearance, editing, export, language and recovery options to their defaults.")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                lineHeight: Theme.lineHeightNormal
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-
-                        NekoButton {
-                            objectName: "settings-reset"
-                            text: root._tr("恢复默认设置", "Reset to defaults")
-                            variant: "secondary"
-                            iconName: "reset"
-                            enabled: !root.busy
-                            onClicked: root.resetToDefaults()
-                        }
-                    }
+                    onRecoveryDiscardRequested: root.recoveryDiscardRequested()
+                    onResetRequested: root.resetToDefaults()
                 }
 
-                // ── About ──────────────────────────────────────────────────
-                ColumnLayout {
-                    objectName: "settings-panel-about"
+                AboutPage {
+                    id: aboutPage
                     visible: root.currentCategory === "about"
-                    Layout.fillWidth: true
-                    spacing: Theme.spacingLg
+                    localeId: root.localeId
+                    busy: root.busy
+                    formatCapabilities: root.formatCapabilities
 
-                    NekoSectionHeader {
-                        objectName: "settings-section-about"
-                        Layout.fillWidth: true
-                        text: root._tr("关于", "About")
-                        eyebrow: true
-                        showDivider: true
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingXs
-
-                        Text {
-                            objectName: "settings-about-version"
-                            text: "NekoPic " + Qt.application.version
-                            color: Theme.textPrimary
-                            font.pixelSize: Theme.fontTitle
-                            font.weight: Theme.fontWeightDemiBold
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root._tr("本地优先的桌面照片编辑器。",
-                                           "A local-first desktop photo editor.")
-                            color: Theme.textSecondary
-                            font.pixelSize: Theme.fontSmall
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            objectName: "settings-about-qt"
-                            text: "Qt " + Qt.application.qtVersion
-                            color: Theme.textTertiary
-                            font.pixelSize: Theme.fontCaption
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: aboutCapabilitiesColumn.implicitHeight + Theme.spacingLg * 2
-                        radius: Theme.radiusMd
-                        color: Theme.background
-                        border.width: Theme.borderWidth
-                        border.color: Theme.border
-
-                        ColumnLayout {
-                            id: aboutCapabilitiesColumn
-                            anchors.fill: parent
-                            anchors.margins: Theme.spacingLg
-                            spacing: Theme.spacingXs
-
-                            Text {
-                                objectName: "settings-about-formats"
-                                Layout.fillWidth: true
-                                text: {
-                                    const readable = root.formatCapabilities
-                                                     && root.formatCapabilities.readableCount !== undefined
-                                                     ? root.formatCapabilities.readableCount : 0
-                                    const writable = root.formatCapabilities
-                                                     && root.formatCapabilities.writableCount !== undefined
-                                                     ? root.formatCapabilities.writableCount : 0
-                                    if (readable <= 0 && writable <= 0)
-                                        return root._tr("格式能力将在应用启动后显示。",
-                                                        "Format capabilities are shown when the app is running.")
-                                    return root._tr("可读取 " + readable + " 种格式 · 可写入 "
-                                                    + writable + " 种格式",
-                                                    "Reads " + readable + " formats · writes "
-                                                    + writable + " formats")
-                                }
-                                color: Theme.textPrimary
-                                font.pixelSize: Theme.fontSmall
-                                wrapMode: Text.WordWrap
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                text: root._tr("导出格式取决于当前构建启用的编解码器。",
-                                               "Export formats depend on the codecs enabled in this build.")
-                                color: Theme.textTertiary
-                                font.pixelSize: Theme.fontCaption
-                                lineHeight: Theme.lineHeightNormal
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.spacingSm
-
-                        NekoButton {
-                            objectName: "settings-shortcuts"
-                            text: root._tr("键盘快捷键", "Keyboard shortcuts")
-                            variant: "secondary"
-                            iconName: "select"
-                            enabled: !root.busy
-                            onClicked: root.shortcutsRequested()
-                        }
-
-                        Item { Layout.fillWidth: true }
-                    }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: root._tr("所有照片都保留在本设备上。",
-                                       "All photos stay on this device.")
-                        color: Theme.textTertiary
-                        font.pixelSize: Theme.fontCaption
-                        lineHeight: Theme.lineHeightNormal
-                        wrapMode: Text.WordWrap
-                    }
+                    onShortcutsRequested: root.shortcutsRequested()
                 }
             }
         }
