@@ -56,7 +56,8 @@ NekoDialog {
         {
             title: qsTr("Help"),
             entries: [
-                { action: qsTr("Keyboard shortcuts"), shortcut: "F1" }
+                { action: qsTr("Keyboard shortcuts"), shortcut: "F1" },
+                { action: qsTr("Preferences…"), shortcut: "Ctrl+," }
             ]
         }
     ]
