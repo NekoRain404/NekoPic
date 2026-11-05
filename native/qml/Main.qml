@@ -682,6 +682,8 @@ ApplicationWindow {
               run: function() { editor.flipHorizontal() } },
             { title: flipVerticalAction.text, detail: qsTr("Image"), enabled: flipVerticalAction.enabled,
               run: function() { editor.flipVertical() } },
+            { title: qsTr("Auto enhance"), detail: qsTr("Image"), enabled: editor.hasImage && !editor.busy,
+              run: function() { editor.autoEnhance() } },
             { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
               run: function() { window.activeTool = "crop" } },
             { title: selectAction.text, detail: qsTr("Tools"), shortcut: "V", enabled: selectAction.enabled,
