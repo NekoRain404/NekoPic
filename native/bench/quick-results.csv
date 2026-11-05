@@ -1,0 +1,66 @@
+suite,case,format,size,width,height,runs,min_ms,median_ms,p95_ms,max_ms,source_bytes,result_bytes,undo_entries,accounted_peak_bytes,skipped,note
+adjustments,identity,RGBA8888,0.5 MP,816,612,5,0.0001,0.0002,0.0037,0.0044,1997568,1997568,-1,-1,0,
+adjustments,exposure +1,RGBA8888,0.5 MP,816,612,5,47.0429,49.0059,55.5344,56.8838,1997568,3995136,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA8888,0.5 MP,816,612,5,47.4397,49.8727,55.2545,56.3699,1997568,3995136,-1,-1,0,
+adjustments,saturation -1,RGBA8888,0.5 MP,816,612,5,54.9226,59.3069,84.7559,90.4454,1997568,3995136,-1,-1,0,
+adjustments,mono filter,RGBA8888,0.5 MP,816,612,5,38.2516,38.7517,43.2327,44.1895,1997568,3995136,-1,-1,0,
+adjustments,combined filter + intensity,RGBA8888,0.5 MP,816,612,5,61.6120,62.6801,72.9700,74.4864,1997568,3995136,-1,-1,0,
+adjustments,identity,RGBA64,0.5 MP,816,612,5,0.0001,0.0002,0.0005,0.0005,3995136,3995136,-1,-1,0,
+adjustments,exposure +1,RGBA64,0.5 MP,816,612,5,55.0814,55.9990,56.2897,56.2933,3995136,3995136,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA64,0.5 MP,816,612,5,58.7496,61.1035,63.2527,63.7117,3995136,3995136,-1,-1,0,
+adjustments,saturation -1,RGBA64,0.5 MP,816,612,5,51.2632,56.0778,57.8933,58.2842,3995136,3995136,-1,-1,0,
+adjustments,mono filter,RGBA64,0.5 MP,816,612,5,38.0075,39.3077,39.7966,39.8640,3995136,3995136,-1,-1,0,
+adjustments,combined filter + intensity,RGBA64,0.5 MP,816,612,5,57.8187,59.2536,59.7194,59.8281,3995136,3995136,-1,-1,0,
+adjustments,identity,RGBA8888,2 MP,1800,1200,5,0.0001,0.0001,0.0002,0.0003,8640000,8640000,-1,-1,0,
+adjustments,exposure +1,RGBA8888,2 MP,1800,1200,5,184.6777,185.9927,192.6941,192.9690,8640000,17280000,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA8888,2 MP,1800,1200,5,253.0758,258.2767,272.1588,275.0434,8640000,17280000,-1,-1,0,
+adjustments,saturation -1,RGBA8888,2 MP,1800,1200,5,211.6447,218.1397,219.7535,220.1441,8640000,17280000,-1,-1,0,
+adjustments,mono filter,RGBA8888,2 MP,1800,1200,5,172.2723,175.8018,182.4819,182.5669,8640000,17280000,-1,-1,0,
+adjustments,combined filter + intensity,RGBA8888,2 MP,1800,1200,5,359.0543,366.5546,405.4125,405.9235,8640000,17280000,-1,-1,0,
+adjustments,identity,RGBA64,2 MP,1800,1200,5,0.0001,0.0001,0.0002,0.0003,17280000,17280000,-1,-1,0,
+adjustments,exposure +1,RGBA64,2 MP,1800,1200,5,182.0181,183.5239,218.6778,218.9343,17280000,17280000,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA64,2 MP,1800,1200,5,246.1493,249.1808,285.3746,291.7485,17280000,17280000,-1,-1,0,
+adjustments,saturation -1,RGBA64,2 MP,1800,1200,5,181.4692,183.0596,189.9192,191.4332,17280000,17280000,-1,-1,0,
+adjustments,mono filter,RGBA64,2 MP,1800,1200,5,165.0269,167.6099,171.3825,171.5599,17280000,17280000,-1,-1,0,
+adjustments,combined filter + intensity,RGBA64,2 MP,1800,1200,5,229.2393,230.7690,233.6181,233.6753,17280000,17280000,-1,-1,0,
+adjustments,identity,RGBA8888,8 MP,3264,2448,5,0.0001,0.0001,0.0002,0.0002,31961088,31961088,-1,-1,0,
+adjustments,exposure +1,RGBA8888,8 MP,3264,2448,5,640.3771,642.8475,665.1075,667.0857,31961088,63922176,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA8888,8 MP,3264,2448,5,670.4108,756.2462,760.8748,761.0596,31961088,63922176,-1,-1,0,
+adjustments,saturation -1,RGBA8888,8 MP,3264,2448,5,627.2055,633.8138,735.7896,739.7478,31961088,63922176,-1,-1,0,
+adjustments,mono filter,RGBA8888,8 MP,3264,2448,5,674.3290,708.3303,789.6423,806.6777,31961088,63922176,-1,-1,0,
+adjustments,combined filter + intensity,RGBA8888,8 MP,3264,2448,5,1150.0071,1235.2038,1320.5923,1327.8401,31961088,63922176,-1,-1,0,
+adjustments,identity,RGBA64,8 MP,3264,2448,5,0.0001,0.0002,0.0002,0.0002,63922176,63922176,-1,-1,0,
+adjustments,exposure +1,RGBA64,8 MP,3264,2448,5,713.1440,911.4310,941.4333,943.0287,63922176,63922176,-1,-1,0,
+adjustments,exposure +2 contrast,RGBA64,8 MP,3264,2448,5,794.2941,998.6789,1056.6393,1056.9090,63922176,63922176,-1,-1,0,
+adjustments,saturation -1,RGBA64,8 MP,3264,2448,5,623.1709,697.1145,749.4220,758.2379,63922176,63922176,-1,-1,0,
+adjustments,mono filter,RGBA64,8 MP,3264,2448,5,416.8867,472.5134,543.3857,554.0026,63922176,63922176,-1,-1,0,
+adjustments,combined filter + intensity,RGBA64,8 MP,3264,2448,5,1030.6904,1123.7639,1170.7176,1177.7399,63922176,63922176,-1,-1,0,
+filter-previews,batch (downscale + 6 presets),RGBA8888,0.5 MP,816,612,5,16.2401,19.1447,19.7878,19.9436,1997568,663552,-1,-1,0,batch = smooth downscale to 192x144 + six presets; per-thumbnail median 3.191 ms
+filter-previews,batch (downscale + 6 presets),RGBA8888,2 MP,1800,1200,5,16.1981,17.8043,19.0614,19.2002,8640000,589824,-1,-1,0,batch = smooth downscale to 192x128 + six presets; per-thumbnail median 2.967 ms
+filter-previews,batch (downscale + 6 presets),RGBA8888,8 MP,3264,2448,5,23.6756,24.2743,24.9957,25.0784,31961088,663552,-1,-1,0,batch = smooth downscale to 192x144 + six presets; per-thumbnail median 4.046 ms
+mosaic,rectangle block 8,RGBA8888,12 MP,4000,3000,5,145.5862,154.9088,159.0556,159.3200,48000000,48000000,-1,-1,0,ROI 1200x900 (9% of image)
+mosaic,rectangle block 32,RGBA8888,12 MP,4000,3000,5,140.0018,148.0206,161.5021,163.2471,48000000,48000000,-1,-1,0,ROI 1200x900 (9% of image)
+mosaic,rectangle block 128,RGBA8888,12 MP,4000,3000,5,147.9318,158.3174,169.6204,171.7041,48000000,48000000,-1,-1,0,ROI 1200x900 (9% of image)
+mosaic,stroke block 8,RGBA8888,12 MP,4000,3000,5,53.5285,55.1524,58.3551,58.4552,48000000,48000000,-1,-1,0,"64 points, diameter 96, ROI approx 2200x1000"
+mosaic,stroke block 32,RGBA8888,12 MP,4000,3000,5,60.7071,61.1990,62.3954,62.4861,48000000,48000000,-1,-1,0,"64 points, diameter 96, ROI approx 2200x1000"
+mosaic,stroke block 128,RGBA8888,12 MP,4000,3000,5,68.7223,71.7133,77.8909,79.0532,48000000,48000000,-1,-1,0,"64 points, diameter 96, ROI approx 2200x1000"
+mosaic,rectangle block 32,RGBA64,12 MP,4000,3000,5,33.6480,34.3134,34.9007,34.9945,96000000,96000000,-1,-1,0,ROI 1200x900 (9% of image)
+mosaic,stroke block 32,RGBA64,12 MP,4000,3000,5,30.4353,31.2898,31.6087,31.6657,96000000,96000000,-1,-1,0,"64 points, diameter 96, ROI approx 2200x1000"
+interaction,first preview 1600x1000,RGBA8888,0.5 MP,816,612,5,126.2168,137.1983,145.8755,147.4765,1997568,10664000,-1,-1,0,downscale + apply; proposed display-scale proxy
+adjustments,exposure +2 contrast,RGBA8888,0.5 MP,816,612,5,47.4397,49.8727,55.2545,56.3699,1997568,3995136,-1,-1,0,"full-size authoritative render, same parameters"
+interaction,first preview 1600x1000,RGBA8888,2 MP,1800,1200,5,139.8763,143.8527,157.2081,160.1859,8640000,12000000,-1,-1,0,downscale + apply; proposed display-scale proxy
+adjustments,exposure +2 contrast,RGBA8888,2 MP,1800,1200,5,253.0758,258.2767,272.1588,275.0434,8640000,17280000,-1,-1,0,"full-size authoritative render, same parameters"
+interaction,first preview 1600x1000,RGBA8888,8 MP,3264,2448,5,131.6481,152.5006,153.9666,154.1177,31961088,10664000,-1,-1,0,downscale + apply; proposed display-scale proxy
+adjustments,exposure +2 contrast,RGBA8888,8 MP,3264,2448,5,670.4108,756.2462,760.8748,761.0596,31961088,63922176,-1,-1,0,"full-size authoritative render, same parameters"
+interaction,QtConcurrent dispatch + result,RGBA8888,2 MP,1800,1200,5,243.5509,244.4382,247.1038,247.5435,8640000,17280000,-1,-1,0,thread handoff + event-loop delivery; excludes UI debounce
+preview-math,authoritative CPU apply,RGBA8888 -> RGBA64,2 MP,1920,1080,5,227.1070,228.2172,235.1225,236.4145,8294400,16588800,-1,-1,0,export/commit path
+preview-math,shader CPU mirror,RGBA8888,2 MP,1920,1080,5,68.5832,72.9559,73.3521,73.4255,8294400,8294400,-1,-1,0,CPU stand-in for the GPU shader; not used for export
+preview-math,authoritative CPU apply,RGBA64,2 MP,1920,1080,5,225.3219,237.9274,240.5799,241.0845,16588800,16588800,-1,-1,0,export/commit path
+preview-math,shader CPU mirror,RGBA64,2 MP,1920,1080,5,72.4918,72.9279,73.1454,73.1926,16588800,16588800,-1,-1,0,CPU stand-in for the GPU shader; not used for export
+decode,bundled JPEG,QImageReader,1800x1200,1800,1200,5,44.3310,44.4442,44.8369,44.9303,8640000,8640000,-1,-1,0,warm file cache; 471 KiB file; cold disk not measured
+memory,base + rendered + undo snapshots,RGBA8888,0.5 MP,816,612,0,,,,,1997568,3995136,66,265676544,0,history can retain 66 rendered snapshot(s) within 256 MiB
+memory,base + rendered + undo snapshots,RGBA64,0.5 MP,816,612,0,,,,,3995136,3995136,66,267674112,0,history can retain 66 rendered snapshot(s) within 256 MiB
+memory,base + rendered + undo snapshots,RGBA8888,2 MP,1800,1200,0,,,,,8640000,17280000,15,267840000,0,history can retain 15 rendered snapshot(s) within 256 MiB
+memory,base + rendered + undo snapshots,RGBA64,2 MP,1800,1200,0,,,,,17280000,17280000,14,259200000,0,history can retain 14 rendered snapshot(s) within 256 MiB
+memory,base + rendered + undo snapshots,RGBA8888,8 MP,3264,2448,0,,,,,31961088,63922176,3,223727616,0,history can retain 3 rendered snapshot(s) within 256 MiB
+memory,base + rendered + undo snapshots,RGBA64,8 MP,3264,2448,0,,,,,63922176,63922176,3,255688704,0,history can retain 3 rendered snapshot(s) within 256 MiB
