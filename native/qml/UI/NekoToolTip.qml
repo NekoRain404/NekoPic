@@ -32,6 +32,4 @@ ToolTip {
         border.color: Theme.border
     }
 
-    Accessible.role: Accessible.StaticText
-    Accessible.name: root.accessibleName.length > 0 ? root.accessibleName : root.text
 }

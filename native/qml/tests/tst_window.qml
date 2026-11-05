@@ -49,6 +49,17 @@ TestCase {
         property real moveDx: 0
         property real moveDy: 0
         property int lastObjectId: 0
+        property var lastObjectIds: []
+        function objectSummaries() { return [] }
+        function moveObjects(ids, dx, dy) { ++moveCalls; lastObjectIds = ids; moveDx = dx; moveDy = dy }
+        function removeObjects(ids) { ++removeCalls; lastObjectIds = ids }
+        function setObjectVisible(id, visible) { return true }
+        function setObjectLocked(id, locked) { return true }
+        function bringObjectToFront(id) { return true }
+        function sendObjectToBack(id) { return true }
+        function raiseObject(id) { return true }
+        function lowerObject(id) { return true }
+        function alignObjects(ids, alignment) { return true }
         property int cropCalls: 0
         property string textCall: ""
         property rect cropArea
@@ -196,11 +207,13 @@ TestCase {
         verify(overlay !== null)
         compare(overlay.selectAt(110, 60), 7)
         compare(overlay.selectedId, 7)
-        canvas.moveObjectRequested(7, 5, 6)
+        verify(findChild(window, "layerPanel").visible)
+        canvas.moveObjectsRequested([7], 5, 6)
         compare(editor.moveCalls, 1)
         compare(editor.moveDx, 5)
         compare(editor.moveDy, 6)
-        canvas.removeObjectRequested(7)
+        compare(editor.lastObjectIds.length, 1)
+        canvas.removeObjectsRequested([7])
         compare(editor.removeCalls, 1)
         editor.hasImage = false
         window.destroy()
@@ -241,7 +254,7 @@ TestCase {
         mouseClick(button)
         const dialog = findChild(window, "settingsDialog")
         verify(dialog !== null)
-        verify(dialog.opened)
+        tryVerify(function() { return dialog.opened }, 1500)
         dialog.close()
         window.destroy()
     }

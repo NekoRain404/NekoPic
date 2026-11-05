@@ -32,6 +32,7 @@ Item {
     property bool eyedropperActive: false
     property bool textActive: false
     property bool selectionActive: false
+    readonly property var selectionIds: selectionOverlay.selectedIds
     property bool compareActive: false
     property bool panActive: false
     readonly property bool comparing: compareActive || compareButton.pressed
@@ -60,6 +61,10 @@ Item {
     signal textCancelled()
     signal moveObjectRequested(var id, real dx, real dy)
     signal removeObjectRequested(var id)
+    signal moveObjectsRequested(var ids, real dx, real dy)
+    signal removeObjectsRequested(var ids)
+    function setSelectionIds(ids) { selectionOverlay.setSelectionIds(ids) }
+    function clearSelection() { selectionOverlay.clearSelection() }
     signal objectDoubleClicked(var id)
     signal shapeCommitted(string kind, rect area)
     signal polygonCommitted(var points)
@@ -318,6 +323,8 @@ Item {
                     objectBounds: root.objectBounds
                     onMoveRequested: function(id, dx, dy) { root.moveObjectRequested(id, dx, dy) }
                     onRemoveRequested: function(id) { root.removeObjectRequested(id) }
+                    onMoveObjectsRequested: function(ids, dx, dy) { root.moveObjectsRequested(ids, dx, dy) }
+                    onRemoveObjectsRequested: function(ids) { root.removeObjectsRequested(ids) }
                     onDoubleClicked: function(id) { root.objectDoubleClicked(id) }
                 }
                 ScrollBar.horizontal: ScrollBar { }

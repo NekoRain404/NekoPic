@@ -8,6 +8,7 @@ import "shell"
 import "dialogs"
 import "panels"
 import "filters"
+import "objects"
 
 ApplicationWindow {
     id: window
@@ -24,6 +25,7 @@ ApplicationWindow {
         || discardDialog.opened || errorDialog.opened
     property bool discardConfirmed: false
     property bool saveBeforePending: false
+    property string startupTool: ""
     property bool closingRequested: false
     property url pendingImage
     property url pendingExportUrl
@@ -339,7 +341,8 @@ ApplicationWindow {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
         function onImageOpened(url) {
-            window.activeTool = "adjust"
+            window.activeTool = window.startupTool.length > 0 ? window.startupTool : "adjust"
+            window.startupTool = ""
         }
         function onImageSaved() {
             if (!window.saveBeforePending) {
@@ -586,8 +589,8 @@ ApplicationWindow {
                 }
                 objectAt: function(x, y) { return editor.objectAt(x, y) }
                 objectBounds: function(id) { return editor.objectBounds(id) }
-                onMoveObjectRequested: function(id, dx, dy) { editor.moveObject(id, dx, dy) }
-                onRemoveObjectRequested: function(id) { editor.removeObject(id) }
+                onMoveObjectsRequested: function(ids, dx, dy) { editor.moveObjects(ids, dx, dy) }
+                onRemoveObjectsRequested: function(ids) { editor.removeObjects(ids) }
                 onObjectDoubleClicked: function(id) {
                     const info = editor.textInfo(id)
                     if (!info || Object.keys(info).length === 0) return
@@ -685,6 +688,31 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.preferredWidth: window.width < 1100 ? 260 : 292
                 theme: theme
+            }
+            LayerPanel {
+                id: layerPanel
+                objectName: "layerPanel"
+                visible: window.activeTool === "select"
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                theme: theme
+                summaries: []
+                selectedIds: canvas.selectionIds
+                enabled: editor.hasImage && !editor.busy
+                function refreshLayers() { summaries = editor.objectSummaries() }
+                Component.onCompleted: refreshLayers()
+                Connections { target: editor; function onDocumentChanged() { layerPanel.refreshLayers() } }
+                onSelectionRequested: function(ids) { canvas.setSelectionIds(ids) }
+                onVisibilityToggled: function(id, visible) { editor.setObjectVisible(id, visible) }
+                onLockToggled: function(id, locked) { editor.setObjectLocked(id, locked) }
+                onOrderRequested: function(id, action) {
+                    if (action === "front") editor.bringObjectToFront(id)
+                    else if (action === "back") editor.sendObjectToBack(id)
+                    else if (action === "up") editor.raiseObject(id)
+                    else editor.lowerObject(id)
+                }
+                onRemoveRequested: function(ids) { editor.removeObjects(ids) }
+                onAlignRequested: function(ids, alignment) { editor.alignObjects(ids, alignment) }
             }
             BrushPanel {
                 id: brushPanel; objectName: "brushPanel"

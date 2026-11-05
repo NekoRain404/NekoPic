@@ -96,8 +96,10 @@ int main(int argc, char *argv[])
     }
 
     auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
-    if (!startTool.isEmpty() && window)
+    if (!startTool.isEmpty() && window) {
+        window->setProperty("startupTool", startTool);
         window->setProperty("activeTool", startTool);
+    }
     if (openSettingsOnStart && window)
         QMetaObject::invokeMethod(window, "openSettings");
 
