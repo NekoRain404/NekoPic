@@ -11,6 +11,8 @@
 - [开发规范](CONTRIBUTING.md)：分层、命名、文件体积上限、测试与发布门禁。
 - [仓库结构](docs/repository-structure.md)：目录职责与新增文件放置规则。
 - [打包与发布](docs/packaging.md)：Linux 安装、CPack TGZ/DEB/RPM、AppImage、图标与发布检查。
+- [变更日志](CHANGELOG.md)：版本历史与已知限制。
+- [CI](.github/workflows/ci.yml)：构建、测试、ASan/UBSan 与标签打包。
 - [架构决策](docs/adr/)：分层、Rust 边界、GPU 预览、设计系统。
 - [性能基准与预算](docs/performance.md)：`scripts/bench.sh` 可复现；包含实测数据与已知瓶颈。
 

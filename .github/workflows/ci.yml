@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: 6.8.3
+  BUILD_DIR: native/build-ci
+
+jobs:
+  build-test:
+    name: Build and tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
+            libwayland-dev libxcb1-dev
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtquickcontrols2
+          cache: true
+      - name: Configure
+        run: cmake -S native -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DNEKOPIC_BUILD_QML_TESTS=ON
+      - name: Build
+        run: cmake --build "$BUILD_DIR" -j2
+      - name: C++ and QML tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir "$BUILD_DIR" --output-on-failure
+      - name: RHI QML tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QSG_RHI_BACKEND: opengl
+          QT_QUICK_BACKEND: rhi
+        run: |
+          "$QT_ROOT_DIR/bin/qmltestrunner" -input native/qml/tests -silent
+      - name: Whitespace
+        run: git diff --check
+
+  sanitizers:
+    name: ASan + UBSan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
+            libwayland-dev libxcb1-dev
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtquickcontrols2
+          cache: true
+      - name: Configure sanitizers
+        run: |
+          cmake -S native -B native/build-sanitize-ci -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build native/build-sanitize-ci -j2
+      - name: Run under sanitizers
+        env:
+          QT_QPA_PLATFORMTHEME: ""
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir native/build-sanitize-ci --output-on-failure
+
+  packages:
+    name: Linux packages
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
+            libwayland-dev libxcb1-dev dpkg-dev
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtquickcontrols2
+          cache: true
+      - name: Build TGZ and DEB
+        run: ./scripts/package.sh --no-tests --generators "TGZ;DEB"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nekopic-linux-packages
+          path: native/build-package/packages/*
