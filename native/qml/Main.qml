@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
 import "UI"
+import "shell"
 
 ApplicationWindow {
     id: window
@@ -74,6 +75,7 @@ ApplicationWindow {
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
+    Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.open() }
     Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
     Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: editor.undo() }
     Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: editor.redo() }
@@ -208,6 +210,7 @@ ApplicationWindow {
         Menu {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
+            MenuItem { action: commandPaletteAction } MenuSeparator {}
             MenuItem { text: qsTr("Follow system theme"); checkable: true; checked: window.followSystemTheme; onTriggered: window.followSystemTheme = checked }
             MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; enabled: !window.followSystemTheme; onTriggered: window.darkTheme = checked }
             MenuItem { text: qsTr("Reduce motion"); checkable: true; checked: window.reduceMotion; onTriggered: window.reduceMotion = checked }
@@ -273,6 +276,11 @@ ApplicationWindow {
                 CommandButton { action: rotateRightAction; text: qsTr("Rotate"); iconName: "rotate" }
                 CommandButton { action: cropAction; iconName: "crop" }
                 Item { Layout.fillWidth: true }
+                NekoButton {
+                    text: qsTr("Search"); variant: "ghost"
+                    onClicked: commandPalette.open()
+                    ToolTip.visible: hovered; ToolTip.text: qsTr("Command palette (Ctrl+K)")
+                }
                 BusyIndicator { running: editor.busy; visible: running; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
                 CommandButton { action: saveAction; iconName: "save" }
                 CommandButton { action: saveAsAction; primary: true }
@@ -410,5 +418,50 @@ ApplicationWindow {
                 Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
             }
         }
+    }
+
+    CommandPalette {
+        id: commandPalette
+        anchors.fill: parent
+        commands: [
+            { title: openAction.text, detail: qsTr("File"), shortcut: "Ctrl+O", enabled: openAction.enabled,
+              run: function() { openDialog.open() } },
+            { title: saveAction.text, detail: qsTr("File"), shortcut: "Ctrl+S", enabled: saveAction.enabled,
+              run: function() { editor.saveImage() } },
+            { title: saveAsAction.text, detail: qsTr("File"), shortcut: "Ctrl+Shift+S", enabled: saveAsAction.enabled,
+              run: function() { saveDialog.open() } },
+            { title: undoAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Z", enabled: undoAction.enabled,
+              run: function() { editor.undo() } },
+            { title: redoAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Shift+Z", enabled: redoAction.enabled,
+              run: function() { editor.redo() } },
+            { title: copyAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Shift+C", enabled: copyAction.enabled,
+              run: function() { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } },
+            { title: rotateRightAction.text, detail: qsTr("Image"), enabled: rotateRightAction.enabled,
+              run: function() { editor.rotateClockwise() } },
+            { title: rotateLeftAction.text, detail: qsTr("Image"), enabled: rotateLeftAction.enabled,
+              run: function() { editor.rotateCounterClockwise() } },
+            { title: flipHorizontalAction.text, detail: qsTr("Image"), enabled: flipHorizontalAction.enabled,
+              run: function() { editor.flipHorizontal() } },
+            { title: flipVerticalAction.text, detail: qsTr("Image"), enabled: flipVerticalAction.enabled,
+              run: function() { editor.flipVertical() } },
+            { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
+              run: function() { window.activeTool = "crop" } },
+            { title: fitAction.text, detail: qsTr("View"), shortcut: "Ctrl+0", enabled: fitAction.enabled,
+              run: function() { canvas.fitImage() } },
+            { title: actualAction.text, detail: qsTr("View"), shortcut: "Ctrl+1", enabled: actualAction.enabled,
+              run: function() { canvas.actualSize() } },
+            { title: qsTr("Toggle dark theme"), detail: qsTr("View"),
+              run: function() { window.followSystemTheme = false; window.darkTheme = !window.darkTheme } },
+            { title: qsTr("Follow system theme"), detail: qsTr("View"),
+              run: function() { window.followSystemTheme = !window.followSystemTheme } },
+            { title: qsTr("Toggle reduce motion"), detail: qsTr("View"),
+              run: function() { window.reduceMotion = !window.reduceMotion } },
+            { title: qsTr("Switch to English"), detail: qsTr("Language"),
+              enabled: typeof language !== "undefined",
+              run: function() { if (typeof language !== "undefined") language.setLanguage("en") } },
+            { title: qsTr("切换到简体中文"), detail: qsTr("Language"),
+              enabled: typeof language !== "undefined",
+              run: function() { if (typeof language !== "undefined") language.setLanguage("zh_CN") } }
+        ]
     }
 }
