@@ -459,8 +459,8 @@ ApplicationWindow {
                 hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
                 baseImageUrl: typeof editor.baseImageUrl !== "undefined" ? editor.baseImageUrl : ""
                 gpuPreviewAvailable: typeof renderCapabilities !== "undefined" && renderCapabilities.gpuPreviewAvailable
-                adjustmentPreviewActive: typeof editor.adjustmentInteractive !== "undefined"
-                                         && editor.adjustmentInteractive
+                adjustmentPreviewActive: typeof editor.adjustmentPreviewGpuEligible !== "undefined"
+                                         && editor.adjustmentPreviewGpuEligible
                                          && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
                 previewExposure: typeof editor.pendingAdjustmentValues !== "undefined"
                                  && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 50 : 0

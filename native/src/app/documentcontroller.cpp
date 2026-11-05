@@ -24,10 +24,14 @@ bool DocumentController::adjustmentInteractive() const
     return adjusting_ && adjustmentKey_ != "filter" && adjustmentKey_ != "filter-intensity"
         && !adjustmentFinishing_;
 }
+bool DocumentController::adjustmentPreviewGpuEligible() const
+{
+    return adjustmentInteractive()
+        && NekoPic::Adjustments::isGpuPreviewKey(adjustmentKey_);
+}
 QVariantMap DocumentController::adjustmentValues() const
 {
-    return {{"exposure", parameters_.exposure * 50.0}, {"brightness", parameters_.brightness * 100.0},
-            {"contrast", parameters_.contrast * 100.0}, {"saturation", parameters_.saturation * 100.0}};
+    return NekoPic::Adjustments::toUiValues(parameters_);
 }
 QVariantList DocumentController::histogramBins() const
 {
@@ -45,10 +49,7 @@ QVariantList DocumentController::histogramBins() const
 
 QVariantMap DocumentController::pendingAdjustmentValues() const
 {
-    return {{"exposure", pendingParameters_.exposure * 50.0},
-            {"brightness", pendingParameters_.brightness * 100.0},
-            {"contrast", pendingParameters_.contrast * 100.0},
-            {"saturation", pendingParameters_.saturation * 100.0}};
+    return NekoPic::Adjustments::toUiValues(pendingParameters_);
 }
 QString DocumentController::filterPreset() const { return parameters_.filterPreset; }
 double DocumentController::filterIntensity() const { return parameters_.filterIntensity * 100.0; }
@@ -151,7 +152,7 @@ QColor DocumentController::colorAt(qreal x, qreal y) const
 void DocumentController::beginAdjustment(const QString &key)
 {
     if (busy_ || !hasImage()) return;
-    if (key != "exposure" && key != "brightness" && key != "contrast" && key != "saturation") return;
+    if (!NekoPic::Adjustments::isParameterKey(key)) return;
     adjustmentSource_ = image_;
     pendingParameters_ = parameters_;
     adjustmentKey_ = key;
@@ -178,8 +179,8 @@ void DocumentController::finishAdjustment(const QString &key, double value)
 void DocumentController::resetAdjustments()
 {
     if (busy_ || !hasImage()) return;
-    if (parameters_.exposure == 0.0 && parameters_.brightness == 0.0
-        && parameters_.contrast == 0.0 && parameters_.saturation == 0.0) return;
+    if (NekoPic::Adjustments::toUiValues(parameters_)
+        == NekoPic::Adjustments::toUiValues(NekoPic::Adjustments::Parameters{})) return;
     adjustmentSource_ = image_;
     pendingParameters_ = {};
     pendingParameters_.filterPreset = parameters_.filterPreset;
@@ -248,10 +249,7 @@ void DocumentController::queueAdjustment(const QString &key, double value, bool 
 {
     if (!adjusting_ || adjustmentFinishing_ || key != adjustmentKey_) return;
     adjustmentValue_ = std::isfinite(value) ? std::clamp(value, -100.0, 100.0) : 0.0;
-    if (key == "exposure") pendingParameters_.exposure = adjustmentValue_ / 50.0;
-    else if (key == "brightness") pendingParameters_.brightness = adjustmentValue_ / 100.0;
-    else if (key == "contrast") pendingParameters_.contrast = adjustmentValue_ / 100.0;
-    else if (key == "saturation") pendingParameters_.saturation = adjustmentValue_ / 100.0;
+    if (!NekoPic::Adjustments::setParameter(pendingParameters_, key, adjustmentValue_)) return;
     adjustmentFinishing_ = finish;
     ++adjustmentSequence_;
     emit adjustmentPreviewChanged();
@@ -304,10 +302,8 @@ void DocumentController::endAdjustment(const QImage &result, bool failed)
     if (wasInteractive) emit adjustmentInteractiveChanged();
     if (wasFilterInteractive) emit filterIntensityInteractiveChanged();
     emit adjustmentPreviewChanged();
-    const bool changed = parameters_.exposure != pendingParameters_.exposure
-        || parameters_.brightness != pendingParameters_.brightness
-        || parameters_.contrast != pendingParameters_.contrast
-        || parameters_.saturation != pendingParameters_.saturation
+    const bool changed = NekoPic::Adjustments::toUiValues(parameters_)
+            != NekoPic::Adjustments::toUiValues(pendingParameters_)
         || parameters_.filterPreset != pendingParameters_.filterPreset
         || parameters_.filterIntensity != pendingParameters_.filterIntensity;
     if (!failed && changed) {

@@ -22,6 +22,7 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(bool adjusting READ adjusting NOTIFY adjustingChanged)
     Q_PROPERTY(bool adjustmentInteractive READ adjustmentInteractive NOTIFY adjustmentInteractiveChanged)
+    Q_PROPERTY(bool adjustmentPreviewGpuEligible READ adjustmentPreviewGpuEligible NOTIFY adjustmentInteractiveChanged)
     Q_PROPERTY(QVariantMap adjustmentValues READ adjustmentValues NOTIFY documentChanged)
     Q_PROPERTY(QVariantMap pendingAdjustmentValues READ pendingAdjustmentValues NOTIFY adjustmentPreviewChanged)
     Q_PROPERTY(QVariantList histogramBins READ histogramBins NOTIFY documentChanged)
@@ -51,6 +52,7 @@ public:
     bool busy() const;
     bool adjusting() const;
     bool adjustmentInteractive() const;
+    bool adjustmentPreviewGpuEligible() const;
     QVariantMap adjustmentValues() const;
     QVariantMap pendingAdjustmentValues() const;
     QVariantList histogramBins() const;

@@ -77,6 +77,42 @@ private slots:
         QVERIFY(!controller.colorAt(std::numeric_limits<double>::quiet_NaN(), 0).isValid());
     }
 
+    void extendedKeysRoundTripThroughTransactions()
+    {
+        QTemporaryDir dir;
+        QVERIFY(sourceImage().save(dir.filePath(QStringLiteral("source.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("source.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        const auto before = controller.image();
+        controller.beginAdjustment(QStringLiteral("highlights"));
+        QVERIFY(controller.adjustmentInteractive());
+        QVERIFY(!controller.adjustmentPreviewGpuEligible());
+        controller.previewAdjustment(QStringLiteral("highlights"), 40.0);
+        QCOMPARE(qRound(controller.pendingAdjustmentValues().value(QStringLiteral("highlights")).toDouble()), 40);
+        controller.finishAdjustment(QStringLiteral("highlights"), 40.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("highlights")).toDouble()), 40);
+        QVERIFY(controller.image() != before);
+
+        controller.beginAdjustment(QStringLiteral("exposure"));
+        QVERIFY(controller.adjustmentPreviewGpuEligible());
+        controller.finishAdjustment(QStringLiteral("exposure"), 0.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+        controller.beginAdjustment(QStringLiteral("hsl.red.hue"));
+        controller.finishAdjustment(QStringLiteral("hsl.red.hue"), 20.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("hsl.red.hue")).toDouble()), 20);
+
+        controller.undo();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("hsl.red.hue")).toDouble()), 0);
+        controller.undo();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("highlights")).toDouble()), 0);
+    }
+
     void exposesHistogramBins()
     {
         QTemporaryDir dir;
