@@ -210,9 +210,9 @@ TestCase {
         const button = findChild(panel, "font-picker-button")
         const search = findChild(panel, "font-picker-search")
         verify(button !== null && search !== null)
-        compare(button.Accessible.name, qsTr("Font family"))
+        compare(button.Accessible.name, qsTranslate("FontPicker", "Font family"))
         compare(button.Accessible.role, Accessible.ComboBox)
-        compare(search.Accessible.name, qsTr("Search fonts"))
+        compare(search.Accessible.name, qsTranslate("FontPicker", "Search fonts"))
 
         button.forceActiveFocus()
         keyClick(Qt.Key_Down)

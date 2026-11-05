@@ -22,22 +22,17 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Theme.spacingLg
 
-    function _tr(zh, en) {
-        return page.localeId === "zh_CN" ? zh : en
-    }
-
     NekoSectionHeader {
         objectName: "settings-section-language"
         Layout.fillWidth: true
-        text: page._tr("语言", "Language")
+        text: qsTr("Language")
         eyebrow: true
         showDivider: true
     }
 
     Text {
         Layout.fillWidth: true
-        text: page._tr("界面语言会立即切换。",
-                       "The interface language changes immediately.")
+        text: qsTr("The interface language changes immediately.")
         color: Theme.textTertiary
         font.pixelSize: Theme.fontCaption
         lineHeight: Theme.lineHeightNormal

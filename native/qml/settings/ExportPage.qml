@@ -31,10 +31,6 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Theme.spacingLg
 
-    function _tr(zh, en) {
-        return page.localeId === "zh_CN" ? zh : en
-    }
-
     function syncQuality() {
         if (qualitySlider && !qualitySlider.dragging)
             qualitySlider.value = page.exportQuality >= 0 ? page.exportQuality : page.defaultQuality
@@ -48,7 +44,7 @@ ColumnLayout {
     NekoSectionHeader {
         objectName: "settings-section-export"
         Layout.fillWidth: true
-        text: page._tr("导出", "Export")
+        text: qsTr("Export")
         eyebrow: true
         showDivider: true
     }
@@ -63,15 +59,14 @@ ColumnLayout {
 
             Text {
                 Layout.fillWidth: true
-                text: page._tr("导出质量", "Export quality")
+                text: qsTr("Export quality")
                 color: Theme.textPrimary
                 font.pixelSize: Theme.fontBody
                 font.weight: Theme.fontWeightMedium
             }
             Text {
                 Layout.fillWidth: true
-                text: page._tr("仅对支持质量设置的格式有效（JPEG、WebP、AVIF 等）。",
-                               "Applies to formats that support quality (JPEG, WebP, AVIF, and others).")
+                text: qsTr("Applies to formats that support quality (JPEG, WebP, AVIF, and others).")
                 color: Theme.textTertiary
                 font.pixelSize: Theme.fontCaption
                 lineHeight: Theme.lineHeightNormal
@@ -81,7 +76,7 @@ ColumnLayout {
 
         Text {
             objectName: "settings-quality-value"
-            text: page.exportQuality < 0 ? page._tr("编码器默认", "Codec default")
+            text: page.exportQuality < 0 ? qsTr("Codec default")
                                          : page.exportQuality + "%"
             color: Theme.textPrimary
             font.pixelSize: Theme.fontSmall
@@ -99,7 +94,7 @@ ColumnLayout {
         stepSize: 1
         defaultValue: 90
         enabled: !page.busy && !qualityDefaultToggle.checked
-        accessibleName: page._tr("导出质量", "Export quality")
+        accessibleName: qsTr("Export quality")
         onPreview: function(value) { page.qualityRequested(value) }
         onFinish: function(value) { page.qualityRequested(value) }
     }
@@ -107,10 +102,10 @@ ColumnLayout {
     NekoToggle {
         id: qualityDefaultToggle
         objectName: "settings-quality-default"
-        text: page._tr("使用编码器默认值", "Use codec default")
+        text: qsTr("Use codec default")
         checked: true
         enabled: !page.busy
-        accessibleName: page._tr("使用编码器默认质量", "Use codec default quality")
+        accessibleName: qsTr("Use codec default quality")
         onClicked: {
             if (checked)
                 page.qualityRequested(-1)
@@ -135,15 +130,14 @@ ColumnLayout {
 
             Text {
                 Layout.fillWidth: true
-                text: page._tr("JPEG 背景", "JPEG background")
+                text: qsTr("JPEG background")
                 color: Theme.textPrimary
                 font.pixelSize: Theme.fontBody
                 font.weight: Theme.fontWeightMedium
             }
             Text {
                 Layout.fillWidth: true
-                text: page._tr("JPEG 不支持透明度，透明区域会填充此颜色。",
-                               "JPEG has no transparency; transparent areas are filled with this colour.")
+                text: qsTr("JPEG has no transparency; transparent areas are filled with this colour.")
                 color: Theme.textTertiary
                 font.pixelSize: Theme.fontCaption
                 lineHeight: Theme.lineHeightNormal
@@ -159,7 +153,7 @@ ColumnLayout {
                 swatchColor: page.whiteBackground
                 selected: Qt.colorEqual(page.jpegBackground, page.whiteBackground)
                 enabled: !page.busy
-                accessibleName: page._tr("白色背景", "White background")
+                accessibleName: qsTr("White background")
                 onClicked: page.backgroundRequested(page.whiteBackground)
             }
 
@@ -168,7 +162,7 @@ ColumnLayout {
                 swatchColor: page.blackBackground
                 selected: Qt.colorEqual(page.jpegBackground, page.blackBackground)
                 enabled: !page.busy
-                accessibleName: page._tr("黑色背景", "Black background")
+                accessibleName: qsTr("Black background")
                 onClicked: page.backgroundRequested(page.blackBackground)
             }
 
@@ -177,7 +171,7 @@ ColumnLayout {
                 swatchColor: page.warmGreyBackground
                 selected: Qt.colorEqual(page.jpegBackground, page.warmGreyBackground)
                 enabled: !page.busy
-                accessibleName: page._tr("暖灰色背景", "Warm grey background")
+                accessibleName: qsTr("Warm grey background")
                 onClicked: page.backgroundRequested(page.warmGreyBackground)
             }
         }

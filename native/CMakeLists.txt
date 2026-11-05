@@ -219,6 +219,22 @@ if(BUILD_TESTING)
             HINTS "${QT6_INSTALL_PREFIX}/lib/qt6/bin" /usr/lib/qt6/bin REQUIRED)
         add_test(NAME qml COMMAND ${QMLTESTRUNNER} -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tests" -silent)
         set_tests_properties(qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+        # Run the settings surface against each compiled catalogue so the
+        # qsTranslate() assertions verify real zh_CN/ja_JP/de_DE rendering.
+        foreach(locale IN LISTS NEKOPIC_LOCALES)
+            add_test(NAME qml_settings_${locale} COMMAND ${QMLTESTRUNNER}
+                -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tests/tst_settings_dialog.qml"
+                -translation "${CMAKE_CURRENT_BINARY_DIR}/nekopic_${locale}.qm" -silent)
+            set_tests_properties(qml_settings_${locale} PROPERTIES
+                ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+            # FontPicker lives inside the text panel; run its coverage with a
+            # real catalogue as well.
+            add_test(NAME qml_font_${locale} COMMAND ${QMLTESTRUNNER}
+                -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tests/tst_text_panel.qml"
+                -translation "${CMAKE_CURRENT_BINARY_DIR}/nekopic_${locale}.qm" -silent)
+            set_tests_properties(qml_font_${locale} PROPERTIES
+                ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+        endforeach()
     endif()
 endif()
 
