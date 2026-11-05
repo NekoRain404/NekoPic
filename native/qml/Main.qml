@@ -434,10 +434,6 @@ ApplicationWindow {
         readonly property color accentInk: Theme.accentInk
     }
 
-    component Icon: NekoIcon {
-        property color ink: Theme.textSecondary
-        color: ink
-    }
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
@@ -464,6 +460,21 @@ ApplicationWindow {
     Action { id: zoomOutAction; text: qsTr("Zoom out"); shortcut: "Ctrl+-"; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1 / 1.2) }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
     Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
+    /*! Shared action catalogue for the menu bar, toolbar and command palette. */
+    readonly property var actionMap: ({
+        open: openAction, save: saveAction, saveAs: saveAsAction,
+        settings: settingsAction, commandPalette: commandPaletteAction,
+        copy: copyAction, undo: undoAction, redo: redoAction,
+        rotateLeft: rotateLeftAction, rotateRight: rotateRightAction,
+        rotate: rotateRightAction,
+        flipHorizontal: flipHorizontalAction, flipVertical: flipVerticalAction,
+        resizeImage: resizeImageAction, canvasSize: canvasSizeAction,
+        shortcuts: shortcutsAction, brush: brushAction, shape: shapeAction,
+        pan: panAction, select: selectAction, text: textAction,
+        eyedropper: eyedropperAction, crop: cropAction,
+        zoomIn: zoomInAction, zoomOut: zoomOutAction,
+        fit: fitAction, actual: actualAction
+    })
     FileDialog {
         id: openDialog; title: qsTr("Open image"); fileMode: FileDialog.OpenFile
         currentFolder: window.lastFolder.toString().length > 0 ? window.lastFolder
@@ -777,74 +788,23 @@ ApplicationWindow {
         }
     }
 
-    menuBar: MenuBar {
-        background: Rectangle { color: theme.background }
-        contentItem: RowLayout {
-            spacing: 0
-            RowLayout {
-                Layout.leftMargin: 14; Layout.rightMargin: 12; spacing: 7
-                Rectangle { width: 21; height: 21; radius: 5; color: theme.accent; Icon { anchors.centerIn: parent; width: 17; height: 17; name: "logo"; ink: theme.accentInk } }
-                Label { text: "NekoPic"; color: theme.text; font.pixelSize: 12; font.weight: Font.DemiBold }
-            }
-            Repeater { model: window.menuBar.contentModel }
-            Item { Layout.fillWidth: true }
-            Rectangle { width: 5; height: 5; radius: 3; color: "#99b4a3" }
-            Label { Layout.leftMargin: 7; Layout.rightMargin: 17; text: qsTr("Local editing"); color: theme.muted; font.pixelSize: 10 }
+    menuBar: AppMenuBar {
+        actions: window.actionMap
+        followSystemTheme: window.followSystemTheme
+        darkTheme: window.darkTheme
+        reduceMotion: window.reduceMotion
+        recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
+        busy: editor.busy
+        availableLocales: typeof language !== "undefined" ? language.availableLocales : []
+        localeId: typeof language !== "undefined" ? language.locale : ""
+        onFollowSystemThemeToggled: function(checked) { window.followSystemTheme = checked }
+        onDarkThemeToggled: function(checked) { window.darkTheme = checked }
+        onReduceMotionToggled: function(checked) { window.reduceMotion = checked }
+        onLocaleSelected: function(id) {
+            if (typeof language !== "undefined") language.setLanguage(id)
         }
-        Menu {
-            title: qsTr("File")
-            MenuItem { action: openAction }
-            Menu {
-                objectName: "recentMenu"
-                title: qsTr("Open recent")
-                enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
-                         && !editor.busy
-                Repeater {
-                    model: typeof recentFiles !== "undefined" ? recentFiles.entries : []
-                    MenuItem {
-                        required property var modelData
-                        text: modelData.name
-                        enabled: !editor.busy
-                        onTriggered: window.requestOpen(modelData.url)
-                    }
-                }
-                MenuSeparator {}
-                MenuItem {
-                    text: qsTr("Clear recent files")
-                    enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
-                             && !editor.busy
-                    onTriggered: if (typeof recentFiles !== "undefined") recentFiles.clear()
-                }
-            }
-            MenuSeparator {}
-            MenuItem { action: saveAction }
-            MenuItem { action: saveAsAction }
-        }
-        Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: selectAction } MenuItem { action: brushAction } MenuItem { action: shapeAction } MenuItem { action: cropAction } MenuItem { action: textAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
-        Menu {
-            title: qsTr("View")
-            MenuItem { action: zoomInAction } MenuItem { action: zoomOutAction } MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
-            MenuItem { action: commandPaletteAction } MenuSeparator {}
-            MenuItem { text: qsTr("Follow system theme"); checkable: true; checked: window.followSystemTheme; onTriggered: window.followSystemTheme = checked }
-            MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; enabled: !window.followSystemTheme; onTriggered: window.darkTheme = checked }
-            MenuItem { text: qsTr("Reduce motion"); checkable: true; checked: window.reduceMotion; onTriggered: window.reduceMotion = checked }
-            Menu {
-                title: qsTr("Language")
-                Repeater {
-                    model: typeof language !== "undefined" ? language.availableLocales : []
-                    MenuItem {
-                        required property var modelData
-                        text: modelData.nativeName
-                        checkable: true
-                        checked: typeof language !== "undefined" && language.locale === modelData.id
-                        onTriggered: if (typeof language !== "undefined") language.setLanguage(modelData.id)
-                    }
-                }
-            }
-            MenuSeparator {}
-            MenuItem { action: settingsAction }
-        }
+        onRecentRequested: function(url) { window.requestOpen(url) }
+        onClearRecentRequested: if (typeof recentFiles !== "undefined") recentFiles.clear()
     }
 
     Rectangle {
@@ -881,16 +841,7 @@ ApplicationWindow {
         Keys.onPressed: function(event) { window.handleCanvasKeyPress(event) }
         Keys.onReleased: function(event) { window.handleCanvasKeyRelease(event) }
         TopActionBar {
-            actions: ({
-                open: openAction,
-                undo: undoAction,
-                redo: redoAction,
-                rotate: rotateRightAction,
-                crop: cropAction,
-                save: saveAction,
-                saveAs: saveAsAction,
-                canvasSize: canvasSizeAction
-            })
+            actions: window.actionMap
             hasImage: editor.hasImage
             busy: editor.busy
             onTransformRequested: transformMenu.open()
@@ -1237,81 +1188,32 @@ ApplicationWindow {
         Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
     }
 
+    CommandCatalog {
+        id: commandCatalog
+        actions: window.actionMap
+        busy: editor.busy
+        hasImage: editor.hasImage
+        languageAvailable: typeof language !== "undefined"
+        recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
+        onUndoRequested: editor.undo()
+        onRedoRequested: editor.redo()
+        onAutoEnhanceRequested: editor.autoEnhance()
+        onToggleDarkThemeRequested: {
+            window.followSystemTheme = false
+            window.darkTheme = !window.darkTheme
+        }
+        onToggleFollowSystemThemeRequested: window.followSystemTheme = !window.followSystemTheme
+        onToggleReduceMotionRequested: window.reduceMotion = !window.reduceMotion
+        onLanguageSelected: function(id) {
+            if (typeof language !== "undefined") language.setLanguage(id)
+        }
+        onRecentRequested: function(url) { window.requestOpen(url) }
+    }
+
     CommandPalette {
         id: commandPalette
         objectName: "commandPalette"
         anchors.fill: parent
-        commands: [
-            { title: openAction.text, detail: qsTr("File"), shortcut: "Ctrl+O", enabled: openAction.enabled,
-              run: function() { openDialog.open() } },
-            { title: saveAction.text, detail: qsTr("File"), shortcut: "Ctrl+S", enabled: saveAction.enabled,
-              run: function() { editor.saveImage() } },
-            { title: saveAsAction.text, detail: qsTr("File"), shortcut: "Ctrl+Shift+S", enabled: saveAsAction.enabled,
-              run: function() { saveDialog.open() } },
-            { title: undoAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Z", enabled: undoAction.enabled,
-              run: function() { editor.undo() } },
-            { title: redoAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Shift+Z", enabled: redoAction.enabled,
-              run: function() { editor.redo() } },
-            { title: copyAction.text, detail: qsTr("Edit"), shortcut: "Ctrl+Shift+C", enabled: copyAction.enabled,
-              run: function() { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } },
-            { title: rotateRightAction.text, detail: qsTr("Image"), enabled: rotateRightAction.enabled,
-              run: function() { editor.rotateClockwise() } },
-            { title: rotateLeftAction.text, detail: qsTr("Image"), enabled: rotateLeftAction.enabled,
-              run: function() { editor.rotateCounterClockwise() } },
-            { title: flipHorizontalAction.text, detail: qsTr("Image"), enabled: flipHorizontalAction.enabled,
-              run: function() { editor.flipHorizontal() } },
-            { title: flipVerticalAction.text, detail: qsTr("Image"), enabled: flipVerticalAction.enabled,
-              run: function() { editor.flipVertical() } },
-            { title: qsTr("Auto enhance"), detail: qsTr("Image"), enabled: editor.hasImage && !editor.busy,
-              run: function() { editor.autoEnhance() } },
-            { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
-              run: function() { window.activeTool = "crop" } },
-            { title: panAction.text, detail: qsTr("Tools"), shortcut: "H", enabled: panAction.enabled,
-              run: function() { window.activeTool = "pan" } },
-            { title: selectAction.text, detail: qsTr("Tools"), shortcut: "V", enabled: selectAction.enabled,
-              run: function() { window.activeTool = "select" } },
-            { title: brushAction.text, detail: qsTr("Tools"), shortcut: "B", enabled: brushAction.enabled,
-              run: function() { window.activeTool = "brush" } },
-            { title: shapeAction.text, detail: qsTr("Tools"), shortcut: "U", enabled: shapeAction.enabled,
-              run: function() { window.activeTool = "shapes" } },
-            { title: textAction.text, detail: qsTr("Tools"), shortcut: "T", enabled: textAction.enabled,
-              run: function() { window.activeTool = "text" } },
-            { title: eyedropperAction.text, detail: qsTr("Tools"), shortcut: "I", enabled: eyedropperAction.enabled,
-              run: function() { window.activeTool = "eye" } },
-            { title: resizeImageAction.text, detail: qsTr("Image"), enabled: resizeImageAction.enabled,
-              run: function() { resizeDialog.open() } },
-            { title: canvasSizeAction.text, detail: qsTr("Image"), enabled: canvasSizeAction.enabled,
-              run: function() { canvasSizeDialog.open() } },
-            { title: shortcutsAction.text, detail: qsTr("Help"), shortcut: "F1",
-              run: function() { shortcutsDialog.open() } },
-            { title: settingsAction.text, detail: qsTr("Help"), shortcut: "Ctrl+,",
-              run: function() { window.openSettings() } },
-            { title: zoomInAction.text, detail: qsTr("View"), shortcut: "Ctrl+=", enabled: zoomInAction.enabled,
-              run: function() { canvas.changeZoom(1.2) } },
-            { title: zoomOutAction.text, detail: qsTr("View"), shortcut: "Ctrl+-", enabled: zoomOutAction.enabled,
-              run: function() { canvas.changeZoom(1 / 1.2) } },
-            { title: fitAction.text, detail: qsTr("View"), shortcut: "Ctrl+0", enabled: fitAction.enabled,
-              run: function() { canvas.fitImage() } },
-            { title: actualAction.text, detail: qsTr("View"), shortcut: "Ctrl+1", enabled: actualAction.enabled,
-              run: function() { canvas.actualSize() } },
-            { title: qsTr("Toggle dark theme"), detail: qsTr("View"),
-              run: function() { window.followSystemTheme = false; window.darkTheme = !window.darkTheme } },
-            { title: qsTr("Follow system theme"), detail: qsTr("View"),
-              run: function() { window.followSystemTheme = !window.followSystemTheme } },
-            { title: qsTr("Toggle reduce motion"), detail: qsTr("View"),
-              run: function() { window.reduceMotion = !window.reduceMotion } },
-            { title: qsTr("Switch to English"), detail: qsTr("Language"),
-              enabled: typeof language !== "undefined",
-              run: function() { if (typeof language !== "undefined") language.setLanguage("en") } },
-            { title: qsTr("切换到简体中文"), detail: qsTr("Language"),
-              enabled: typeof language !== "undefined",
-              run: function() { if (typeof language !== "undefined") language.setLanguage("zh_CN") } }
-        ].concat((typeof recentFiles !== "undefined" && recentFiles.entries)
-                 ? recentFiles.entries.map(function(entry) {
-                       return { title: entry.name, detail: qsTr("Recent"),
-                                enabled: !editor.busy,
-                                run: function() { window.requestOpen(entry.url) } }
-                   })
-                 : [])
+        commands: commandCatalog.commands
     }
 }
