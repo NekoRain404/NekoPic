@@ -1700,4 +1700,182 @@
         <translation>完成</translation>
     </message>
 </context>
+<context>
+    <name>TextDialog</name>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="56" />
+        <source>Enter some text.</source>
+        <translation>请输入文字。</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="58" />
+        <source>Font size must be between %1 and %2 px.</source>
+        <translation>字号必须在 %1 到 %2 px 之间。</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="60" />
+        <source>Open an image before adding text.</source>
+        <translation>请先打开图片再添加文字。</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="62" />
+        <source>The anchor must be inside the image.</source>
+        <translation>锚点必须位于图像内。</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="82" />
+        <location filename="../qml/dialogs/TextDialog.qml" line="515" />
+        <source>Add text</source>
+        <translation>添加文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="83" />
+        <source>Type your text, choose a style, then place it on the image.</source>
+        <translation>输入文字、选择样式，然后放置到图像上。</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="137" />
+        <source>Top left</source>
+        <translation>左上</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="137" />
+        <source>Top</source>
+        <translation>上</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="137" />
+        <source>Top right</source>
+        <translation>右上</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="138" />
+        <source>Left</source>
+        <translation>左</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="138" />
+        <source>Center</source>
+        <translation>居中</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="138" />
+        <source>Right</source>
+        <translation>右</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="139" />
+        <source>Bottom left</source>
+        <translation>左下</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="139" />
+        <source>Bottom</source>
+        <translation>下</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="139" />
+        <source>Bottom right</source>
+        <translation>右下</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="175" />
+        <source>Text</source>
+        <translation>文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="189" />
+        <source>Type your text…</source>
+        <translation>输入文字…</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="201" />
+        <source>Text content</source>
+        <translation>文字内容</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="235" />
+        <location filename="../qml/dialogs/TextDialog.qml" line="260" />
+        <source>Font size</source>
+        <translation>字号</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="266" />
+        <source>Colour</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="280" />
+        <source>White text</source>
+        <translation>白色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="289" />
+        <source>Black text</source>
+        <translation>黑色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="298" />
+        <source>Warm grey text</source>
+        <translation>暖灰色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="307" />
+        <source>Peach text</source>
+        <translation>桃色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="316" />
+        <source>Red text</source>
+        <translation>红色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="325" />
+        <source>Blue text</source>
+        <translation>蓝色文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="340" />
+        <source>Alignment</source>
+        <translation>对齐</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="420" />
+        <source>Anchor</source>
+        <translation>锚点</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="465" />
+        <source>Anchor: %1 × %2 px</source>
+        <translation>锚点：%1 × %2 px</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="468" />
+        <source>No image loaded</source>
+        <translation>尚未加载图片</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="508" />
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/TextDialog.qml" line="515" />
+        <source>Adding…</source>
+        <translation>正在添加…</translation>
+    </message>
+</context>
+<context>
+    <name>TextPlacementOverlay</name>
+    <message>
+        <location filename="../qml/overlays/TextPlacementOverlay.qml" line="63" />
+        <source>Text placement</source>
+        <translation>文字放置</translation>
+    </message>
+    <message>
+        <location filename="../qml/overlays/TextPlacementOverlay.qml" line="64" />
+        <source>Click the image to place text. Press Escape to cancel.</source>
+        <translation>点击图像放置文字，按 Escape 取消。</translation>
+    </message>
+</context>
 </TS>
