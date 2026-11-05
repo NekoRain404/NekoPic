@@ -56,10 +56,13 @@ QString SettingsManager::startupTool() const { return startupTool_; }
 
 QString SettingsManager::normaliseThemeMode(const QString &mode)
 {
-    if (mode == QLatin1String("system") || mode == QLatin1String("light")
-        || mode == QLatin1String("dark")) {
+    static const QStringList modes{
+        QStringLiteral("system"), QStringLiteral("light"), QStringLiteral("dark"),
+        QStringLiteral("midnight"), QStringLiteral("warm"), QStringLiteral("graphite"),
+        QStringLiteral("contrast")
+    };
+    if (modes.contains(mode))
         return mode;
-    }
     return kDefaultThemeMode;
 }
 
