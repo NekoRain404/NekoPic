@@ -112,3 +112,19 @@ Command
 - 文字编辑一次撤销，不发散为每字符一项；
 - 保存后继续编辑对象，脏状态正确；
 - 恢复快照损坏时安全拒绝并提示。
+
+
+## 10. 已实现内核 API（2026-11-05）
+
+代码位于 `native/src/document/`，测试为 `native/tests/tst_objects.cpp`（20 项）。
+
+| 类型 | 关键接口 |
+| --- | --- |
+| `DocumentObject` | `id()`, `kind()`, `visible/locked/opacity`, `transform/translation`, `applyTransform`, `bounds`, `render`, `hitTest`, `clone` |
+| `TextObject` | `text`, `font`/`fontFamily`/`fontWeight`/`fontPointSize`, `color`, `alignment`, `lineHeight`, `outlineColor`/`outlineWidth`, `padding` |
+| `ShapeObject` | `shape`（矩形/椭圆/直线/箭头/多边形）, `rect`/`points`, `fillColor`/`strokeColor`/`strokeWidth`, `cornerRadius` |
+| `ShapeGeometry` | `squareFromDrag`, `snapToAngle`（Shift 约束） |
+| `StrokeObject` | `points`/`addPoint`/`clearPoints`, `MaxSamples = 4096`, `diameter`, `color` |
+| `ObjectLayer` | `add`/`take`/`remove`/`clear`, `object`/`objectAt`/`hitTest`, `raise`/`lower`/`bringToFront`/`sendToBack`/`moveTo`, `renderOnto`, `applyTransform`, `crop` |
+
+已知限制：文字为矢量轮廓、无自动换行/富文本/光标模型；变换为仿射；笔迹 4096 采样上限；命中测试在非均匀缩放下为近似；`crop` 不做对象级破坏性裁剪。控制器接入与文字/形状/笔迹工具界面是下一步。
