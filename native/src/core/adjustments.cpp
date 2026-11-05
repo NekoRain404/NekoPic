@@ -1,5 +1,6 @@
 #include "adjustments.h"
 
+#include "colorpipeline.h"
 #include "rowparallel.h"
 
 #include <qfloat16.h>
@@ -396,6 +397,11 @@ QImage apply(const QImage &source, const Parameters &parameters)
 {
     if (source.isNull())
         return {};
+
+    // Extended controls run through the new pipeline; the neutral case stays
+    // on the optimised path below so its pixels remain byte-identical.
+    if (Internal::hasExtendedParameters(parameters))
+        return Internal::applyExtended(source, parameters);
 
     const double exposure = bounded(parameters.exposure, 4.0);
     const double brightness = bounded(parameters.brightness, 1.0);
