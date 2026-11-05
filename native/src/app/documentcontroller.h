@@ -67,6 +67,7 @@ public:
     Q_INVOKABLE void saveImage();
     Q_INVOKABLE void saveAs(const QUrl &url, const QString &format);
     Q_INVOKABLE void clearError();
+    Q_INVOKABLE void copyImageToClipboard();
     Q_INVOKABLE void rotateClockwise();
     Q_INVOKABLE void rotateCounterClockwise();
     Q_INVOKABLE void flipHorizontal();
@@ -94,6 +95,7 @@ signals:
     void filterIntensityInteractiveChanged();
     void errorChanged();
     void imageOpened(const QUrl &url);
+    void imageCopied();
 
 private:
     enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };

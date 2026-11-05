@@ -35,9 +35,10 @@ target_link_libraries(nekopic_document PUBLIC nekopic_core)
 
 # --- platform: recent files, clipboard, OS integration -------------------
 add_library(nekopic_platform STATIC
-    src/platform/recentfiles.cpp src/platform/recentfiles.h)
+    src/platform/recentfiles.cpp src/platform/recentfiles.h
+    src/platform/clipboard.cpp src/platform/clipboard.h)
 target_include_directories(nekopic_platform PUBLIC src)
-target_link_libraries(nekopic_platform PUBLIC Qt6::Core)
+target_link_libraries(nekopic_platform PUBLIC Qt6::Core Qt6::Gui)
 
 # --- render: preview backends and GPU capability probes ------------------
 add_library(nekopic_render STATIC
@@ -111,6 +112,7 @@ if(BUILD_TESTING)
     nekopic_add_test(languagemanager tests/tst_languagemanager.cpp nekopic_app)
     nekopic_add_test(recentfiles tests/tst_recentfiles.cpp nekopic_platform)
     nekopic_add_test(exportformats tests/tst_exportformats.cpp nekopic_app)
+    nekopic_add_test(clipboard tests/tst_clipboard.cpp nekopic_platform)
     if(NEKOPIC_WITH_RUST)
         nekopic_add_test(rustcodecs tests/tst_rustcodecs.cpp nekopic_io)
     endif()

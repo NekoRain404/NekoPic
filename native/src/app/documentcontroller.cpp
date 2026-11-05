@@ -1,6 +1,7 @@
 #include "documentcontroller.h"
 #include "core/adjustments.h"
 #include "io/formatregistry.h"
+#include "platform/clipboard.h"
 #include "io/imageio.h"
 
 #include <QFileInfo>
@@ -91,6 +92,17 @@ void DocumentController::setError(const QString &error)
 }
 
 void DocumentController::clearError() { setError({}); }
+
+void DocumentController::copyImageToClipboard()
+{
+    if (busy_ || !hasImage()) return;
+    QString error;
+    if (!NekoPic::Platform::copyImage(image_, &error)) {
+        setError(error);
+        return;
+    }
+    emit imageCopied();
+}
 
 void DocumentController::beginAdjustment(const QString &key)
 {

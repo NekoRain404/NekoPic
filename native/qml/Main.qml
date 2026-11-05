@@ -14,6 +14,8 @@ ApplicationWindow {
     property bool closingRequested: false
     property url pendingImage
     property string activeTool: "adjust"
+    property string transientStatus: ""
+    function showStatus(message) { transientStatus = message; statusTimer.restart() }
     function applyCrop(area) {
         if (!editor.hasImage || editor.busy) return
         editor.cropImage(area)
@@ -73,6 +75,7 @@ ApplicationWindow {
             else if (name === "text") { c.moveTo(4,6); c.lineTo(4,3); c.lineTo(20,3); c.lineTo(20,6); c.moveTo(12,3); c.lineTo(12,21); c.moveTo(8,21); c.lineTo(16,21) }
             else if (name === "shapes") { c.rect(3,3,12,12); c.moveTo(22,16); c.arc(16,16,6,0,Math.PI*2) }
             else if (name === "mosaic") { c.rect(3,3,7,7); c.rect(14,3,7,7); c.rect(3,14,7,7); c.rect(14,14,7,7) }
+            else if (name === "copy") { c.rect(8, 8, 12, 12); c.moveTo(16, 8); c.lineTo(16, 4); c.lineTo(4, 4); c.lineTo(4, 16); c.lineTo(8, 16) }
             else if (name === "select") { c.moveTo(5,3); c.lineTo(20,13); c.lineTo(13,14); c.lineTo(10,21); c.closePath() }
             else if (name === "pan") { c.moveTo(8,12); c.lineTo(8,5); c.quadraticCurveTo(10,2,12,5); c.lineTo(12,11); c.lineTo(12,4); c.quadraticCurveTo(14,1,16,4); c.lineTo(16,11); c.lineTo(16,6); c.quadraticCurveTo(18,3,20,6); c.lineTo(20,15); c.quadraticCurveTo(20,22,13,22); c.quadraticCurveTo(9,22,7,18); c.lineTo(3,12); c.quadraticCurveTo(4,9,6,11); c.lineTo(8,13) }
             c.stroke()
@@ -95,6 +98,7 @@ ApplicationWindow {
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
+    Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
     Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: editor.undo() }
     Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: editor.redo() }
     Action { id: rotateRightAction; text: qsTr("Rotate clockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateClockwise() }
@@ -199,7 +203,7 @@ ApplicationWindow {
             MenuItem { action: saveAction }
             MenuItem { action: saveAsAction }
         }
-        Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } }
+        Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
         Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } }
         Menu {
             title: qsTr("View")
@@ -358,7 +362,8 @@ ApplicationWindow {
                 anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 15
                 Label { text: editor.hasImage ? editor.imageWidth + " × " + editor.imageHeight + " px" : "— × — px"; color: theme.muted; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
-                Label { text: editor.busy ? qsTr("Working…") : qsTr("Local editing"); color: theme.muted; font.pixelSize: 10 }
+                Label { text: window.transientStatus.length > 0 ? window.transientStatus : (editor.busy ? qsTr("Working…") : qsTr("Local editing")); color: theme.muted; font.pixelSize: 10 }
+                Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
             }
         }
     }
