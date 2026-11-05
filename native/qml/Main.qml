@@ -20,11 +20,7 @@ ApplicationWindow {
     property bool followSystemTheme: false
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     // Letter shortcuts must not fire while the user is typing in a modal.
-    readonly property bool blockingModal: commandPalette.opened
-        || exportDialog.opened || resizeDialog.opened || canvasSizeDialog.opened
-        || shortcutsDialog.opened || aboutDialog.opened || settingsDialog.opened
-        || discardDialog.opened || errorDialog.opened || foregroundColorDialog.visible
-        || recoveryDialog.opened
+    readonly property bool blockingModal: commandPalette.opened || dialogs.anyBlockingOpen
     property bool discardConfirmed: false
     property bool saveBeforePending: false
     property string startupTool: ""
@@ -129,13 +125,13 @@ ApplicationWindow {
         const base = window.pendingExportUrl
         if (!base || String(base).length === 0)
             return base
-        const name = exportDialog.fileName.trim()
+        const name = dialogs.exportFileName.trim()
         if (name.length === 0 || /[\\/]/.test(name)
                 || name === "." || name === "..")
             return base
         let finalName = name
-        if (finalName.lastIndexOf(".") < 0 && exportDialog.formatSuffix.length > 0)
-            finalName += "." + exportDialog.formatSuffix
+        if (finalName.lastIndexOf(".") < 0 && dialogs.exportFormatSuffix.length > 0)
+            finalName += "." + dialogs.exportFormatSuffix
         const text = String(base)
         const slash = text.lastIndexOf("/")
         const directory = slash >= 0 ? text.substring(0, slash + 1) : ""
@@ -203,7 +199,7 @@ ApplicationWindow {
         if (editor.dirty) {
             pendingImage = url
             closingRequested = false
-            discardDialog.open()
+            dialogs.openDiscardDialog()
         } else {
             editor.openImage(url)
         }
@@ -275,27 +271,10 @@ ApplicationWindow {
             recoveryCheckTimer.restart()
             return
         }
-        recoveryDialog.open()
+        dialogs.showRecovery()
     }
     function openSettings() {
-        if (typeof settings !== "undefined") {
-            settingsDialog.themeMode = settings.themeMode
-            settingsDialog.reduceMotion = settings.reduceMotion
-            settingsDialog.gpuPreviewEnabled = settings.gpuPreviewEnabled
-            settingsDialog.exportQuality = settings.exportQuality
-            settingsDialog.jpegBackground = settings.jpegBackground
-            settingsDialog.localeId = settings.locale
-            settingsDialog.confirmOnClose = settings.confirmOnClose
-            settingsDialog.showCheckerboard = settings.showCheckerboard
-            settingsDialog.recoveryEnabled = settings.recoveryEnabled
-            settingsDialog.startupTool = settings.startupTool
-        } else {
-            settingsDialog.themeMode = window.followSystemTheme ? "system"
-                                     : window.darkTheme ? "dark" : "light"
-            settingsDialog.reduceMotion = window.reduceMotion
-            settingsDialog.localeId = typeof language !== "undefined" ? language.locale : "zh_CN"
-        }
-        settingsDialog.open()
+        dialogs.openSettings()
     }
     Component.onCompleted: {
         applySettings()
@@ -360,9 +339,6 @@ ApplicationWindow {
                              textPanel.outline ? "#151718" : "transparent",
                              textPanel.outline ? 2 : 0, 1.0, 4.0)
     }
-    function formatSupportsQuality(id) {
-        return ["jpeg", "webp", "avif", "heic", "heif", "jxl", "tiff", "png"].indexOf(id) >= 0
-    }
     function applyCrop(area) {
         if (!editor.hasImage || editor.busy) return
         editor.cropImage(area)
@@ -386,7 +362,7 @@ ApplicationWindow {
         const shouldConfirm = typeof settings === "undefined" || settings.confirmOnClose
         if (editor.busy || (editor.dirty && shouldConfirm && !discardConfirmed)) {
             close.accepted = false
-            if (!editor.busy) { closingRequested = true; discardDialog.open() }
+            if (!editor.busy) { closingRequested = true; dialogs.openDiscardDialog() }
             return
         }
         // Normal exit with nothing unsaved, or an explicit discard, must not
@@ -434,9 +410,9 @@ ApplicationWindow {
         readonly property color accentInk: Theme.accentInk
     }
 
-    Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
+    Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: dialogs.openOpenDialog() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
-    Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
+    Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openSaveDialog() }
     Action { id: settingsAction; text: qsTr("Preferences…"); shortcut: "Ctrl+,"; onTriggered: window.openSettings() }
     Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
     Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
@@ -446,9 +422,9 @@ ApplicationWindow {
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }
     Action { id: flipVerticalAction; text: qsTr("Flip vertically"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipVertical() }
-    Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: resizeDialog.open() }
-    Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: canvasSizeDialog.open() }
-    Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
+    Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openResizeDialog() }
+    Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openCanvasSizeDialog() }
+    Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: dialogs.openShortcutsDialog() }
     Action { id: brushAction; text: qsTr("Brush"); shortcut: "B"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "brush" }
     Action { id: shapeAction; text: qsTr("Shapes"); shortcut: "U"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "shapes" }
     Action { id: panAction; text: qsTr("Pan"); shortcut: "H"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "pan" }
@@ -475,141 +451,58 @@ ApplicationWindow {
         zoomIn: zoomInAction, zoomOut: zoomOutAction,
         fit: fitAction, actual: actualAction
     })
-    FileDialog {
-        id: openDialog; title: qsTr("Open image"); fileMode: FileDialog.OpenFile
-        currentFolder: window.lastFolder.toString().length > 0 ? window.lastFolder
-                : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
-        nameFilters: [qsTr("Images") + " (" + editor.readableImagePatterns.join(" ") + ")", qsTr("All files (*)")]
-        onAccepted: {
-            window.lastFolder = currentFolder
+    AppDialogs {
+        id: dialogs
+        actions: window.actionMap
+        editorModel: editor
+        recoveryService: typeof recovery !== "undefined" ? recovery : null
+        settingsStore: typeof settings !== "undefined" ? settings : null
+        languageService: typeof language !== "undefined" ? language : null
+        formatInfo: typeof formatRegistryInfo !== "undefined"
+                    ? formatRegistryInfo : ({ readableCount: 0, writableCount: 0 })
+        lastFolder: window.lastFolder
+        busy: editor.busy
+        closingRequested: window.closingRequested
+        pendingImage: window.pendingImage
+        foregroundColor: window.foregroundColor
+        followSystemTheme: window.followSystemTheme
+        darkTheme: window.darkTheme
+        reduceMotion: window.reduceMotion
+        localeId: typeof language !== "undefined" ? language.locale : "zh_CN"
+
+        onImageOpenRequested: function(selectedFile, folder) {
+            window.lastFolder = folder
             window.requestOpen(selectedFile)
         }
-    }
-    FileDialog {
-        id: saveDialog; title: qsTr("Save image as"); fileMode: FileDialog.SaveFile
-        currentFolder: window.lastFolder.toString().length > 0 ? window.lastFolder
-                : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
-        readonly property var formats: (typeof editor !== "undefined" && editor.writableFormats)
-                                       ? editor.writableFormats : [{ id: "png", label: "PNG image",
-                                                                     suffix: "png", patterns: ["*.png"] }]
-        readonly property int selectedFormat: selectedNameFilter.index >= 0
-                                              && selectedNameFilter.index < formats.length
-                                              ? selectedNameFilter.index : 0
-        nameFilters: formats.map(function(format) {
-            return qsTr(format.label) + " (" + format.patterns.join(" ") + ")"
-        })
-        defaultSuffix: formats[selectedFormat].suffix
-        onAccepted: {
-            window.lastFolder = currentFolder
-            const format = formats[selectedFormat]
+        onExportDestinationSelected: function(selectedFile, folder) {
+            window.lastFolder = folder
             window.pendingExportUrl = selectedFile
-            exportDialog.formatId = format.id
-            exportDialog.formatLabel = format.label
-            exportDialog.formatSuffix = format.suffix
-            exportDialog.fileName = selectedFile.toString().split("/").pop()
-            exportDialog.supportsQuality = window.formatSupportsQuality(format.id)
-            exportDialog.initialQuality = editor.exportQuality >= 0 ? editor.exportQuality : 90
-            exportDialog.initialBackground = editor.jpegBackground
-            exportDialog.previewUrl = editor.imageUrl
-            exportDialog.previewWidth = editor.imageWidth
-            exportDialog.previewHeight = editor.imageHeight
-            exportDialog.open()
         }
-        onRejected: if (window.saveBeforePending) window.saveBeforePending = false
-    }
-    Menu {
-        id: transformMenu
-        objectName: "transformMenu"
-        MenuItem { objectName: "transform-rotate-left"; action: rotateLeftAction }
-        MenuItem { objectName: "transform-rotate-right"; action: rotateRightAction }
-        MenuSeparator { }
-        MenuItem { objectName: "transform-flip-horizontal"; action: flipHorizontalAction }
-        MenuItem { objectName: "transform-flip-vertical"; action: flipVerticalAction }
-    }
-    ColorDialog {
-        id: foregroundColorDialog
-        objectName: "foregroundColorDialog"
-        title: qsTr("Foreground colour")
-        selectedColor: window.foregroundColor
-        onAccepted: window.foregroundColor = selectedColor
-    }
-    Dialog {
-        id: errorDialog; objectName: "errorDialog"
-        title: qsTr("Unable to complete operation"); modal: true
-        anchors.centerIn: parent; standardButtons: Dialog.Ok
-        onClosed: editor.clearError()
-        Label { text: editor.errorMessage; wrapMode: Text.WordWrap; width: 360; color: theme.text }
-    }
-    Dialog {
-        id: discardDialog; objectName: "discardDialog"
-        title: qsTr("Save changes before continuing?"); modal: true
-        anchors.centerIn: parent; standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
-        onAccepted: {
-            window.saveBeforePending = true
-            if (editor.hasPath) editor.saveImage()
-            else saveDialog.open()
+        onSaveBeforeRequested: window.saveBeforePending = true
+        onSaveBeforeCancelled: if (window.saveBeforePending) window.saveBeforePending = false
+        onDiscardAndCloseRequested: {
+            window.discardConfirmed = true
+            window.close()
         }
-        onDiscarded: {
-            if (window.closingRequested) {
-                window.discardConfirmed = true
-                window.close()
-            } else {
-                editor.openImageDiscardingChanges(window.pendingImage)
-            }
+        onForegroundColorPicked: function(value) { window.foregroundColor = value }
+        onExportRequested: function(format, quality, background) {
+            editor.exportQuality = quality
+            editor.jpegBackground = background
+            editor.saveAs(window.exportDestinationUrl(), format)
         }
-        Label { text: qsTr("Your unsaved changes will be lost."); color: theme.text; wrapMode: Text.WordWrap; width: 340 }
-    }
-    NekoDialog {
-        id: aboutDialog
-        objectName: "aboutDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        title: qsTr("About NekoPic")
-        acceptText: qsTr("Close")
-        showCloseButton: true
-        onAccepted: close()
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: Theme.spacingSm
-            Label {
-                text: "NekoPic " + Qt.application.version
-                color: Theme.textPrimary
-                font.pixelSize: Theme.fontTitle
-                font.weight: Theme.fontWeightDemiBold
-            }
-            Label {
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                text: qsTr("A local-first desktop photo editor. Your photos stay on this device.")
-                color: Theme.textSecondary
-                font.pixelSize: Theme.fontBody
-            }
-            Label {
-                text: "Qt " + Qt.application.qtVersion + " · Linux"
-                color: Theme.textTertiary
-                font.pixelSize: Theme.fontCaption
-            }
+        onThemeModeChanged: function(value) {
+            const variants = ["midnight", "warm", "graphite", "contrast"]
+            window.themeVariant = variants.indexOf(value) >= 0 ? value : ""
+            window.followSystemTheme = value === "system"
+            if (value === "system")
+                window.darkTheme = window.systemDark
+            else if (window.themeVariant.length > 0)
+                window.darkTheme = value !== "warm"
+            else
+                window.darkTheme = value === "dark"
         }
-    }
-    RecoveryDialog {
-        id: recoveryDialog
-        objectName: "recoveryDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        sourceName: typeof recovery !== "undefined" && recovery !== null
-                    ? recovery.sourceName : ""
-        sourcePath: typeof recovery !== "undefined" && recovery !== null
-                    ? recovery.sourcePath : ""
-        capturedAtText: typeof recovery !== "undefined" && recovery !== null
-                        ? recovery.capturedAtText : ""
-        imageSizeText: typeof recovery !== "undefined" && recovery !== null
-                       ? recovery.imageSizeText : ""
-        flattened: typeof recovery !== "undefined" && recovery !== null
-                   ? recovery.flattened : true
-        onAccepted: if (typeof recovery !== "undefined" && recovery !== null)
-                        recovery.restoreRecovery()
-        onRejected: if (typeof recovery !== "undefined" && recovery !== null)
-                        recovery.discardRecovery()
+        onReduceMotionRequested: window.reduceMotion = value
+        onStartupToolChanged: window.startupTool = value
     }
     // Single-shot retry while a startup image is decoding; avoids spinning the
     // event loop with Qt.callLater.
@@ -618,102 +511,6 @@ ApplicationWindow {
         interval: 120
         repeat: false
         onTriggered: window.maybeShowRecovery()
-    }
-    ExportDialog {
-        id: exportDialog
-        objectName: "exportDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        busy: editor.busy
-        onExportRequested: function(format, quality, background) {
-            editor.exportQuality = quality
-            editor.jpegBackground = background
-            editor.saveAs(window.exportDestinationUrl(), format)
-        }
-        onRejected: if (window.saveBeforePending) window.saveBeforePending = false
-    }
-    ResizeImageDialog {
-        id: resizeDialog
-        objectName: "resizeImageDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        imageWidth: editor.imageWidth
-        imageHeight: editor.imageHeight
-        busy: editor.busy
-        onResizeRequested: function(width, height) { editor.resizeImage(width, height) }
-    }
-    CanvasSizeDialog {
-        id: canvasSizeDialog
-        objectName: "canvasSizeDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        imageWidth: editor.imageWidth
-        imageHeight: editor.imageHeight
-        busy: editor.busy
-        onCanvasResizeRequested: function(width, height, anchor, background) {
-            editor.resizeCanvas(width, height, anchor, background)
-        }
-    }
-    SettingsDialog {
-        id: settingsDialog
-        objectName: "settingsDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        localeOptions: typeof language !== "undefined" ? language.availableLocales : []
-        recoveryAvailable: typeof recovery !== "undefined" && recovery !== null
-                           && recovery.hasRecovery
-        recoverySourceName: typeof recovery !== "undefined" && recovery !== null
-                            ? recovery.sourceName : ""
-        recoveryCapturedAt: typeof recovery !== "undefined" && recovery !== null
-                            ? recovery.capturedAtText : ""
-        recoveryImageSize: typeof recovery !== "undefined" && recovery !== null
-                           ? recovery.imageSizeText : ""
-        formatCapabilities: typeof formatRegistryInfo !== "undefined"
-                            ? formatRegistryInfo
-                            : ({ readableCount: 0, writableCount: 0 })
-        onSettingChanged: function(key, value) {
-            if (typeof settings === "undefined") return
-            settings[key] = value
-            if (key === "themeMode") {
-                const variants = ["midnight", "warm", "graphite", "contrast"]
-                window.themeVariant = variants.indexOf(value) >= 0 ? value : ""
-                window.followSystemTheme = value === "system"
-                if (value === "system")
-                    window.darkTheme = window.systemDark
-                else if (window.themeVariant.length > 0)
-                    window.darkTheme = value !== "warm"
-                else
-                    window.darkTheme = value === "dark"
-            } else if (key === "reduceMotion") {
-                window.reduceMotion = value
-            } else if (key === "exportQuality") {
-                editor.exportQuality = value
-            } else if (key === "jpegBackground") {
-                editor.jpegBackground = value
-            } else if (key === "recoveryEnabled") {
-                if (typeof recovery !== "undefined" && recovery !== null)
-                    recovery.autosaveEnabled = value
-            } else if (key === "startupTool") {
-                // Consumed by onImageOpened, so it takes effect the next time
-                // a document is opened even if one is already on screen.
-                window.startupTool = value
-            }
-        }
-        onLocaleSelected: function(id) {
-            if (typeof settings !== "undefined") settings.locale = id
-            if (typeof language !== "undefined") language.setLanguage(id)
-        }
-        onShortcutsRequested: if (!shortcutsDialog.opened) shortcutsDialog.open()
-        onRecoveryDiscardRequested: {
-            if (typeof recovery !== "undefined" && recovery !== null)
-                recovery.discardRecovery()
-        }
-    }
-    ShortcutsDialog {
-        id: shortcutsDialog
-        objectName: "shortcutsDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
     }
     Connections {
         target: canvas
@@ -744,7 +541,7 @@ ApplicationWindow {
     }
     Connections {
         target: editor
-        function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
+        function onErrorChanged() { dialogs.showError() }
         function onBusyChanged() {
             if (!editor.busy && window._awaitingMovePreview) {
                 window._awaitingMovePreview = false
@@ -807,29 +604,10 @@ ApplicationWindow {
         onClearRecentRequested: if (typeof recentFiles !== "undefined") recentFiles.clear()
     }
 
-    Rectangle {
+    DropTarget {
         anchors.fill: parent
-        visible: dropArea.containsDrag
-        color: Theme.alpha(Theme.accent, 0.06)
-        border.width: 2
-        border.color: Theme.accent
-        z: 1000
-        Label {
-            anchors.centerIn: parent
-            text: qsTr("Drop to open image")
-            color: Theme.textPrimary
-            font.pixelSize: Theme.fontHeadline
-            font.weight: Theme.fontWeightDemiBold
-        }
-    }
-    DropArea {
-        id: dropArea
-        anchors.fill: parent
-        onDropped: function(drop) {
-            if (editor.busy || !drop.hasUrls || drop.urls.length === 0) return
-            window.requestOpen(drop.urls[0])
-            drop.acceptProposedAction()
-        }
+        busy: editor.busy
+        onOpenRequested: function(url) { window.requestOpen(url) }
     }
 
     ColumnLayout {
@@ -844,7 +622,7 @@ ApplicationWindow {
             actions: window.actionMap
             hasImage: editor.hasImage
             busy: editor.busy
-            onTransformRequested: transformMenu.open()
+            onTransformRequested: dialogs.openTransformMenu()
             onCanvasSizeRequested: canvasSizeAction.trigger()
             onSettingsRequested: window.openSettings()
             onCommandPaletteRequested: commandPalette.open()
@@ -858,148 +636,33 @@ ApplicationWindow {
                 busy: editor.busy
                 foregroundColor: window.foregroundColor
                 onToolSelected: function(tool) { window.activeTool = tool }
-                onForegroundColorRequested: {
-                    foregroundColorDialog.selectedColor = window.foregroundColor
-                    foregroundColorDialog.open()
-                }
+                onForegroundColorRequested: dialogs.pickForegroundColor(window.foregroundColor)
             }
-            Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
-            EditorCanvas {
-                id: canvas; Layout.fillWidth: true; Layout.fillHeight: true; theme: theme
-                objectName: "editorCanvas"
-                hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
-                baseImageUrl: typeof editor.baseImageUrl !== "undefined" ? editor.baseImageUrl : ""
-                gpuPreviewAvailable: typeof renderCapabilities !== "undefined" && renderCapabilities.gpuPreviewAvailable
-                                     && (typeof settings === "undefined" || settings.gpuPreviewEnabled)
-                showCheckerboard: typeof settings === "undefined" || settings.showCheckerboard
-                adjustmentPreviewActive: typeof editor.adjustmentPreviewGpuEligible !== "undefined"
-                                         && editor.adjustmentPreviewGpuEligible
-                                         && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
-                previewExposure: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 25 : 0
-                previewBrightness: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.brightness / 100 : 0
-                previewContrast: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.contrast / 100 : 0
-                previewSaturation: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.saturation / 100 : 0
-                previewHighlights: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.highlights / 100 : 0
-                previewShadows: typeof editor.pendingAdjustmentValues !== "undefined"
-                                && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.shadows / 100 : 0
-                previewWhites: typeof editor.pendingAdjustmentValues !== "undefined"
-                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.whites / 100 : 0
-                previewBlacks: typeof editor.pendingAdjustmentValues !== "undefined"
-                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.blacks / 100 : 0
-                previewTemperature: typeof editor.pendingAdjustmentValues !== "undefined"
-                                    && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.temperature / 100 : 0
-                previewTint: typeof editor.pendingAdjustmentValues !== "undefined"
-                             && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.tint / 100 : 0
-                previewVibrance: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.vibrance / 100 : 0
-                fileName: editor.fileName; dirty: editor.dirty
-                mosaicActive: window.activeTool === "mosaic"
-                cropActive: window.activeTool === "crop"
-                eyedropperActive: window.activeTool === "eye"
-                textActive: window.activeTool === "text"
-                panActive: window.activeTool === "pan"
-                spacePanActive: window.spacePanActive
-                busy: editor.busy
+            EditorSurface {
+                id: canvas
+                editorModel: editor
+                panels: ({ brush: brushPanel, text: textPanel, shape: shapePanel,
+                           mosaic: mosaicPanel, crop: cropPanel })
+                settingsObject: typeof settings !== "undefined" ? settings : null
+                renderCapabilitiesObject: typeof renderCapabilities !== "undefined"
+                                          ? renderCapabilities : null
+                recentFilesObject: typeof recentFiles !== "undefined" ? recentFiles : null
+                activeTool: window.activeTool
                 toolHint: window.activeToolHint
-                selectionActive: window.activeTool === "select"
-                movePreviewReady: editor.objectMovePreviewReady
-                movePreviewBaseUrl: editor.objectMoveBaseUrl
-                movePreviewObjectUrl: editor.objectMoveObjectUrl
-                movePreviewBounds: editor.objectMoveBounds
-                shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
-                polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
-                brushActive: window.activeTool === "brush"
-                brushDiameter: brushPanel.diameter
-                brushColor: brushPanel.color
-                brushOpacity: brushPanel.inkOpacity
-                brushSoftness: brushPanel.softness
-                onBrushStrokeCommitted: function(points) {
-                    editor.addBrushStroke(points, brushPanel.diameter,
-                                          brushPanel.effectiveColor,
-                                          brushPanel.softness / 100)
-                }
-                onBrushCancelled: window.activeTool = "adjust"
-                shapeKind: shapePanel.shapeKind
-                shapeFillColor: shapePanel.fillColor
-                shapeStrokeColor: shapePanel.strokeColor
-                shapeStrokeWidth: shapePanel.strokeWidth
-                shapeCornerRadius: shapePanel.cornerRadius
-                shapeFilled: shapePanel.filled
-                onShapeCommitted: function(kind, area) {
-                    editor.addShape(kind, area,
-                                    shapePanel.filled ? shapePanel.fillColor : "transparent",
-                                    shapePanel.strokeColor, shapePanel.strokeWidth,
-                                    shapePanel.cornerRadius)
-                }
-                onShapeCancelled: window.activeTool = "adjust"
-                onPolygonCommitted: function(points) {
-                    editor.addPolygon(points,
-                                      shapePanel.filled ? shapePanel.fillColor : "transparent",
-                                      shapePanel.strokeColor, shapePanel.strokeWidth)
-                }
-                objectAt: function(x, y) { return editor.objectAt(x, y) }
-                objectBounds: function(id) { return editor.objectBounds(id) }
-                onMoveObjectsRequested: function(ids, dx, dy) {
-                    const moved = editor.moveObjects(ids, dx, dy)
-                    if (!moved) {
-                        window._awaitingMovePreview = false
-                        editor.clearObjectMovePreview()
-                        canvas.clearMovePreview()
-                    }
-                }
-                onMoveStarted: function(ids) {
-                    window._awaitingMovePreview = true
-                    editor.beginObjectMovePreview(ids)
-                }
-                onMovePreview: function(ids, dx, dy) {
-                    // The object crop offset is bound inside EditorCanvas to
-                    // SelectionOverlay.movePreviewOffset; no controller work
-                    // happens per pointer event.
-                }
-                onMoveFinished: function(ids, dx, dy) {
-                    // The commit is already in flight via moveObjectsRequested;
-                    // keep the crop until busyChanged reports completion.
-                }
-                onMoveCancelled: function() {
-                    window._awaitingMovePreview = false
-                    editor.clearObjectMovePreview()
-                    canvas.clearMovePreview()
-                }
-                onRemoveObjectsRequested: function(ids) { editor.removeObjects(ids) }
-                onObjectDoubleClicked: function(id) {
-                    const info = editor.textInfo(id)
-                    if (!info || info.id === undefined) return
+                spacePanActive: window.spacePanActive
+                onToolChangeRequested: function(tool) { window.activeTool = tool }
+                onStatusRequested: function(message) { window.showStatus(message) }
+                onTextObjectActivated: function(info) {
                     window.activeTool = "text"
-                    canvas.setSelectionIds([id])
+                    canvas.setSelectionIds([info.id])
                     window.applyTextInfo(info)
                 }
-                onTextPointSelected: function(imageX, imageY) { window.createTextAt(imageX, imageY) }
-                onTextCancelled: window.activeTool = "adjust"
-                colorSampler: function(x, y) { return editor.colorAt(x, y) }
-                onColorPicked: function(value) { window.showStatus(qsTr("Picked %1").arg(value.toString())) }
-                onEyedropperCancelled: window.activeTool = "adjust"
-                cropAspectRatio: cropPanel.aspectRatio
-                onCropApplyRequested: function(area) { window.applyCrop(area) }
-                onCropCancelled: window.activeTool = "adjust"
-                mosaicBrushMode: mosaicPanel.brushMode
-                mosaicBrushDiameter: mosaicPanel.brushDiameter
-                inputEnabled: !editor.busy
-                onMosaicRectangleCommitted: function(area) {
-                    if (mosaicPanel.effect === "blur") editor.blurRectangle(area, mosaicPanel.blurRadius)
-                    else editor.mosaicRectangle(area, mosaicPanel.blockSize)
-                }
-                onMosaicStrokeCommitted: function(points) {
-                    if (mosaicPanel.effect === "blur") editor.blurStroke(points, mosaicPanel.blurRadius)
-                    else editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize)
-                }
-                recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
-                onRecentRequested: function(url) { window.requestOpen(url) }
-                onOpenRequested: if (!editor.busy) openDialog.open()
+                onTextPointChosen: function(imageX, imageY) { window.createTextAt(imageX, imageY) }
+                onCropApplyChosen: function(area) { window.applyCrop(area) }
+                onMovePreviewStarted: window._awaitingMovePreview = true
+                onMovePreviewSettled: window._awaitingMovePreview = false
+                onRecentOpenRequested: function(url) { window.requestOpen(url) }
+                onOpenDialogRequested: if (!editor.busy) dialogs.openOpenDialog()
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             Inspector {
