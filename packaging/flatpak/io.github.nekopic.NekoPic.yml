@@ -1,0 +1,53 @@
+# Experimental Flatpak manifest for NekoPic.
+#
+# NOT VALIDATED against a real org.kde.Sdk 6.8 runtime yet. The manifest is
+# provided as a starting point: build it locally before claiming Flatpak
+# support, and review the finish-args with the project owner.
+#
+#   flatpak-builder --user --install --force-clean \
+#       packaging/flatpak/build packaging/flatpak/io.github.nekopic.NekoPic.yml
+#
+# The app id must match the AppStream component id and the exported desktop
+# file name. CMake installs nekopic.desktop, so rename-desktop-file maps it to
+# the Flatpak app id.
+app-id: io.github.nekopic.NekoPic
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: nekopic
+# These are manifest-level cleanup options, not module options. They rename
+# the installed CMake files to the app id that Flatpak requires for export.
+rename-desktop-file: nekopic.desktop
+rename-appdata-file: nekopic.metainfo.xml
+
+finish-args:
+  # Display integration; no network access is requested.
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  # Image locations the editor is expected to open and save into. Flatpak's
+  # portal still mediates file dialogs.
+  - --filesystem=xdg-pictures
+  - --filesystem=xdg-download
+  - --filesystem=xdg-desktop
+  - --filesystem=xdg-documents
+
+modules:
+  - name: nekopic
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_TESTING=OFF
+      - -DNEKOPIC_BUILD_QML_TESTS=OFF
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - .git
+          - .claude
+          - artifacts
+          - native/build*
+          - native/rust/target
+          - packaging/flatpak/build
