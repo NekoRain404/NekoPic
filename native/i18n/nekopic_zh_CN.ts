@@ -514,6 +514,74 @@
     </message>
 </context>
 <context>
+    <name>FormatRegistry</name>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="185" />
+        <source>PNG image</source>
+        <translation>PNG 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="186" />
+        <source>JPEG image</source>
+        <translation>JPEG 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="187" />
+        <source>WebP image</source>
+        <translation>WebP 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="188" />
+        <source>TIFF image</source>
+        <translation>TIFF 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="189" />
+        <source>AVIF image</source>
+        <translation>AVIF 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="190" />
+        <source>HEIC image</source>
+        <translation>HEIC 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="191" />
+        <source>HEIF image</source>
+        <translation>HEIF 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="192" />
+        <source>JPEG XL image</source>
+        <translation>JPEG XL 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="193" />
+        <source>QOI image</source>
+        <translation>QOI 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="194" />
+        <source>BMP image</source>
+        <translation>BMP 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="195" />
+        <source>TGA image</source>
+        <translation>TGA 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="196" />
+        <source>OpenEXR image</source>
+        <translation>OpenEXR 图像</translation>
+    </message>
+    <message>
+        <location filename="../src/io/formatregistry.cpp" line="197" />
+        <source>ICO image</source>
+        <translation>ICO 图像</translation>
+    </message>
+</context>
+<context>
     <name>Gallery</name>
     <message>
         <location filename="../qml/UI/Gallery.qml" line="75" />
@@ -941,67 +1009,67 @@
 <context>
     <name>Main</name>
     <message>
-        <location filename="../qml/Main.qml" line="80" />
+        <location filename="../qml/Main.qml" line="81" />
         <source>Open image…</source>
         <translation>打开图片…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="81" />
+        <location filename="../qml/Main.qml" line="82" />
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="82" />
+        <location filename="../qml/Main.qml" line="83" />
         <source>Save as…</source>
         <translation>另存为…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="87" />
+        <location filename="../qml/Main.qml" line="88" />
         <source>Rotate clockwise</source>
         <translation>顺时针旋转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="88" />
+        <location filename="../qml/Main.qml" line="89" />
         <source>Rotate counterclockwise</source>
         <translation>逆时针旋转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="89" />
+        <location filename="../qml/Main.qml" line="90" />
         <source>Flip horizontally</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="90" />
+        <location filename="../qml/Main.qml" line="91" />
         <source>Flip vertically</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="96" />
+        <location filename="../qml/Main.qml" line="99" />
         <source>Fit to window</source>
         <translation>适应窗口</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="97" />
+        <location filename="../qml/Main.qml" line="100" />
         <source>Actual size (100%)</source>
         <translation>实际大小 (100%)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="99" />
+        <location filename="../qml/Main.qml" line="102" />
         <source>Open image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="100" />
+        <location filename="../qml/Main.qml" line="105" />
         <source>Images</source>
         <translation>图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="100" />
+        <location filename="../qml/Main.qml" line="105" />
         <source>All files (*)</source>
         <translation>所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="112" />
+        <location filename="../qml/Main.qml" line="118" />
         <source>Save image as</source>
         <translation>图片另存为</translation>
     </message>
@@ -1014,7 +1082,7 @@
         <translation type="vanished">JPEG 图片 (*.jpg *.jpeg)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="137" />
+        <location filename="../qml/Main.qml" line="146" />
         <source>Unable to complete operation</source>
         <translation>无法完成操作</translation>
     </message>
@@ -1023,272 +1091,289 @@
         <translation type="vanished">放弃未保存的修改？</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="158" />
+        <location filename="../qml/Main.qml" line="167" />
         <source>Your unsaved changes will be lost.</source>
         <translation>未保存的修改将会丢失。</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="263" />
-        <location filename="../qml/Main.qml" line="518" />
-        <location filename="../qml/Main.qml" line="520" />
-        <location filename="../qml/Main.qml" line="522" />
+        <location filename="../qml/Main.qml" line="272" />
+        <location filename="../qml/Main.qml" line="527" />
+        <location filename="../qml/Main.qml" line="529" />
+        <location filename="../qml/Main.qml" line="531" />
         <source>File</source>
         <translation>文件</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="295" />
-        <location filename="../qml/Main.qml" line="524" />
-        <location filename="../qml/Main.qml" line="526" />
-        <location filename="../qml/Main.qml" line="528" />
+        <location filename="../qml/Main.qml" line="304" />
+        <location filename="../qml/Main.qml" line="533" />
+        <location filename="../qml/Main.qml" line="535" />
+        <location filename="../qml/Main.qml" line="537" />
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="85" />
+        <location filename="../qml/Main.qml" line="86" />
         <source>Undo</source>
         <translation>撤销</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="86" />
+        <location filename="../qml/Main.qml" line="87" />
         <source>Redo</source>
         <translation>重做</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="296" />
-        <location filename="../qml/Main.qml" line="530" />
-        <location filename="../qml/Main.qml" line="532" />
-        <location filename="../qml/Main.qml" line="534" />
-        <location filename="../qml/Main.qml" line="536" />
-        <location filename="../qml/Main.qml" line="542" />
-        <location filename="../qml/Main.qml" line="544" />
+        <location filename="../qml/Main.qml" line="305" />
+        <location filename="../qml/Main.qml" line="539" />
+        <location filename="../qml/Main.qml" line="541" />
+        <location filename="../qml/Main.qml" line="543" />
+        <location filename="../qml/Main.qml" line="545" />
+        <location filename="../qml/Main.qml" line="551" />
+        <location filename="../qml/Main.qml" line="553" />
         <source>Image</source>
         <translation>图像</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="363" />
+        <location filename="../qml/Main.qml" line="372" />
         <source>Rotate</source>
         <translation>旋转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="95" />
-        <location filename="../qml/Main.qml" line="391" />
+        <location filename="../qml/Main.qml" line="96" />
+        <location filename="../qml/Main.qml" line="400" />
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="83" />
+        <location filename="../qml/Main.qml" line="84" />
         <source>Command palette…</source>
         <translation>命令面板…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="84" />
+        <location filename="../qml/Main.qml" line="85" />
         <source>Copy image</source>
         <translation>复制图像</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="84" />
-        <location filename="../qml/Main.qml" line="529" />
+        <location filename="../qml/Main.qml" line="85" />
+        <location filename="../qml/Main.qml" line="538" />
         <source>Copied to clipboard</source>
         <translation>已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="91" />
+        <location filename="../qml/Main.qml" line="92" />
         <source>Resize image…</source>
         <translation>调整图片尺寸…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="92" />
+        <location filename="../qml/Main.qml" line="93" />
         <source>Canvas size…</source>
         <translation>画布尺寸…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="93" />
+        <location filename="../qml/Main.qml" line="94" />
         <source>Keyboard shortcuts</source>
         <translation>键盘快捷键</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="94" />
-        <location filename="../qml/Main.qml" line="391" />
+        <location filename="../qml/Main.qml" line="95" />
+        <location filename="../qml/Main.qml" line="400" />
         <source>Eyedropper</source>
         <translation>吸管</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="143" />
+        <location filename="../qml/Main.qml" line="97" />
+        <source>Zoom in</source>
+        <translation>放大</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="98" />
+        <source>Zoom out</source>
+        <translation>缩小</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="152" />
         <source>Save changes before continuing?</source>
         <translation>继续前保存更改？</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="164" />
+        <location filename="../qml/Main.qml" line="173" />
         <source>About NekoPic</source>
         <translation>关于 NekoPic</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="165" />
+        <location filename="../qml/Main.qml" line="174" />
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="180" />
+        <location filename="../qml/Main.qml" line="189" />
         <source>A local-first desktop photo editor. Your photos stay on this device.</source>
         <translation>本地优先的桌面照片编辑器。照片始终保留在本机。</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="233" />
+        <location filename="../qml/Main.qml" line="242" />
         <source>Image saved</source>
         <translation>图像已保存</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="266" />
+        <location filename="../qml/Main.qml" line="275" />
         <source>Open recent</source>
         <translation>打开最近</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="286" />
+        <location filename="../qml/Main.qml" line="295" />
         <source>Clear recent files</source>
         <translation>清除最近文件</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="298" />
-        <location filename="../qml/Main.qml" line="548" />
-        <location filename="../qml/Main.qml" line="550" />
-        <location filename="../qml/Main.qml" line="552" />
-        <location filename="../qml/Main.qml" line="554" />
-        <location filename="../qml/Main.qml" line="556" />
+        <location filename="../qml/Main.qml" line="307" />
+        <location filename="../qml/Main.qml" line="557" />
+        <location filename="../qml/Main.qml" line="559" />
+        <location filename="../qml/Main.qml" line="561" />
+        <location filename="../qml/Main.qml" line="563" />
+        <location filename="../qml/Main.qml" line="565" />
+        <location filename="../qml/Main.qml" line="567" />
+        <location filename="../qml/Main.qml" line="569" />
         <source>View</source>
         <translation>视图</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="301" />
-        <location filename="../qml/Main.qml" line="554" />
+        <location filename="../qml/Main.qml" line="310" />
+        <location filename="../qml/Main.qml" line="567" />
         <source>Follow system theme</source>
         <translation>跟随系统主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="302" />
+        <location filename="../qml/Main.qml" line="311" />
         <source>Dark theme</source>
         <translation>深色主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="303" />
+        <location filename="../qml/Main.qml" line="312" />
         <source>Reduce motion</source>
         <translation>减少动效</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="305" />
-        <location filename="../qml/Main.qml" line="558" />
-        <location filename="../qml/Main.qml" line="561" />
+        <location filename="../qml/Main.qml" line="314" />
+        <location filename="../qml/Main.qml" line="571" />
+        <location filename="../qml/Main.qml" line="574" />
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="329" />
+        <location filename="../qml/Main.qml" line="338" />
         <source>Drop to open image</source>
         <translation>拖放以打开图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="367" />
+        <location filename="../qml/Main.qml" line="376" />
         <source>Search</source>
         <translation>搜索</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="369" />
+        <location filename="../qml/Main.qml" line="378" />
         <source>Command palette (Ctrl+K)</source>
         <translation>命令面板（Ctrl+K）</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="387" />
+        <location filename="../qml/Main.qml" line="396" />
         <source>Select</source>
         <translation>选择</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="387" />
+        <location filename="../qml/Main.qml" line="396" />
         <source>Pan</source>
         <translation>平移</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="388" />
+        <location filename="../qml/Main.qml" line="397" />
         <source>Adjust</source>
         <translation>调色</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="388" />
+        <location filename="../qml/Main.qml" line="397" />
         <source>Filters</source>
         <translation>滤镜</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="389" />
+        <location filename="../qml/Main.qml" line="398" />
         <source>Brush</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="389" />
+        <location filename="../qml/Main.qml" line="398" />
         <source>Text</source>
         <translation>文字</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="390" />
+        <location filename="../qml/Main.qml" line="399" />
         <source>Shapes</source>
         <translation>形状</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="390" />
+        <location filename="../qml/Main.qml" line="399" />
         <source>Mosaic</source>
         <translation>打码</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="408" />
+        <location filename="../qml/Main.qml" line="417" />
         <source>Coming soon</source>
         <translation>即将推出</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="437" />
+        <location filename="../qml/Main.qml" line="446" />
         <source>Picked %1</source>
         <translation>已拾取 %1</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="508" />
+        <location filename="../qml/Main.qml" line="517" />
         <source>Working…</source>
         <translation>正在处理…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="538" />
-        <location filename="../qml/Main.qml" line="540" />
+        <location filename="../qml/Main.qml" line="517" />
+        <source>Unsaved changes</source>
+        <translation>未保存的更改</translation>
+    </message>
+    <message>
+        <location filename="../qml/Main.qml" line="547" />
+        <location filename="../qml/Main.qml" line="549" />
         <source>Tools</source>
         <translation>工具</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="546" />
+        <location filename="../qml/Main.qml" line="555" />
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="552" />
+        <location filename="../qml/Main.qml" line="565" />
         <source>Toggle dark theme</source>
         <translation>切换深色主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="556" />
+        <location filename="../qml/Main.qml" line="569" />
         <source>Toggle reduce motion</source>
         <translation>切换减少动效</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="558" />
+        <location filename="../qml/Main.qml" line="571" />
         <source>Switch to English</source>
         <translation>切换到英文</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="561" />
+        <location filename="../qml/Main.qml" line="574" />
         <source>切换到简体中文</source>
         <translation>切换到简体中文</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="566" />
+        <location filename="../qml/Main.qml" line="579" />
         <source>Recent</source>
         <translation>最近</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="260" />
-        <location filename="../qml/Main.qml" line="508" />
+        <location filename="../qml/Main.qml" line="269" />
+        <location filename="../qml/Main.qml" line="517" />
         <source>Local editing</source>
         <translation>本地编辑</translation>
     </message>
@@ -1545,62 +1630,72 @@
     </message>
     <message>
         <location filename="../qml/dialogs/ShortcutsDialog.qml" line="36" />
+        <source>Zoom in</source>
+        <translation>放大</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="37" />
+        <source>Zoom out</source>
+        <translation>缩小</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="38" />
         <source>Fit to window</source>
         <translation>适应窗口</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="37" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="39" />
         <source>Actual size (100%)</source>
         <translation>实际大小 (100%)</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="38" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="40" />
         <source>Command palette…</source>
         <translation>命令面板…</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="42" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="44" />
         <source>Tools</source>
         <translation>工具</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="44" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="46" />
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="45" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="47" />
         <source>Eyedropper</source>
         <translation>吸管</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="46" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="48" />
         <source>Apply crop</source>
         <translation>应用裁剪</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="47" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="49" />
         <source>Cancel crop or eyedropper</source>
         <translation>取消裁剪或吸管</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="51" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="53" />
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="53" />
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="69" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="55" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="71" />
         <source>Keyboard shortcuts</source>
         <translation>键盘快捷键</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="70" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="72" />
         <source>Shortcuts available in the editor. Crop shortcuts work while the crop tool is active.</source>
         <translation>编辑器中可用的快捷键。裁剪快捷键在裁剪工具激活时生效。</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="139" />
+        <location filename="../qml/dialogs/ShortcutsDialog.qml" line="141" />
         <source>Done</source>
         <translation>完成</translation>
     </message>
