@@ -6,7 +6,7 @@ Current scope (user clarification): UI interaction review only. Keep existing ex
 
 Design: graphite workspace, warm peach accent, persistent desktop menus and tool rail, central photo canvas, contextual inspector, bottom status and zoom controls. Editing is local in the browser.
 
-Files: `index.html` for semantic layout and dialogs, `styles.css` for visual design, `app.js` for editing and interaction, `assets/demo.jpg` for an offline sample, and `README.md` for launch instructions and browser limitations.
+Files: `prototype/h5/index.html` for semantic layout and dialogs, `styles.css` for visual design, `app.js` for editing and interaction, `assets/demo.jpg` for an offline sample, and `README.md` for launch instructions and browser limitations.
 
 - [x] Build the desktop shell, responsive canvas workspace and local sample image.
 - [ ] Implement image import, adjustment preview, drawing, editable text and shapes, selection, undo/redo, rotation, comparison and zoom.

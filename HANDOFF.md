@@ -107,7 +107,7 @@ git ls-files --others --exclude-standard
 
 ### H5 与原生版的区别
 
-H5 入口是根目录 `index.html`，配套 `styles.css`、`app.js`、`ui-preview.*`、`color-ui.*`。它承担视觉和交互参考作用。
+H5 入口是`prototype/h5/index.html`，配套 `styles.css`、`app.js`、`ui-preview.*`、`color-ui.*`。它承担视觉和交互参考作用。
 
 H5 的高级调色有多个页签和大量控件，但其中一些参数只暂存于界面，不改变像素、不进入撤销与导出。H5 滤镜缩略图是示例照片与 CSS 效果，不是正式渲染。浏览器的文件保存和 IndexedDB 恢复也不能直接当作原生实现。
 
@@ -119,7 +119,7 @@ H5 的高级调色有多个页签和大量控件，但其中一些参数只暂�
 NekoPic/
 ├── HANDOFF.md                    本交接文档，当前状态与下一步入口
 ├── README.md                     运行说明、原生与 H5 的区别
-├── index.html / *.css / *.js      H5 原型，保留作设计参考
+├── prototype/h5/                    H5 原型，保留作设计参考
 ├── assets/demo.jpg               本地示例图，来源见 README
 ├── docs/
 │   ├── ui-prototype-plan.md       原型设计历史

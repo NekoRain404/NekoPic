@@ -1,6 +1,6 @@
 # H5 与原生 UI / 功能审计
 
-审计日期：2026-11-05。对照根目录 H5 页面（`index.html`，Chrome 1440×900 实际截图）与原生 Qt 界面（`nekopic assets/demo.jpg`）。
+审计日期：2026-11-05。对照 H5 原型（`prototype/h5/index.html`，Chrome 1440×900 实际截图）与原生 Qt 界面（`nekopic assets/demo.jpg`）。
 结论：**核心编辑闭环已对齐，但功能未全部完成；UI 结构一致，视觉与部分交互仍有可见差异。**
 
 ## 1. 已对齐的核心功能
