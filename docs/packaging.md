@@ -405,3 +405,13 @@ AppStream 的 `<screenshot>` 只能使用 HTTPS URL，不能引用仓库内相�
 - `packaging/nekopic.desktop`、`packaging/nekopic.metainfo.xml`、
   `packaging/nekopic.svg`、`packaging/icons/`、`packaging/appimage/`、
   `packaging/flatpak/`。
+
+## 元数据快速校验
+
+```sh
+./scripts/validate-packaging.sh        # 开发模式：许可证/主页占位只告警
+./scripts/validate-packaging.sh --strict  # 发布门禁
+```
+
+脚本检查 desktop、AppStream、SVG、16–512 px 图标、AppDir（若存在）和
+LICENSE 缺失；CI 已接入开发模式。
