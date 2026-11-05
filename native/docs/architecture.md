@@ -1,5 +1,7 @@
 # 原生端架构与实施路线
 
+> 2026-11-05 更新：仓库级架构与当前实现状态以 [`docs/architecture/overview.md`](../../docs/architecture/overview.md)、[`docs/architecture/module-map.md`](../../docs/architecture/module-map.md)、[`docs/roadmap.md`](../../docs/roadmap.md) 和 ADR 为准。本文保留长期设计意图，其中的服务/类型多数尚未实现。
+
 本文是设计与协作约定，不是功能完成清单。根目录的 H5 是界面和交互原型，不能作为原生图像质量、色彩管理或数据可靠性的证明。首阶段采用 Qt Quick / QML 界面、C++20 核心和 CMake；具体支持的平台、依赖版本及发布格式在构建验证后确定。
 
 ## 模块与所有权
