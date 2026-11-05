@@ -1,5 +1,6 @@
 #include "documentcontroller.h"
 #include "core/adjustments.h"
+#include "core/histogram.h"
 #include "io/formatregistry.h"
 #include "platform/clipboard.h"
 #include "io/imageio.h"
@@ -28,6 +29,20 @@ QVariantMap DocumentController::adjustmentValues() const
     return {{"exposure", parameters_.exposure * 50.0}, {"brightness", parameters_.brightness * 100.0},
             {"contrast", parameters_.contrast * 100.0}, {"saturation", parameters_.saturation * 100.0}};
 }
+QVariantList DocumentController::histogramBins() const
+{
+    if (image_.isNull()) return {};
+    if (histogramCacheRevision_ == revision_ && !histogramCache_.isEmpty())
+        return histogramCache_;
+    const auto histogram = NekoPic::Histogram::compute(image_, 500000);
+    QVariantList bins;
+    bins.reserve(256);
+    for (const auto count : histogram.luma) bins.append(QVariant::fromValue<qulonglong>(count));
+    histogramCache_ = bins;
+    histogramCacheRevision_ = revision_;
+    return histogramCache_;
+}
+
 QVariantMap DocumentController::pendingAdjustmentValues() const
 {
     return {{"exposure", pendingParameters_.exposure * 50.0},

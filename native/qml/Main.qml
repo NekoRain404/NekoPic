@@ -535,6 +535,7 @@ ApplicationWindow {
                 theme: theme
                 adjustmentsEnabled: editor.hasImage && (!editor.busy || editor.adjustmentInteractive)
                 adjustmentValues: editor.adjustmentValues
+                histogramBins: editor.histogramBins
                 onAdjustmentStarted: function(key) { editor.beginAdjustment(key) }
                 onAdjustmentPreview: function(key, value) { editor.previewAdjustment(key, value) }
                 onAdjustmentFinished: function(key, value) { editor.finishAdjustment(key, value) }

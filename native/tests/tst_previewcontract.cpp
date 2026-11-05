@@ -77,6 +77,20 @@ private slots:
         QVERIFY(!controller.colorAt(std::numeric_limits<double>::quiet_NaN(), 0).isValid());
     }
 
+    void exposesHistogramBins()
+    {
+        QTemporaryDir dir;
+        QVERIFY(sourceImage().save(dir.filePath(QStringLiteral("source.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("source.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        const auto bins = controller.histogramBins();
+        QCOMPARE(bins.size(), 256);
+        qulonglong total = 0;
+        for (const auto &bin : bins) total += bin.toULongLong();
+        QVERIFY(total > 0);
+    }
+
     void baseUrlRevisionChangesAfterEdits()
     {
         QTemporaryDir dir;

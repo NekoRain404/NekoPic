@@ -24,6 +24,7 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool adjustmentInteractive READ adjustmentInteractive NOTIFY adjustmentInteractiveChanged)
     Q_PROPERTY(QVariantMap adjustmentValues READ adjustmentValues NOTIFY documentChanged)
     Q_PROPERTY(QVariantMap pendingAdjustmentValues READ pendingAdjustmentValues NOTIFY adjustmentPreviewChanged)
+    Q_PROPERTY(QVariantList histogramBins READ histogramBins NOTIFY documentChanged)
     Q_PROPERTY(QString filterPreset READ filterPreset NOTIFY documentChanged)
     Q_PROPERTY(double filterIntensity READ filterIntensity NOTIFY documentChanged)
     Q_PROPERTY(bool filterIntensityInteractive READ filterIntensityInteractive NOTIFY filterIntensityInteractiveChanged)
@@ -52,6 +53,7 @@ public:
     bool adjustmentInteractive() const;
     QVariantMap adjustmentValues() const;
     QVariantMap pendingAdjustmentValues() const;
+    QVariantList histogramBins() const;
     QString filterPreset() const;
     double filterIntensity() const;
     bool filterIntensityInteractive() const;
@@ -188,6 +190,8 @@ private:
     quint64 savedState_ = 0;
     quint64 nextState_ = 0;
     NekoPic::Document::HistoryStore history_;
+    mutable QVariantList histogramCache_;
+    mutable quint64 histogramCacheRevision_ = ~quint64(0);
     int exportQuality_ = -1;
     QColor jpegBackground_ = Qt::white;
 };

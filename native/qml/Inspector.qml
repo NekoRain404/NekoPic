@@ -4,6 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "UI"
 import "inspector"
+import "components"
 
 /*!
     Inspector — native counterpart of the H5 five-tab colour workspace.
@@ -23,6 +24,7 @@ Rectangle {
     property int adjustTab: 0
     property bool adjustmentsEnabled: false
     property var adjustmentValues: ({})
+    property var histogramBins: []
     property bool filtersEnabled: false
     property bool filterIntensityEnabled: filtersEnabled
     property string filterPreset: "none"
@@ -373,6 +375,12 @@ Rectangle {
                                 onGestureFinished: function(key, value) { root.adjustmentFinished(key, value) }
                             }
                         }
+                    }
+
+                    HistogramView {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 54
+                        bins: root.histogramBins
                     }
 
                     Section {
