@@ -23,6 +23,13 @@ public:
     quint64 revision() const;
     // URLs: image://filterpreview/<preset>/<revision>; engine takes provider ownership.
     std::unique_ptr<QQuickImageProvider> createImageProvider() const;
+    // Stateless worker used by the coordinator and by tests. Downsamples to fit
+    // 192x144, then returns one RGBA8888 tile per preset id. Tiles are generated
+    // on at most `workerCount` threads (<= 0 selects the bounded default) and
+    // never touch QObject state, so the provider can outlive the coordinator.
+    static QHash<QString, QImage> generateBatch(
+        const QImage &source, const NekoPic::Adjustments::Parameters &parameters,
+        int workerCount = 0);
 signals:
     void changed();
 private:

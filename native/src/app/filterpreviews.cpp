@@ -1,10 +1,16 @@
 #include "filterpreviews.h"
 #include "documentcontroller.h"
+#include "core/colorpipeline.h"
 #include "core/filterpresets.h"
 #include <QQuickImageProvider>
 #include <QReadWriteLock>
 #include <QtConcurrentRun>
+
+#include <algorithm>
+#include <atomic>
+#include <thread>
 #include <utility>
+#include <vector>
 
 struct FilterPreviewCache {
     QReadWriteLock lock;
@@ -13,6 +19,32 @@ struct FilterPreviewCache {
 };
 
 namespace {
+// Keep the fan-out bounded: four to six workers is enough to hide the per-tile
+// setup cost without competing with the UI or the row-parallel core path.
+int defaultPreviewWorkers()
+{
+    const unsigned hardware = std::thread::hardware_concurrency();
+    if (hardware == 0)
+        return 4;
+    return static_cast<int>(std::clamp<unsigned>(hardware, 4u, 6u));
+}
+
+bool isFloatingFormat(QImage::Format format)
+{
+    return format >= QImage::Format_RGBX16FPx4
+        && format <= QImage::Format_RGBA32FPx4_Premultiplied;
+}
+
+// The shared-base split is bit-exact for integer formats when the extended
+// pipeline is inactive: tone/saturation run once and each preset then applies
+// to the same quantized RGBA64 values it would have seen in a full apply().
+// Floating-point sources and extended controls fall back to a full apply per
+// preset so the output stays identical to the historical serial path.
+bool canShareBase(const QImage &image, const NekoPic::Adjustments::Parameters &parameters)
+{
+    return !isFloatingFormat(image.format())
+        && !NekoPic::Adjustments::Internal::hasExtendedParameters(parameters);
+}
 class PreviewImageProvider final : public QQuickImageProvider {
 public:
     explicit PreviewImageProvider(std::shared_ptr<FilterPreviewCache> cache)
@@ -107,19 +139,109 @@ void FilterPreviews::startWorker()
         emit changed();
     });
     watcher_.setFuture(QtConcurrent::run([source, parameters] {
-        // Downsample before effects; only these small results enter the cache.
-        const auto small = (source.width() > 192 || source.height() > 144)
-            ? source.scaled(192, 144, Qt::KeepAspectRatio, Qt::SmoothTransformation) : source;
-        Batch images;
-        const auto presets = NekoPic::Filters::presetIds();
-        for (const auto &preset : presets) {
-            auto tileParameters = parameters;
-            tileParameters.filterPreset = preset;
-            auto image = NekoPic::Adjustments::apply(small, tileParameters)
-                             .convertToFormat(QImage::Format_RGBA8888);
-            if (image.isNull()) return Batch{};
-            images.insert(tileParameters.filterPreset, std::move(image));
-        }
-        return images;
+        return FilterPreviews::generateBatch(source, parameters);
     }));
+}
+
+QHash<QString, QImage> FilterPreviews::generateBatch(
+    const QImage &source, const NekoPic::Adjustments::Parameters &parameters, int workerCount)
+{
+    if (source.isNull())
+        return {};
+    // Downsample before effects; only these small results enter the cache.
+    const auto small = (source.width() > 192 || source.height() > 144)
+        ? source.scaled(192, 144, Qt::KeepAspectRatio, Qt::SmoothTransformation) : source;
+    const auto presets = NekoPic::Filters::presetIds();
+    if (presets.isEmpty())
+        return {};
+
+    // Apply shared tone/base parameters once when that is provably exact.
+    QImage base;
+    if (canShareBase(small, parameters)) {
+        auto baseParameters = parameters;
+        baseParameters.filterPreset = QStringLiteral("none");
+        baseParameters.filterIntensity = 1.0;
+        base = NekoPic::Adjustments::apply(small, baseParameters);
+        if (base.isNull())
+            return {};
+    }
+    // Keep the conversion chained onto the temporary returned by apply(): Qt
+    // selects the rvalue convertToFormat() overload for it, and the historical
+    // serial path (apply(...).convertToFormat(...)) produced slightly
+    // different 8-bit results for floating-point sources on the other
+    // overload. Chaining preserves byte-identical previews.
+    const auto renderTile = [](const QImage &input,
+                               const NekoPic::Adjustments::Parameters &tileParameters) {
+        return NekoPic::Adjustments::apply(input, tileParameters)
+            .convertToFormat(QImage::Format_RGBA8888);
+    };
+
+    const int count = int(presets.size());
+    const int workers = std::clamp(
+        workerCount > 0 ? workerCount : defaultPreviewWorkers(), 1, count);
+    std::vector<QImage> tiles(static_cast<std::size_t>(count));
+    std::atomic<int> next{0};
+    std::atomic<bool> failed{false};
+
+    // Threads write disjoint slots; the calling thread participates and joins
+    // before returning, so no task ever outlives its captured source.
+    const auto run = [&] {
+        for (;;) {
+            const int index = next.fetch_add(1, std::memory_order_relaxed);
+            if (index >= count)
+                return;
+            try {
+                const auto &preset = presets.at(index);
+                QImage image;
+                if (base.isNull()) {
+                    auto tileParameters = parameters;
+                    tileParameters.filterPreset = preset;
+                    image = renderTile(small, tileParameters);
+                } else {
+                    // The base already carries tone/saturation; run only the
+                    // preset so all 13 tiles share that work.
+                    auto filterParameters = NekoPic::Adjustments::Parameters{};
+                    filterParameters.filterPreset = preset;
+                    filterParameters.filterIntensity = parameters.filterIntensity;
+                    image = renderTile(base, filterParameters);
+                }
+                if (image.isNull()) {
+                    failed.store(true, std::memory_order_relaxed);
+                    return;
+                }
+                tiles[std::size_t(index)] = std::move(image);
+            } catch (...) {
+                failed.store(true, std::memory_order_relaxed);
+                return;
+            }
+        }
+    };
+
+    if (workers <= 1) {
+        run();
+    } else {
+        std::vector<std::thread> threads;
+        threads.reserve(std::size_t(workers - 1));
+        for (int worker = 1; worker < workers; ++worker) {
+            try {
+                threads.emplace_back(run);
+            } catch (...) {
+                break; // finish the remainder on the calling thread
+            }
+        }
+        run();
+        for (auto &thread : threads)
+            thread.join();
+    }
+    if (failed.load(std::memory_order_relaxed))
+        return {};
+
+    QHash<QString, QImage> images;
+    images.reserve(count);
+    for (int index = 0; index < count; ++index) {
+        if (tiles[std::size_t(index)].isNull())
+            return {};
+        images.insert(presets.at(index), std::move(tiles[std::size_t(index)]));
+    }
+    return images;
 }

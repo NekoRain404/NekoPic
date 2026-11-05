@@ -15,6 +15,8 @@ struct Stroke {
 // The grid is anchored at the image origin. Blocks average encoded RGB weighted
 // by source alpha; destination alpha and fully transparent pixels are unchanged.
 // Only the clipped selection is written. Indexed/mono images become RGBA64.
+// RGBA8888/RGBX8888/ARGB32/RGB32 (including premultiplied variants) use a
+// direct scanline path that is bit-identical to the generic 16-bit path.
 // blockSize <= 1 is a no-op; larger sizes clamp to 512. Invalid inputs and
 // images exceeding 64M pixels / 1 GiB return the unchanged source.
 QImage pixelateRect(const QImage &source, const QRect &rectangle, int blockSize);
