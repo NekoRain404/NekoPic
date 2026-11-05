@@ -256,11 +256,11 @@ Item {
                 Rectangle { width: 5; height: 5; radius: 3; color: "#99b4a3" }
                 Label { text: root.hasImage ? qsTr("Image ready") : qsTr("Canvas ready"); color: root.theme ? root.theme.muted : "#aaa"; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
-                ToolButton { text: "−"; enabled: root.hasImage; ToolTip.visible: hovered; ToolTip.text: qsTr("Zoom out"); onClicked: root.changeZoom(1 / 1.2) }
+                NekoIconButton { iconName: "minus"; buttonSize: 26; iconSize: 16; accessibleName: qsTr("Zoom out"); enabled: root.hasImage; onClicked: root.changeZoom(1 / 1.2) }
                 Label { text: Math.round(root.zoom * 100) + "%"; color: root.theme ? root.theme.text : "white"; Layout.preferredWidth: 45; horizontalAlignment: Text.AlignHCenter }
-                ToolButton { text: "+"; enabled: root.hasImage; ToolTip.visible: hovered; ToolTip.text: qsTr("Zoom in"); onClicked: root.changeZoom(1.2) }
-                ToolButton { text: qsTr("100%"); enabled: root.hasImage; onClicked: root.actualSize() }
-                ToolButton { text: qsTr("Fit"); enabled: root.hasImage; onClicked: root.fitImage() }
+                NekoIconButton { iconName: "plus"; buttonSize: 26; iconSize: 16; accessibleName: qsTr("Zoom in"); enabled: root.hasImage; onClicked: root.changeZoom(1.2) }
+                NekoButton { text: qsTr("100%"); variant: "ghost"; implicitHeight: 26; enabled: root.hasImage; onClicked: root.actualSize() }
+                NekoButton { text: qsTr("Fit"); variant: "ghost"; implicitHeight: 26; enabled: root.hasImage; onClicked: root.fitImage() }
             }
         }
     }
