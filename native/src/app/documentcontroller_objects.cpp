@@ -132,5 +132,31 @@ quint64 DocumentController::objectAt(qreal x, qreal y) const
 {
     if (image_.isNull() || !std::isfinite(x) || !std::isfinite(y))
         return NekoPic::Document::InvalidObjectId;
-    return objects_.hitTest(QPointF(x, y), 0.0);
+    const QPointF point(x, y);
+    // Selection uses bounding boxes (topmost first), which is friendlier for
+    // text and transparent shapes; the layer's ink hit test remains available
+    // for tools that need precise shape hits.
+    const auto &objects = objects_.objects();
+    for (auto it = objects.rbegin(); it != objects.rend(); ++it) {
+        const auto *object = it->get();
+        if (!object->isVisible() || object->isLocked()) continue;
+        if (object->bounds().contains(point)) return object->id();
+    }
+    return NekoPic::Document::InvalidObjectId;
+}
+
+QRectF DocumentController::objectBounds(quint64 id) const
+{
+    if (id == NekoPic::Document::InvalidObjectId) return {};
+    const auto *object = objects_.object(id);
+    return object ? object->bounds() : QRectF{};
+}
+
+QVariantList DocumentController::objectIds() const
+{
+    QVariantList result;
+    const auto ids = objects_.ids();
+    result.reserve(ids.size());
+    for (const auto id : ids) result.append(QVariant::fromValue<qulonglong>(id));
+    return result;
 }

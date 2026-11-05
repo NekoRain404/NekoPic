@@ -106,6 +106,8 @@ public:
     Q_INVOKABLE void clearObjects();
     Q_INVOKABLE void moveObject(quint64 id, qreal dx, qreal dy);
     Q_INVOKABLE quint64 objectAt(qreal x, qreal y) const;
+    Q_INVOKABLE QRectF objectBounds(quint64 id) const;
+    Q_INVOKABLE QVariantList objectIds() const;
 
 signals:
     void documentChanged();
