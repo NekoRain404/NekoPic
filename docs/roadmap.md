@@ -17,6 +17,8 @@
 - [x] Rust 评估：基准完成，结论为暂不引入，见 ADR-0002 与 `native/rust/BENCHMARKS.md`。
 - [x] CMake 模块化、可选特性开关、CI 校验脚本与 ASan/UBSan 脚本。
 - [ ] 真实显示器视觉抽查与流畅度记录（已完成离屏/OpenGL RHI 截图与 QML 测试，待真实屏幕与多后端复核）。
+- [x] 性能基线与预算：`native/tests/bench_pipeline.cpp`、`scripts/bench.sh`、`docs/performance.md`。
+- [ ] 调色 CPU 热路径并行化（进行中，目标是保持逐像素结果不变并显著降低提交延迟）。
 
 ### 阶段 1 附带落地
 

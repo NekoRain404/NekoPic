@@ -9,6 +9,7 @@
 - [路线图](docs/roadmap.md)：阶段目标与工作流。
 - [开发流程](docs/development.md)：分支、提交、校验与版本管理。
 - [架构决策](docs/adr/)：分层、Rust 边界、GPU 预览、设计系统。
+- [性能基准与预算](docs/performance.md)：`scripts/bench.sh` 可复现；包含实测数据与已知瓶颈。
 
 原生代码按 `core → io/document/render → app → QML` 单向依赖组织。一键校验：
 
