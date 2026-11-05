@@ -14,6 +14,12 @@
 # AppImage rather than a broken artifact.
 set -euo pipefail
 
+# AppImage tools ship an old binutils; on rolling distros their strip cannot
+# read newer .relr.dyn sections. Keep the libraries intact by default, and use
+# the extract-and-run fallback when FUSE is unavailable.
+export NO_STRIP="${NO_STRIP:-1}"
+export APPIMAGE_EXTRACT_AND_RUN="${APPIMAGE_EXTRACT_AND_RUN:-1}"
+
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "${script_dir}/.." && pwd -P)"
 build_dir="${NEKOPIC_APPIMAGE_BUILD_DIR:-${repo_root}/native/build-appimage}"

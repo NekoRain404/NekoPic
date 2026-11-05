@@ -10,8 +10,10 @@
   `native/cmake/NekoPicPackaging.cmake`；
 - 桌面入口、AppStream 元数据、SVG 与 16–512 px hicolor PNG 图标位于
   `packaging/`；
-- `scripts/build-appimage.sh` 可生成单文件 AppImage；本机没有
-  linuxdeploy/appimagetool，因此只验证了 AppDir 暂存，未产出 AppImage；
+- `scripts/build-appimage.sh` 可生成单文件 AppImage；本机已用 linuxdeploy 与
+  appimagetool 实际产出 `NekoPic-0.1.0-x86_64.AppImage`；
+- AppImage 默认设置 `NO_STRIP=1`（旧 binutils 无法读取新式 `.relr.dyn`）和
+  `APPIMAGE_EXTRACT_AND_RUN=1`（无 FUSE 时可运行）；
 - Flatpak manifest 为实验性，尚未在真实运行时中验证；
 - 项目尚未选择许可证，发布前必须解决。
 
@@ -154,7 +156,15 @@ sha256sum -c SHA256SUMS
 6. 确认输出目录只有一个 `.AppImage`，再生成校验和。
 
 如果缺少 linuxdeploy / linuxdeploy-plugin-qt，脚本会保留并校验 AppDir、打印
-安装说明，然后以非零状态退出；不会生成不可用的假 AppImage。AppImage 的
+安装说明，然后以非零状态退出；不会生成不可用的假 AppImage。
+
+本机实测产物（2026-11-05）：
+
+```text
+artifacts/appimage/NekoPic-0.1.0-x86_64.AppImage   66 MB
+sha256  c798ffadefb8a216d6816e0a4503c94632eaa32518ce009ddc61fb8bf980ae28
+```
+AppImage 的
 `AppRun` 模板位于 `packaging/appimage/AppRun`，负责设置 `LD_LIBRARY_PATH`、
 `QT_PLUGIN_PATH`、`QML2_IMPORT_PATH` 等路径。
 
