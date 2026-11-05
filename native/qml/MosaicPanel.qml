@@ -29,6 +29,13 @@ Rectangle {
             accessibleName: qsTr("Redaction effect")
             Component.onCompleted: currentIndex = root.effect === "blur" ? 1 : 0
             onActivated: function(index) { root.effect = index === 1 ? "blur" : "mosaic" }
+            Connections {
+                target: root
+                function onEffectChanged() {
+                    const index = root.effect === "blur" ? 1 : 0
+                    if (effectTabs.currentIndex !== index) effectTabs.currentIndex = index
+                }
+            }
         }
         RowLayout {
             Layout.fillWidth: true; spacing: 3
@@ -50,6 +57,7 @@ Rectangle {
             Layout.fillWidth: true; spacing: 8; opacity: root.enabled ? 1 : 0.5
             RowLayout {
                 Layout.fillWidth: true
+                visible: root.effect === "mosaic"
                 Label { text: qsTr("Brush diameter"); color: root.theme.muted; font.pixelSize: 11 }
                 Item { Layout.fillWidth: true }
                 Label { text: Math.round(root.brushDiameter) + " px"; color: root.theme.text; font.pixelSize: 10 }
@@ -57,7 +65,9 @@ Rectangle {
             NekoSlider {
                 id: diameterSlider
                 objectName: "mosaic-brush-diameter"
-                Layout.fillWidth: true; enabled: root.brushMode
+                Layout.fillWidth: true
+                visible: root.effect === "mosaic"
+                enabled: root.brushMode
                 from: 4; to: 512; stepSize: 1; defaultValue: 24
                 accessibleName: qsTr("Brush diameter")
                 onPreview: function(value) { root.brushDiameter = Math.round(value) }
