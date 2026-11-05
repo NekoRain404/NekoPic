@@ -1,0 +1,15 @@
+module NekoPic.UI
+singleton Theme 1.0 Theme.qml
+singleton Motion 1.0 Motion.qml
+NekoIcon 1.0 NekoIcon.qml
+NekoButton 1.0 NekoButton.qml
+NekoIconButton 1.0 NekoIconButton.qml
+NekoToolButton 1.0 NekoToolButton.qml
+NekoSegmentedControl 1.0 NekoSegmentedControl.qml
+NekoSlider 1.0 NekoSlider.qml
+NekoToggle 1.0 NekoToggle.qml
+NekoPanel 1.0 NekoPanel.qml
+NekoCard 1.0 NekoCard.qml
+NekoSectionHeader 1.0 NekoSectionHeader.qml
+NekoScrollBar 1.0 NekoScrollBar.qml
+NekoDialog 1.0 NekoDialog.qml
