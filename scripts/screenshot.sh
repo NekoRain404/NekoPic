@@ -21,10 +21,17 @@ backup=""
 if [[ -n "$theme" && -f "$conf" ]]; then
     backup="$(mktemp)"
     cp "$conf" "$backup"
+    set_theme_key() {
+        if grep -q "^${1}=" "$conf"; then
+            sed -i "s/^${1}=.*/${1}=${2}/" "$conf"
+        else
+            sed -i "/^\[ui\]/a ${1}=${2}" "$conf"
+        fi
+    }
     case "$theme" in
-        dark) sed -i 's/^darkTheme=.*/darkTheme=true/' "$conf" ;;
-        light) sed -i 's/^darkTheme=.*/darkTheme=false/' "$conf" ;;
-        system) sed -i 's/^followSystemTheme=.*/followSystemTheme=true/' "$conf" ;;
+        dark) set_theme_key themeMode dark;;
+        light) set_theme_key themeMode light;;
+        system) set_theme_key followSystemTheme true; set_theme_key themeMode system;;
         *) echo "theme must be dark|light|system" >&2; exit 1 ;;
     esac
 fi
