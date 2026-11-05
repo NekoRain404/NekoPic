@@ -138,6 +138,33 @@ public:
     Q_INVOKABLE quint64 objectAt(qreal x, qreal y) const;
     Q_INVOKABLE QRectF objectBounds(quint64 id) const;
     Q_INVOKABLE QVariantList objectIds() const;
+    // One map per object, topmost first. Keys: id (qulonglong), kind
+    // ("text" | "shape" | "stroke"), name (short text preview or shape kind),
+    // bounds (QRectF in document pixels), visible (bool), locked (bool).
+    // Pure query: never mutates the document or touches history.
+    Q_INVOKABLE QVariantList objectSummaries() const;
+    // Per-object state. Each is one undo step, validates the id, and returns
+    // false for unknown ids, while busy, when no image is open, or when the
+    // requested value already matches (no-op edits create no history).
+    Q_INVOKABLE bool setObjectVisible(quint64 id, bool visible);
+    Q_INVOKABLE bool setObjectLocked(quint64 id, bool locked);
+    // Z-order commands around the existing single-object layer operations.
+    // Return false for unknown ids or when the object is already at the
+    // requested end / next to a boundary (no undo step is created).
+    Q_INVOKABLE bool raiseObject(quint64 id);
+    Q_INVOKABLE bool lowerObject(quint64 id);
+    Q_INVOKABLE bool bringObjectToFront(quint64 id);
+    Q_INVOKABLE bool sendObjectToBack(quint64 id);
+    // Group commands. Unknown/invalid ids are ignored; duplicates collapse.
+    // Both are one undo step for all objects and return false when no live
+    // object is targeted, when the delta is zero/non-finite, or while busy.
+    Q_INVOKABLE bool removeObjects(const QVariantList &ids);
+    Q_INVOKABLE bool moveObjects(const QVariantList &ids, qreal dx, qreal dy);
+    // Aligns every selected object to the image edge or centre selected by the
+    // matching Qt alignment flag (AlignLeft/HCenter/Right and/or
+    // AlignTop/VCenter/Bottom). One undo step; false for no flags, no valid
+    // ids, or when nothing would move.
+    Q_INVOKABLE bool alignObjects(const QVariantList &ids, int alignment);
     Q_INVOKABLE void addBrushStroke(const QVariantList &points, double diameter, const QColor &color);
     Q_INVOKABLE void addShape(const QString &kind, const QRectF &rect,
                               const QColor &fillColor, const QColor &strokeColor,

@@ -62,6 +62,8 @@ TestCase {
 
     SignalSpy { id: moves; target: overlay; signalName: "moveRequested" }
     SignalSpy { id: removes; target: overlay; signalName: "removeRequested" }
+    SignalSpy { id: groupMoves; target: overlay; signalName: "moveObjectsRequested" }
+    SignalSpy { id: groupRemoves; target: overlay; signalName: "removeObjectsRequested" }
     SignalSpy { id: selections; target: overlay; signalName: "selectionChanged" }
     SignalSpy { id: doubleClicks; target: overlay; signalName: "doubleClicked" }
     SignalSpy { id: cancels; target: overlay; signalName: "cancelled" }
@@ -102,6 +104,8 @@ TestCase {
 
         moves.clear()
         removes.clear()
+        groupMoves.clear()
+        groupRemoves.clear()
         selections.clear()
         doubleClicks.clear()
         cancels.clear()
@@ -586,5 +590,158 @@ TestCase {
         mouseMove(overlay, 50, 25)
         compare(overlay.hoveringSelected, true)
         compare(pointer.cursorShape, Qt.OpenHandCursor)
+    }
+
+    // ── Multi-selection ─────────────────────────────────────────────────────
+
+    function test_shiftClickTogglesSelection() {
+        compare(overlay.selectedIds.length, 0)
+        mouseClick(overlay, 50, 25) // id 7
+        compare(overlay.selectedIds.length, 1)
+        compare(overlay.selectedIds[0], 7)
+
+        // Shift adds without starting a drag or emitting a move.
+        mouseClick(overlay, 175, 87, Qt.LeftButton, Qt.ShiftModifier) // id 9
+        compare(overlay.selectedIds.length, 2)
+        compare(overlay.selectedIds[0], 7)
+        compare(overlay.selectedIds[1], 9)
+        compare(overlay.selectedId, 9) // primary is the most recent id
+        compare(moves.count, 0)
+        compare(groupMoves.count, 0)
+
+        // The multi payload of selectionChanged is an array.
+        const payload = selections.signalArguments[selections.count - 1][0]
+        verify(payload !== undefined && payload !== null)
+        compare(payload.length, 2)
+
+        // Shift-clicking a selected object removes it.
+        mouseClick(overlay, 50, 25, Qt.LeftButton, Qt.ShiftModifier)
+        compare(overlay.selectedIds.length, 1)
+        compare(overlay.selectedIds[0], 9)
+
+        // Shift-clicking empty space leaves the selection untouched.
+        mouseClick(overlay, 10, 10, Qt.LeftButton, Qt.ShiftModifier)
+        compare(overlay.selectedIds.length, 1)
+        compare(overlay.selectedIds[0], 9)
+    }
+
+    function test_multiSelectionBoundsAreTheUnion() {
+        overlay.setSelectionIds([7, 9])
+        // Document union: (100,50)-(800,400); display scale is 0.25.
+        compare(overlay.selectionBounds, Qt.rect(25, 12.5, 175, 87.5))
+        compare(overlay.selectedBounds, overlay.selectionBounds)
+        compare(overlay.selectedIds.length, 2)
+
+        overlay.setSelectionIds([9])
+        compare(overlay.selectionBounds, Qt.rect(150, 75, 50, 25))
+
+        overlay.setSelectionIds([999999])
+        compare(overlay.selectedIds.length, 1)
+        compare(overlay.selectionBounds, Qt.rect(0, 0, 0, 0))
+
+        // Duplicates and invalid ids are normalised away.
+        overlay.setSelectionIds([7, 7, 0, -3, 9])
+        compare(overlay.selectedIds.length, 2)
+        compare(overlay.selectedIds[0], 7)
+        compare(overlay.selectedIds[1], 9)
+    }
+
+    function test_groupDragEmitsOneMoveObjects() {
+        overlay.setSelectionIds([7, 9])
+        groupMoves.clear()
+        moves.clear()
+
+        // Press inside the first member; the whole group is dragged.
+        mousePress(overlay, 50, 25)
+        compare(overlay.dragging, true)
+        mouseMove(overlay, 60, 30)
+        // Preview only: no per-move controller call.
+        compare(groupMoves.count, 0)
+        compare(moves.count, 0)
+        compare(overlay.previewDelta, Qt.point(40, 20))
+
+        mouseRelease(overlay, 60, 30)
+        compare(groupMoves.count, 1)
+        compare(moves.count, 0) // legacy signal is single-selection only
+        const ids = groupMoves.signalArguments[0][0]
+        verify(ids !== undefined && ids !== null)
+        compare(ids.length, 2)
+        compare(ids[0], 7)
+        compare(ids[1], 9)
+        compare(groupMoves.signalArguments[0][1], 40)
+        compare(groupMoves.signalArguments[0][2], 20)
+        // The selection survives the move.
+        compare(overlay.selectedIds.length, 2)
+    }
+
+    function test_groupDeleteEmitsOneRemoveObjects() {
+        overlay.setSelectionIds([7, 9])
+        groupRemoves.clear()
+        removes.clear()
+
+        overlay.forceActiveFocus()
+        keyClick(Qt.Key_Delete)
+        compare(groupRemoves.count, 1)
+        compare(removes.count, 0)
+        const ids = groupRemoves.signalArguments[0][0]
+        verify(ids !== undefined && ids !== null)
+        compare(ids.length, 2)
+        compare(ids[0], 7)
+        compare(ids[1], 9)
+        compare(overlay.selectedIds.length, 0)
+        compare(overlay.selectedId, 0)
+    }
+
+    function test_escapeClearsMultiSelection() {
+        overlay.setSelectionIds([7, 9])
+        overlay.forceActiveFocus()
+        keyClick(Qt.Key_Escape)
+        compare(cancels.count, 1)
+        compare(overlay.selectedIds.length, 0)
+        compare(overlay.selectionBounds, Qt.rect(0, 0, 0, 0))
+    }
+
+    function test_arrowsNudgeEverySelectedObject() {
+        overlay.setSelectionIds([7, 9])
+        groupMoves.clear()
+        moves.clear()
+        overlay.forceActiveFocus()
+
+        keyClick(Qt.Key_Right)
+        compare(groupMoves.count, 1)
+        compare(moves.count, 0)
+        compare(groupMoves.signalArguments[0][0].length, 2)
+        compare(groupMoves.signalArguments[0][1], 1)
+        compare(groupMoves.signalArguments[0][2], 0)
+
+        keyClick(Qt.Key_Up, Qt.ShiftModifier)
+        compare(groupMoves.count, 2)
+        compare(groupMoves.signalArguments[1][1], 0)
+        compare(groupMoves.signalArguments[1][2], -10)
+    }
+
+    function test_singleSelectionStillEmitsLegacySignals() {
+        overlay.setSelection(7)
+        moves.clear()
+        groupMoves.clear()
+
+        mousePress(overlay, 50, 25)
+        mouseMove(overlay, 55, 30)
+        mouseRelease(overlay, 55, 30)
+        compare(moves.count, 1)
+        compare(groupMoves.count, 1)
+        compare(moves.signalArguments[0][0], 7)
+        compare(groupMoves.signalArguments[0][0].length, 1)
+        compare(groupMoves.signalArguments[0][0][0], 7)
+
+        removes.clear()
+        groupRemoves.clear()
+        overlay.setSelection(9)
+        overlay.forceActiveFocus()
+        keyClick(Qt.Key_Delete)
+        compare(removes.count, 1)
+        compare(groupRemoves.count, 1)
+        compare(removes.signalArguments[0][0], 9)
+        compare(groupRemoves.signalArguments[0][0][0], 9)
     }
 }

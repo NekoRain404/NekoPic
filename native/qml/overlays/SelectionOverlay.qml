@@ -27,58 +27,74 @@ import "../UI"
       objectBounds yields no visible box (so there is nothing to drag).
 
     Signals:
-      • moveRequested(id, dx, dy) — one call per completed drag/key nudge.
-        The delta is in document pixels; the controller commits one undo step.
-      • removeRequested(id)     — Delete/Backspace on the selected object.
-      • selectionChanged(id)    — id is 0 when the selection is cleared.
-      • doubleClicked(id)       — double click on an object, or inside the
-                                  selected object's box. The second click
-                                  never starts a move gesture.
-      • cancelled()             — Esc; the selection is cleared first.
+      • moveObjectsRequested(ids, dx, dy) — one call per completed drag/key
+        nudge for the whole selection. `ids` is a JS array of object ids and
+        the delta is in document pixels; the controller commits one undo step.
+      • removeObjectsRequested(ids) — Delete/Backspace for the whole selection.
+      • selectionChanged(idOrIds) — legacy-compatible payload: a scalar id for
+        zero/one selected object (0 clears), and an array of ids for a
+        multi-selection. The array form is the authoritative new contract.
+      • moveRequested(id, dx, dy) — legacy single-object alias. Emitted only
+        when exactly one object is selected, in addition to
+        moveObjectsRequested, so existing single-select wiring keeps working.
+      • removeRequested(id) — legacy single-object alias, emitted only when
+        exactly one object is selected.
+      • doubleClicked(id) — double click on an object, or inside the selected
+        object's box. The second click never starts a move gesture.
+      • cancelled() — Esc; the selection is cleared first.
 
     Read-only:
-      • selectedId        — currently selected object id, 0 for none.
-      • selectedBounds    — selection in local display pixels; empty when
-                            nothing is selected or the overlay is inactive.
+      • selectedIds       — array of selected ids (authoritative).
+      • selectedId        — primary/last selected id, 0 when empty. Kept for
+                            legacy single-select consumers.
+      • selectionBounds   — union of every selected object in local display
+                            pixels; empty when nothing is selected.
+      • selectedBounds    — alias of selectionBounds (single selection yields
+                            exactly that object's box, as before).
       • dragging          — true while a move preview is in progress.
       • previewBounds     — ghost rectangle in local display pixels.
       • previewDelta      — ghost offset in document pixels.
       • hoveringObject    — hover hit-test result (used for the cursor).
+      • hoveringSelected  — pointer is inside the shared selection box.
 
     Functions:
-      • selectAt(imageX, imageY) — hit-test at document pixels, select/clear.
-        Returns the resulting id (0 for a miss).
-      • setSelection(id)         — programmatic selection; 0 clears.
+      • selectAt(imageX, imageY) — hit-test at document pixels, replace the
+        selection with the hit (or clear on a miss). Returns the resulting id.
+      • setSelection(id)         — programmatic single selection; 0 clears.
+      • setSelectionIds(ids)     — programmatic multi-selection; empty clears.
       • clearSelection()         — clear and emit selectionChanged(0) if needed.
       • pointAt(x, y) / displayPoint(imageX, imageY) — coordinate mapping.
       • refresh()                — re-read objectBounds for the selection.
 
     # Interaction
 
-      • left click     select the topmost object at the point, or clear on a
-                       miss. Clicking the selected box keeps it selected.
-      • left drag      pressing inside the selected box starts a move preview;
-                       a ghost rectangle follows the pointer and exactly one
-                       `moveRequested` is emitted on release. Mouse moves never
-                       call the controller.
-      • double click   emits doubleClicked(id) for an object under the pointer
-                       (or the selected one when the pointer is inside its
-                       box). Any drag started by the second press is cancelled,
-                       so a double click never moves the object.
-      • Delete / Backspace  emit removeRequested(selectedId) once and clear.
+      • left click          select the topmost object at the point, or clear
+                            on a miss. Clicking inside the current selection
+                            box keeps the selection and starts a group drag.
+      • Shift + left click  toggle the object under the pointer in/out of the
+                            selection. A toggling click never starts a drag.
+      • left drag           pressing inside the shared selection box starts a
+                            move preview; a ghost rectangle follows the
+                            pointer and exactly one moveObjectsRequested is
+                            emitted on release. Mouse moves never call the
+                            controller.
+      • double click        emits doubleClicked(id) for an object under the
+                            pointer (or the selected one when the pointer is
+                            inside its box). Any drag started by the second
+                            press is cancelled, so a double click never moves.
+      • Delete / Backspace  emit removeObjectsRequested(ids) once and clear.
       • Esc                 clear the selection and emit cancelled().
-      • arrows               nudge by 1 document pixel (Shift = 10), one
-                             moveRequested per key press.
-      • middle / wheel delays to the canvas pan / zoom handlers underneath;
-        this overlay never accepts either.
+      • arrows              nudge the whole selection by 1 document pixel
+                            (Shift = 10), one moveObjectsRequested per press.
+      • middle / wheel      delays to the canvas pan / zoom handlers
+                            underneath; this overlay never accepts either.
 
     # Clamping
 
-    The move delta is clamped so the whole selection box stays inside
-    [0, imageWidth] x [0, imageHeight]. If an object is wider/taller than the
-    image on an axis, that axis is locked (delta 0) because no position can
-    satisfy the constraint. The move delta is always reported in document
-    pixels; the ghost is display-backed.
+    Drag/nudge deltas are clamped so the shared selection box stays inside
+    [0, imageWidth] x [0, imageHeight]. If the selection is wider/taller than
+    the image on an axis, that axis is locked (delta 0). Deltas are always
+    reported in document pixels; the ghost is display-backed.
 
     The selection box may be visually larger than the viewport; only the
     viewport intersection is rasterised.
@@ -94,7 +110,7 @@ import "../UI"
     QML's signal grammar has no `quint64` basic type, so id parameters are
     declared as `var`. DocumentController ids are small monotonic counters and
     arrive unchanged (as JS numbers), so connecting them to
-    `editor.moveObject(id, dx, dy)` / `editor.removeObject(id)` is exact.
+    `editor.moveObjects(ids, dx, dy)` / `editor.removeObjects(ids)` is exact.
 */
 Item {
     id: root
@@ -115,6 +131,8 @@ Item {
 
     signal moveRequested(var id, real dx, real dy)
     signal removeRequested(var id)
+    signal moveObjectsRequested(var ids, real dx, real dy)
+    signal removeObjectsRequested(var ids)
     signal selectionChanged(var id)
     signal doubleClicked(var id)
     signal cancelled()
@@ -135,12 +153,20 @@ Item {
                                    && imageHeight > 0 && width > 0 && height > 0
 
     // ── Exposed state ───────────────────────────────────────────────────────
-    /*! Selected object id (quint64), 0 when nothing is selected. */
-    readonly property var selectedId: _selectedId
-    /*! Selection rect in local display pixels; empty when not visible. */
-    readonly property rect selectedBounds: _boundsRevision >= 0
-                                           ? _computeSelectedBounds()
-                                           : Qt.rect(0, 0, 0, 0)
+    /*! Selected ids (authoritative multi-selection set), in selection order. */
+    readonly property var selectedIds: _selectedIds
+    /*!
+        Primary selected id: the only id for a single selection, the most
+        recently added id for a multi-selection, 0 when empty. Legacy alias.
+    */
+    readonly property var selectedId: _selectedIds.length === 0 ? 0
+                                    : _selectedIds[_selectedIds.length - 1]
+    /*! Union of the selected objects in local display pixels. */
+    readonly property rect selectionBounds: _boundsRevision >= 0
+                                            ? _computeSelectionBounds()
+                                            : Qt.rect(0, 0, 0, 0)
+    /*! Legacy alias of selectionBounds (identical for single selection). */
+    readonly property rect selectedBounds: selectionBounds
     /*! True while a move gesture is previewing. */
     readonly property bool dragging: _dragging
     /*! Ghost rectangle in local display pixels; empty when not dragging. */
@@ -149,11 +175,11 @@ Item {
     readonly property point previewDelta: _dragDelta
     /*! True when the pointer currently hovers a selectable object. */
     readonly property bool hoveringObject: _hoverObject
-    /*! True when the pointer currently hovers the selected object's box. */
+    /*! True when the pointer currently hovers the shared selection box. */
     readonly property bool hoveringSelected: _hoverSelected
 
     // ── Internal gesture state ──────────────────────────────────────────────
-    property var _selectedId: 0
+    property var _selectedIds: []
     property rect _lastRawBounds: Qt.rect(0, 0, 0, 0)
     property int _boundsRevision: 0
     property bool _dragging: false
@@ -169,8 +195,9 @@ Item {
 
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Object selection")
-    Accessible.description: qsTr("Click to select an object. Drag to move it. "
-                                 + "Press Delete to remove it or Escape to cancel.")
+    Accessible.description: qsTr("Click to select an object. Shift-click to add or remove objects. "
+                                 + "Drag to move the selection, press Delete to remove it, "
+                                 + "or Escape to cancel.")
     Accessible.focusable: true
     Accessible.focused: activeFocus
 
@@ -249,11 +276,58 @@ Item {
                 && Math.abs(a.height - b.height) < 1e-6
     }
 
+    function _sameIds(a, b) {
+        if (a.length !== b.length)
+            return false
+        for (let i = 0; i < a.length; ++i) {
+            if (a[i] !== b[i])
+                return false
+        }
+        return true
+    }
+
+    function _normalizeIds(values) {
+        const result = []
+        if (values === undefined || values === null)
+            return result
+        const list = Array.isArray(values) ? values : [values]
+        for (let i = 0; i < list.length; ++i) {
+            const id = _normalizeId(list[i])
+            if (id !== 0 && result.indexOf(id) < 0)
+                result.push(id)
+        }
+        return result
+    }
+
+    function _isSelected(id) {
+        return _selectedIds.indexOf(id) >= 0
+    }
+
     // ── Derived rects ───────────────────────────────────────────────────────
-    function _computeSelectedBounds() {
-        if (!usable || _selectedId === 0)
+    /*! Union of the raw document-pixel boxes of every selected object. */
+    function _unionRawBounds(ids) {
+        let result = _emptyRect()
+        for (let i = 0; i < ids.length; ++i) {
+            const b = _rawBounds(ids[i])
+            if (!(b.width > 0) || !(b.height > 0))
+                continue
+            if (!(result.width > 0) || !(result.height > 0)) {
+                result = b
+                continue
+            }
+            const left = Math.min(result.x, b.x)
+            const top = Math.min(result.y, b.y)
+            const right = Math.max(result.x + result.width, b.x + b.width)
+            const bottom = Math.max(result.y + result.height, b.y + b.height)
+            result = Qt.rect(left, top, right - left, bottom - top)
+        }
+        return result
+    }
+
+    function _computeSelectionBounds() {
+        if (!usable || _selectedIds.length === 0)
             return _emptyRect()
-        const b = _rawBounds(_selectedId)
+        const b = _lastRawBounds
         if (!(b.width > 0) || !(b.height > 0))
             return _emptyRect()
         return Qt.rect(b.x * scaleX, b.y * scaleY,
@@ -278,21 +352,49 @@ Item {
     }
 
     function _refreshBounds() {
-        const next = _selectedId === 0 ? _emptyRect() : _rawBounds(_selectedId)
+        const next = _unionRawBounds(_selectedIds)
         if (_rectEquals(next, _lastRawBounds))
             return
         _lastRawBounds = next
         _boundsRevision++
     }
 
+    function _emitSelectionChanged() {
+        if (_selectedIds.length > 1)
+            root.selectionChanged(_selectedIds.slice())
+        else
+            root.selectionChanged(_selectedIds.length === 1 ? _selectedIds[0] : 0)
+    }
+
+    /*! Replaces the selection with `ids` (normalised, deduplicated). */
+    function setSelectionIds(ids) {
+        _setSelectionIds(_normalizeIds(ids))
+    }
+
+    function _setSelectionIds(next) {
+        if (_sameIds(next, _selectedIds)) {
+            _refreshBounds()
+            preview.requestPaint()
+            return
+        }
+        _cancelDrag()
+        _selectedIds = next
+        _lastRawBounds = _unionRawBounds(next)
+        _boundsRevision++
+        _hoverSelected = false
+        preview.requestPaint()
+        _emitSelectionChanged()
+    }
+
     /*! Selects an object id; 0 (or an invalid id) clears the selection. */
     function setSelection(id) {
-        _applySelection(_normalizeId(id))
+        const primary = _normalizeId(id)
+        _setSelectionIds(primary === 0 ? [] : [primary])
     }
 
     /*!
-        Hit-tests at document-pixel coordinates and selects the result.
-        Returns the resulting id (0 for a miss/disabled overlay).
+        Hit-tests at document-pixel coordinates and replaces the selection with
+        the result. Returns the resulting id (0 for a miss/disabled overlay).
     */
     function selectAt(imageX, imageY) {
         if (!usable || !isFinite(imageX) || !isFinite(imageY))
@@ -300,46 +402,41 @@ Item {
         const x = _clamp(imageX, 0, imageWidth)
         const y = _clamp(imageY, 0, imageHeight)
         const hit = _hitTest(x, y)
-        _applySelection(hit)
+        _setSelectionIds(hit === 0 ? [] : [hit])
         return hit
     }
 
     /*! Clears the selection and emits selectionChanged(0) when it changes. */
     function clearSelection() {
-        _applySelection(0)
+        _setSelectionIds([])
     }
 
-    function _applySelection(id) {
-        const next = _normalizeId(id)
-        if (next === _selectedId) {
-            _refreshBounds()
-            preview.requestPaint()
+    /*! Toggles one id in the current selection (Shift+click semantics). */
+    function toggleSelection(id) {
+        const target = _normalizeId(id)
+        if (target === 0)
             return
-        }
-        _cancelDrag()
-        _selectedId = next
-        _lastRawBounds = next === 0 ? _emptyRect() : _rawBounds(next)
-        _boundsRevision++
-        _hoverSelected = false
-        preview.requestPaint()
-        root.selectionChanged(next)
+        const next = _selectedIds.slice()
+        const index = next.indexOf(target)
+        if (index >= 0)
+            next.splice(index, 1)
+        else
+            next.push(target)
+        _setSelectionIds(next)
     }
 
     // ── Gesture helpers ─────────────────────────────────────────────────────
-    function _selectedRawBounds() {
-        return _selectedId === 0 ? _emptyRect() : _rawBounds(_selectedId)
-    }
-
-    function _containsSelected(imageX, imageY) {
-        const b = _selectedRawBounds()
-        return b.width > 0 && b.height > 0
+    function _containsSelection(imageX, imageY) {
+        const b = _lastRawBounds
+        return _selectedIds.length > 0
+                && b.width > 0 && b.height > 0
                 && imageX >= b.x && imageX <= b.x + b.width
                 && imageY >= b.y && imageY <= b.y + b.height
     }
 
     /*!
-        Clamps a document-pixel delta so the whole box stays in the image.
-        An axis whose object is larger than the image is locked.
+        Clamps a document-pixel delta so the whole selection box stays in the
+        image. An axis whose selection is larger than the image is locked.
     */
     function _clampedDeltaFor(bounds, dx, dy) {
         let cx = dx
@@ -361,7 +458,8 @@ Item {
     }
 
     function _startDrag() {
-        const b = _selectedRawBounds()
+        _refreshBounds()
+        const b = _lastRawBounds
         if (!(b.width > 0) || !(b.height > 0)) {
             _dragging = false
             return false
@@ -392,17 +490,23 @@ Item {
         preview.requestPaint()
     }
 
+    function _emitMove(ids, dx, dy) {
+        if (ids.length === 1)
+            root.moveRequested(ids[0], dx, dy)
+        root.moveObjectsRequested(ids, dx, dy)
+    }
+
     function _finishDrag() {
-        const id = _selectedId
+        const ids = _selectedIds.slice()
         // Copy scalars before cancelling: Qt.point values read from a property
         // can alias the property object, and _cancelDrag() resets it.
         const dx = _dragDelta.x
         const dy = _dragDelta.y
-        const moved = _dragging && id !== 0 && (dx !== 0 || dy !== 0)
+        const moved = _dragging && ids.length > 0 && (dx !== 0 || dy !== 0)
         _cancelDrag()
         if (!moved)
             return
-        root.moveRequested(id, dx, dy)
+        _emitMove(ids, dx, dy)
         // The controller commits asynchronously; refresh now (in case the
         // model updated synchronously) and let the poll timer pick up a
         // worker-backed commit shortly afterwards.
@@ -410,7 +514,7 @@ Item {
     }
 
     function _updateHover(imageX, imageY) {
-        const inside = _selectedId !== 0 && _containsSelected(imageX, imageY)
+        const inside = _containsSelection(imageX, imageY)
         const overObject = inside ? false : _hitTest(imageX, imageY) !== 0
         if (inside !== _hoverSelected)
             _hoverSelected = inside
@@ -431,11 +535,20 @@ Item {
         forceActiveFocus(Qt.MouseFocusReason)
         const p = pointAt(mouse.x, mouse.y)
         _pressImage = p
-        if (_selectedId !== 0 && _containsSelected(p.x, p.y)) {
+        const shift = (mouse.modifiers & Qt.ShiftModifier) !== 0
+        if (shift) {
+            // Shift+click toggles membership and never drags.
+            const toggled = _hitTest(p.x, p.y)
+            if (toggled !== 0)
+                toggleSelection(toggled)
+            _updateHover(p.x, p.y)
+            return true
+        }
+        if (_containsSelection(p.x, p.y)) {
             _startDrag()
         } else {
             const hit = _hitTest(p.x, p.y)
-            _applySelection(hit)
+            _setSelectionIds(hit === 0 ? [] : [hit])
             if (hit !== 0)
                 _startDrag()
         }
@@ -444,13 +557,19 @@ Item {
     }
 
     /*!
-        Resolves the object a double click targets: the current selection when
-        the point is inside its box, otherwise the topmost object at the point.
+        Resolves the object a double click targets: the current single
+        selection when the point is inside its box, otherwise the topmost
+        object at the point.
     */
     function _doubleClickId(imageX, imageY) {
-        if (_selectedId !== 0 && _containsSelected(imageX, imageY))
-            return _selectedId
-        return _hitTest(imageX, imageY)
+        if (_selectedIds.length === 1 && _containsSelection(imageX, imageY))
+            return _selectedIds[0]
+        const hit = _hitTest(imageX, imageY)
+        if (hit !== 0)
+            return hit
+        if (_selectedIds.length > 1 && _containsSelection(imageX, imageY))
+            return _selectedIds[_selectedIds.length - 1]
+        return 0
     }
 
     function _handleDoubleClick(mouse) {
@@ -463,7 +582,7 @@ Item {
         _cancelDrag()
         if (id === 0)
             return 0
-        _applySelection(id)
+        setSelection(id)
         root.doubleClicked(id)
         return id
     }
@@ -480,13 +599,15 @@ Item {
         _finishDrag()
     }
 
-    function _removeSelected() {
-        if (!usable || _selectedId === 0)
+    function removeSelected() {
+        if (!usable || _selectedIds.length === 0)
             return false
-        const id = _selectedId
+        const ids = _selectedIds.slice()
         _cancelDrag()
         clearSelection()
-        root.removeRequested(id)
+        if (ids.length === 1)
+            root.removeRequested(ids[0])
+        root.removeObjectsRequested(ids)
         return true
     }
 
@@ -499,15 +620,16 @@ Item {
     }
 
     function _nudge(dx, dy) {
-        if (!usable || _selectedId === 0)
+        if (!usable || _selectedIds.length === 0)
             return
-        const b = _selectedRawBounds()
+        _refreshBounds()
+        const b = _lastRawBounds
         if (!(b.width > 0) || !(b.height > 0))
             return
         const d = _clampedDeltaFor(b, dx, dy)
         if (d.x === 0 && d.y === 0)
             return
-        root.moveRequested(_selectedId, d.x, d.y)
+        _emitMove(_selectedIds.slice(), d.x, d.y)
         _refreshBounds()
     }
 
@@ -528,7 +650,7 @@ Item {
         preview.requestPaint()
     }
     onSelectedIdChanged: preview.requestPaint()
-    onSelectedBoundsChanged: preview.requestPaint()
+    onSelectionBoundsChanged: preview.requestPaint()
     onPreviewBoundsChanged: preview.requestPaint()
     onWidthChanged: preview.requestPaint()
     onHeightChanged: preview.requestPaint()
@@ -550,7 +672,7 @@ Item {
         if (!usable)
             return
         if (event.key === Qt.Key_Delete || event.key === Qt.Key_Backspace) {
-            _removeSelected()
+            removeSelected()
             event.accepted = true
             return
         }
@@ -577,7 +699,7 @@ Item {
         y: Math.max(0, Math.min(root.height, root.visibleRect.y))
         width: Math.max(0, Math.min(root.width, root.visibleRect.x + root.visibleRect.width) - x)
         height: Math.max(0, Math.min(root.height, root.visibleRect.y + root.visibleRect.height) - y)
-        visible: root.usable && root._selectedId !== 0
+        visible: root.usable && root._selectedIds.length > 0
         onXChanged: requestPaint()
         onYChanged: requestPaint()
         onWidthChanged: requestPaint()
@@ -585,11 +707,28 @@ Item {
         onPaint: {
             const c = getContext("2d")
             c.reset()
-            if (!root.usable || root.selectedId === 0)
+            if (!root.usable || root._selectedIds.length === 0)
                 return
             c.translate(-x, -y)
 
-            const b = root.selectedBounds
+            // Multi-selection: keep a subtle outline per object so the
+            // individual members stay legible under the shared box.
+            if (root._selectedIds.length > 1) {
+                c.strokeStyle = Theme.alpha(Theme.accent, 0.55)
+                c.lineWidth = 1
+                for (let i = 0; i < root._selectedIds.length; ++i) {
+                    const raw = root._rawBounds(root._selectedIds[i])
+                    if (!(raw.width > 0) || !(raw.height > 0))
+                        continue
+                    const l = Math.round(raw.x * root.scaleX) + 0.5
+                    const t = Math.round(raw.y * root.scaleY) + 0.5
+                    const r = Math.round((raw.x + raw.width) * root.scaleX) - 0.5
+                    const btm = Math.round((raw.y + raw.height) * root.scaleY) - 0.5
+                    c.strokeRect(l, t, Math.max(0, r - l), Math.max(0, btm - t))
+                }
+            }
+
+            const b = root.selectionBounds
             if (!(b.width > 0) || !(b.height > 0))
                 return
 
@@ -714,14 +853,14 @@ Item {
     }
 
     // The object layer commits asynchronously (worker render), so a lightweight
-    // poll keeps the selection box glued to the object after a move, undo or
-    // redo. objectBounds is an O(1) lookup and the timer only runs while an
-    // object is selected; the binding is bumped only when the rect changes.
+    // poll keeps the selection box glued to the objects after a move, undo or
+    // redo. objectBounds is an O(1) lookup and the timer only runs while the
+    // selection is non-empty; the binding is bumped only when the union changes.
     Timer {
         id: boundsPoll
         interval: 60
         repeat: true
-        running: root.usable && root._selectedId !== 0
+        running: root.usable && root._selectedIds.length > 0
         onTriggered: root._refreshBounds()
     }
 
