@@ -19,7 +19,8 @@ ApplicationWindow {
     // Letter shortcuts must not fire while the user is typing in a modal.
     readonly property bool blockingModal: commandPalette.opened || textDialog.opened
         || exportDialog.opened || resizeDialog.opened || canvasSizeDialog.opened
-        || shortcutsDialog.opened || aboutDialog.opened || discardDialog.opened || errorDialog.opened
+        || shortcutsDialog.opened || aboutDialog.opened || settingsDialog.opened
+        || discardDialog.opened || errorDialog.opened
     property bool discardConfirmed: false
     property bool saveBeforePending: false
     property bool closingRequested: false
@@ -30,6 +31,31 @@ ApplicationWindow {
     property string transientStatus: ""
     property bool reduceMotion: false
     function showStatus(message) { transientStatus = message; statusTimer.restart() }
+    function applySettings() {
+        if (typeof settings === "undefined") return
+        const mode = settings.themeMode
+        window.followSystemTheme = mode === "system"
+        if (mode !== "system") window.darkTheme = mode === "dark"
+        window.reduceMotion = settings.reduceMotion
+        editor.exportQuality = settings.exportQuality
+        editor.jpegBackground = settings.jpegBackground
+        if (typeof language !== "undefined" && settings.locale.length > 0
+                && language.locale !== settings.locale)
+            language.setLanguage(settings.locale)
+    }
+    function openSettings() {
+        if (typeof settings === "undefined") return
+        settingsDialog.themeMode = settings.themeMode
+        settingsDialog.reduceMotion = settings.reduceMotion
+        settingsDialog.gpuPreviewEnabled = settings.gpuPreviewEnabled
+        settingsDialog.exportQuality = settings.exportQuality
+        settingsDialog.jpegBackground = settings.jpegBackground
+        settingsDialog.localeId = settings.locale
+        settingsDialog.confirmOnClose = settings.confirmOnClose
+        settingsDialog.showCheckerboard = settings.showCheckerboard
+        settingsDialog.open()
+    }
+    Component.onCompleted: applySettings()
     function openTextDialog(imageX, imageY) {
         textDialog.text = ""
         textDialog.anchorX = imageX
@@ -47,12 +73,13 @@ ApplicationWindow {
     onActiveToolChanged: if (activeTool === "adjust" || activeTool === "filters")
                             inspector.currentTab = activeTool === "filters" ? 1 : 0
     onClosing: function(close) {
-        if (editor.busy || (editor.dirty && !discardConfirmed)) {
+        const shouldConfirm = typeof settings === "undefined" || settings.confirmOnClose
+        if (editor.busy || (editor.dirty && shouldConfirm && !discardConfirmed)) {
             close.accepted = false
             if (!editor.busy) { closingRequested = true; discardDialog.open() }
         }
     }
-    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion; property alias followSystemTheme: window.followSystemTheme; property alias lastFolder: window.lastFolder }
+    Settings { category: "ui"; property alias lastFolder: window.lastFolder }
     Binding { target: Theme; property: "dark"; value: window.followSystemTheme ? window.systemDark : window.darkTheme }
     Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
     color: theme.background
@@ -92,6 +119,7 @@ ApplicationWindow {
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
+    Action { id: settingsAction; text: qsTr("Preferences…"); shortcut: "Ctrl+,"; onTriggered: window.openSettings() }
     Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
     Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
     Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: editor.undo() }
@@ -260,6 +288,29 @@ ApplicationWindow {
                                  lineHeight, padding)
         }
         onClosed: if (window.activeTool === "text") window.activeTool = "adjust"
+    }
+    SettingsDialog {
+        id: settingsDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        onSettingChanged: function(key, value) {
+            if (typeof settings === "undefined") return
+            settings[key] = value
+            if (key === "themeMode") {
+                window.followSystemTheme = value === "system"
+                if (value !== "system") window.darkTheme = value === "dark"
+            } else if (key === "reduceMotion") {
+                window.reduceMotion = value
+            } else if (key === "exportQuality") {
+                editor.exportQuality = value
+            } else if (key === "jpegBackground") {
+                editor.jpegBackground = value
+            }
+        }
+        onLocaleSelected: function(id) {
+            if (typeof settings !== "undefined") settings.locale = id
+            if (typeof language !== "undefined") language.setLanguage(id)
+        }
     }
     ShortcutsDialog {
         id: shortcutsDialog
@@ -459,6 +510,8 @@ ApplicationWindow {
                 hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
                 baseImageUrl: typeof editor.baseImageUrl !== "undefined" ? editor.baseImageUrl : ""
                 gpuPreviewAvailable: typeof renderCapabilities !== "undefined" && renderCapabilities.gpuPreviewAvailable
+                                     && (typeof settings === "undefined" || settings.gpuPreviewEnabled)
+                showCheckerboard: typeof settings === "undefined" || settings.showCheckerboard
                 adjustmentPreviewActive: typeof editor.adjustmentPreviewGpuEligible !== "undefined"
                                          && editor.adjustmentPreviewGpuEligible
                                          && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
@@ -647,6 +700,8 @@ ApplicationWindow {
               run: function() { canvasSizeDialog.open() } },
             { title: shortcutsAction.text, detail: qsTr("Help"), shortcut: "F1",
               run: function() { shortcutsDialog.open() } },
+            { title: settingsAction.text, detail: qsTr("Help"), shortcut: "Ctrl+,",
+              run: function() { window.openSettings() } },
             { title: zoomInAction.text, detail: qsTr("View"), shortcut: "Ctrl+=", enabled: zoomInAction.enabled,
               run: function() { canvas.changeZoom(1.2) } },
             { title: zoomOutAction.text, detail: qsTr("View"), shortcut: "Ctrl+-", enabled: zoomOutAction.enabled,

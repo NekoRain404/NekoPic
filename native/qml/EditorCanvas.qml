@@ -33,6 +33,7 @@ Item {
     property bool textActive: false
     property bool selectionActive: false
     property bool compareActive: false
+    property bool showCheckerboard: true
     property bool shapeActive: false
     property bool brushActive: false
     property real brushDiameter: 24
@@ -147,7 +148,7 @@ Item {
                     id: checker
                     x: view.contentX; y: view.contentY
                     width: view.width; height: view.height
-                    visible: root.hasImage
+                    visible: root.hasImage && root.showCheckerboard
                     property real imageX: picture.x - view.contentX
                     property real imageY: picture.y - view.contentY
                     property real imageW: picture.width
