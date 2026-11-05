@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for NekoPic.
+
+  TODO(owner): replace the placeholder licenses below once the project license
+  is chosen. LicenseRef-proprietary is intentionally not a real open-source
+  license: it records that no project license has been selected yet.
+-->
+<component type="desktop-application">
+  <id>io.github.nekopic.NekoPic</id>
+
+  <name>NekoPic</name>
+  <name xml:lang="zh_CN">NekoPic 照片编辑器</name>
+  <summary>Simple photo editor for the Linux desktop</summary>
+  <summary xml:lang="zh_CN">面向 Linux 桌面的轻量照片编辑器</summary>
+
+  <description>
+    <p>
+      NekoPic is a desktop photo editor built with Qt Quick. It opens images
+      through Qt's image plugins and keeps a single editing session with
+      undo and redo around every committed operation.
+    </p>
+    <p>Editing tools include:</p>
+    <ul>
+      <li>Exposure, brightness, contrast, saturation and five adjustment tabs</li>
+      <li>Built-in filter presets with an intensity control</li>
+      <li>Crop, rotate, flip and image or canvas resizing</li>
+      <li>Brush, text, shapes, mosaic and blur objects</li>
+      <li>Recent files, clipboard output and format-aware export</li>
+    </ul>
+    <p>
+      Read and write capabilities depend on the Qt image plugins available on
+      the system. NekoPic keeps adjustments non-destructive until export, but
+      saving always writes the merged image; there is no editable project
+      format.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">nekopic.desktop</launchable>
+
+  <provides>
+    <binary>nekopic</binary>
+  </provides>
+
+  <categories>
+    <category>Graphics</category>
+    <category>Photography</category>
+  </categories>
+
+  <keywords>
+    <keyword>photo</keyword>
+    <keyword>image</keyword>
+    <keyword>editor</keyword>
+    <keyword>crop</keyword>
+    <keyword>retouch</keyword>
+  </keywords>
+
+  <!--
+    TODO(owner): add real screenshots once a stable HTTPS location exists, for
+    example a release asset or the project website. AppStream does not accept
+    repository-relative paths. Uncomment and replace the URLs when available:
+
+    <screenshots>
+      <screenshot type="default">
+        <caption>Editing a photo with the adjustment panel</caption>
+        <image type="source">https://example.invalid/nekopic-main.png</image>
+      </screenshot>
+      <screenshot>
+        <caption>Filters and layer controls</caption>
+        <image type="source">https://example.invalid/nekopic-filters.png</image>
+      </screenshot>
+    </screenshots>
+  -->
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.1.0" date="2026-11-05" type="development">
+      <description>
+        <p>Initial development release with the core editing workflow.</p>
+      </description>
+    </release>
+  </releases>
+
+  <developer id="io.github.nekopic">
+    <name>NekoPic contributors</name>
+  </developer>
+
+  <!--
+    TODO(owner): this is a placeholder, not a chosen license. No LICENSE file
+    exists in the repository yet. Replace both values with the project's real
+    SPDX expression before publishing packages or submitting to Flathub.
+  -->
+  <metadata_license>LicenseRef-proprietary</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+</component>

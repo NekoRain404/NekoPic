@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=NekoPic
+Name[zh_CN]=NekoPic 照片编辑器
+GenericName=Photo Editor
+GenericName[zh_CN]=照片编辑器
+Comment=Edit photos, apply adjustments and add drawings, text and shapes
+Comment[zh_CN]=编辑照片、调整色彩，并添加绘图、文字和形状
+Exec=nekopic %f
+TryExec=nekopic
+Icon=nekopic
+Terminal=false
+Categories=Graphics;Photography;Qt;
+StartupNotify=true
+StartupWMClass=nekopic
+MimeType=image/png;image/jpeg;image/webp;image/tiff;image/bmp;image/gif;image/avif;image/jxl;
+Keywords=photo;image;editor;paint;crop;retouch;
+Keywords[zh_CN]=照片;图片;编辑器;绘画;裁剪;修图;

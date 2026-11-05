@@ -20,3 +20,6 @@ CMakeCache.txt
 
 # Local visual artifacts
 /artifacts/
+
+# Flatpak build trees
+/packaging/flatpak/build/
