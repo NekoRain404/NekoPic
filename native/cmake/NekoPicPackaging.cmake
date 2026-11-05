@@ -3,7 +3,7 @@
 # Included last from native/CMakeLists.txt. The install tree itself is defined
 # by the install() rules in that file; this module only describes the packages.
 # Build artifacts are written to the caller-chosen CPack output directory, e.g.
-#   cpack --config native/build-release/CPackConfig.cmake -G "TGZ;DEB"
+#   cpack --config native/build-release/CPackConfig.cmake -G "TGZ;DEB;RPM"
 # or through scripts/package.sh.
 
 if(NOT UNIX OR APPLE)
@@ -26,7 +26,7 @@ set(CPACK_PACKAGE_CONTACT "NekoPic contributors <maintainers@nekopic.invalid>")
 # CMAKE_INSTALL_PREFIX (which may be a local staging directory).
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
-set(CPACK_GENERATOR "TGZ;DEB")
+set(CPACK_GENERATOR "TGZ;DEB;RPM")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 set(CPACK_SOURCE_IGNORE_FILES
     "/build[^/]*/"
@@ -55,6 +55,27 @@ string(CONCAT CPACK_DEBIAN_PACKAGE_DEPENDS
     "qml6-module-qtquick-controls, qml6-module-qtquick-dialogs, "
     "qml6-module-qtquick-layouts, qml6-module-qtquick-templates, "
     "qml6-module-qtquick-window")
+
+# --- RPM -----------------------------------------------------------------
+# Dependency names follow the Fedora/qt6-qt* family. Other RPM distributions
+# (for example openSUSE's libQt6Core6 scheme) need these names adjusted, or
+# CPACK_RPM_PACKAGE_AUTOREQ left ON to derive shared-library dependencies.
+set(CPACK_RPM_PACKAGE_NAME "nekopic")
+set(CPACK_RPM_PACKAGE_SUMMARY "Simple photo editor for the Linux desktop")
+set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
+string(CONCAT CPACK_RPM_PACKAGE_REQUIRES
+    "qt6-qtbase >= 6.5, qt6-qtdeclarative >= 6.5, "
+    "qt6-qtquickcontrols2, qt6-qtwayland")
+# TODO(owner): placeholder only; see docs/packaging.md. A real license must be
+# chosen and this field updated before publishing.
+set(CPACK_RPM_PACKAGE_LICENSE "LicenseRef-proprietary")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Multimedia")
+set(CPACK_RPM_PACKAGE_RELEASE "1")
+set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+# Explicit Requires above keep the package deterministic; rpmbuild's automatic
+# ELF dependency scan would otherwise depend on the packaging host.
+set(CPACK_RPM_PACKAGE_AUTOREQ OFF)
+set(CPACK_RPM_PACKAGE_AUTOPROV OFF)
 
 set(CPACK_STRIP_FILES TRUE)
 set(CPACK_VERBATIM_VARIABLES TRUE)
