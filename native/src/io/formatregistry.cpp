@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QImageWriter>
+#include <QCoreApplication>
 #include <QHash>
 #include <QMap>
 #include <algorithm>
@@ -179,20 +180,21 @@ QString FormatRegistry::preferredSuffix(const QString &id) const
 
 QString FormatRegistry::displayName(const QString &id) const
 {
+    // Literals go through tr() so the catalogue can translate them.
     static const QHash<QString, QString> names{
-        {QStringLiteral("png"), QStringLiteral("PNG image")},
-        {QStringLiteral("jpeg"), QStringLiteral("JPEG image")},
-        {QStringLiteral("webp"), QStringLiteral("WebP image")},
-        {QStringLiteral("tiff"), QStringLiteral("TIFF image")},
-        {QStringLiteral("avif"), QStringLiteral("AVIF image")},
-        {QStringLiteral("heic"), QStringLiteral("HEIC image")},
-        {QStringLiteral("heif"), QStringLiteral("HEIF image")},
-        {QStringLiteral("jxl"), QStringLiteral("JPEG XL image")},
-        {QStringLiteral("qoi"), QStringLiteral("QOI image")},
-        {QStringLiteral("bmp"), QStringLiteral("BMP image")},
-        {QStringLiteral("tga"), QStringLiteral("TGA image")},
-        {QStringLiteral("exr"), QStringLiteral("OpenEXR image")},
-        {QStringLiteral("ico"), QStringLiteral("ICO image")},
+        {QStringLiteral("png"), QCoreApplication::translate("FormatRegistry", "PNG image")},
+        {QStringLiteral("jpeg"), QCoreApplication::translate("FormatRegistry", "JPEG image")},
+        {QStringLiteral("webp"), QCoreApplication::translate("FormatRegistry", "WebP image")},
+        {QStringLiteral("tiff"), QCoreApplication::translate("FormatRegistry", "TIFF image")},
+        {QStringLiteral("avif"), QCoreApplication::translate("FormatRegistry", "AVIF image")},
+        {QStringLiteral("heic"), QCoreApplication::translate("FormatRegistry", "HEIC image")},
+        {QStringLiteral("heif"), QCoreApplication::translate("FormatRegistry", "HEIF image")},
+        {QStringLiteral("jxl"), QCoreApplication::translate("FormatRegistry", "JPEG XL image")},
+        {QStringLiteral("qoi"), QCoreApplication::translate("FormatRegistry", "QOI image")},
+        {QStringLiteral("bmp"), QCoreApplication::translate("FormatRegistry", "BMP image")},
+        {QStringLiteral("tga"), QCoreApplication::translate("FormatRegistry", "TGA image")},
+        {QStringLiteral("exr"), QCoreApplication::translate("FormatRegistry", "OpenEXR image")},
+        {QStringLiteral("ico"), QCoreApplication::translate("FormatRegistry", "ICO image")},
     };
     const auto found = names.constFind(id);
     return found != names.cend() ? *found : id.toUpper() + QStringLiteral(" image");
