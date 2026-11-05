@@ -201,6 +201,15 @@ fi
 
 echo "== deploy Qt dependencies =="
 export QMAKE="${QMAKE:-qmake6}"
+# The app embeds QML in its qrc, so qmlimportscanner cannot see imports from
+# the binary alone. Point the Qt plugin at the source tree so QtQuick,
+# Controls, Layouts and their transitive modules are bundled.
+export QML_SOURCES_PATHS="${QML_SOURCES_PATHS:-$repo_root/native/qml}"
+# Platform plugins are loaded dynamically, so the plugin cannot infer them
+# from the executable. Wayland is required on the target desktop; xcb and
+# offscreen keep XWayland and CI/offscreen verification working.
+export EXTRA_PLATFORM_PLUGINS="${EXTRA_PLATFORM_PLUGINS:-libqwayland.so;libqxcb.so;libqoffscreen.so}"
+export EXTRA_QT_MODULES="${EXTRA_QT_MODULES:-waylandclient}"
 linuxdeploy --appdir "${appdir}" \
     --executable "${appdir}/usr/bin/nekopic" \
     --desktop-file "${appdir}/nekopic.desktop" \
