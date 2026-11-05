@@ -1,11 +1,434 @@
 #include "adjustments.h"
+#include "rowparallel.h"
 
 #include <QColorSpace>
 #include <QtTest>
 #include <qfloat16.h>
+#include <algorithm>
+#include <cmath>
 #include <cstring>
+#include <vector>
 
 using namespace NekoPic::Adjustments;
+
+namespace {
+
+// ---------------------------------------------------------------------------
+// Reference implementation: a verbatim copy of the pre-optimization algorithm.
+// It is intentionally slow and simple; every optimized call must match it
+// bit-for-bit.
+// ---------------------------------------------------------------------------
+
+quint16 legacyChannel(double value)
+{
+    return static_cast<quint16>(std::lround(std::clamp(value, 0.0, 1.0) * 65535.0));
+}
+
+struct LegacyRgb {
+    double red;
+    double green;
+    double blue;
+};
+
+LegacyRgb legacyFilterTarget(LegacyRgb color, const QString &preset)
+{
+    const auto [red, green, blue] = color;
+    const double luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    if (preset == "mono") {
+        return {luminance, luminance, luminance};
+    } else if (preset == "vivid") {
+        color.red = std::clamp((red - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+        color.green = std::clamp((green - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+        color.blue = std::clamp((blue - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+        color.red = luminance + (color.red - luminance) * 1.25;
+        color.green = luminance + (color.green - luminance) * 1.25;
+        color.blue = luminance + (color.blue - luminance) * 1.25;
+    } else if (preset == "warm" || preset == "vintage") {
+        const double amount = preset == "warm" ? 0.12 : 0.08;
+        color.red = std::min(1.0, red + amount * (1.0 - red));
+        color.blue = std::max(0.0, blue - amount * blue);
+        if (preset == "vintage") {
+            color.red = (color.red - 0.5) * 0.82 + 0.54;
+            color.green = (green - 0.5) * 0.82 + 0.52;
+            color.blue = (color.blue - 0.5) * 0.82 + 0.48;
+        }
+    } else if (preset == "cool") {
+        color.red = std::max(0.0, red - 0.12 * red);
+        color.blue = std::min(1.0, blue + 0.12 * (1.0 - blue));
+    }
+    return color;
+}
+
+bool legacyIsFloating(QImage::Format format)
+{
+    return format >= QImage::Format_RGBX16FPx4
+        && format <= QImage::Format_RGBA32FPx4_Premultiplied;
+}
+
+QImage legacyApplyFloating(const QImage &source, double exposure, double brightness,
+                           double contrast, double saturation, const QString &preset,
+                           double intensity)
+{
+    auto result = source.copy();
+    if (result.isNull())
+        return {};
+    const bool half = source.depth() == 64;
+    const bool premultiplied = source.format() == QImage::Format_RGBA16FPx4_Premultiplied
+        || source.format() == QImage::Format_RGBA32FPx4_Premultiplied;
+    const double exposureFactor = std::exp2(exposure);
+    const bool toneChanged = exposure != 0 || brightness != 0 || contrast != 0;
+    for (int y = 0; y < result.height(); ++y) {
+        auto *floats = half ? nullptr : reinterpret_cast<float *>(result.scanLine(y));
+        auto *halves = half ? reinterpret_cast<qfloat16 *>(result.scanLine(y)) : nullptr;
+        for (int x = 0; x < result.width(); ++x) {
+            const auto offset = x * 4;
+            const double alpha = half ? float(halves[offset + 3]) : floats[offset + 3];
+            if (premultiplied && alpha <= 0)
+                continue;
+            const double scale = premultiplied ? alpha : 1.0;
+            LegacyRgb original{(half ? float(halves[offset]) : floats[offset]) / scale,
+                               (half ? float(halves[offset + 1]) : floats[offset + 1]) / scale,
+                               (half ? float(halves[offset + 2]) : floats[offset + 2]) / scale};
+            auto color = original;
+            if (toneChanged) {
+                const auto tone = [=](double value) {
+                    return (value * exposureFactor - 0.5) * (1.0 + contrast) + 0.5 + brightness;
+                };
+                color = {tone(color.red), tone(color.green), tone(color.blue)};
+            }
+            if (saturation != 0) {
+                const double luminance =
+                    0.2126 * color.red + 0.7152 * color.green + 0.0722 * color.blue;
+                color = {luminance + (color.red - luminance) * (1.0 + saturation),
+                         luminance + (color.green - luminance) * (1.0 + saturation),
+                         luminance + (color.blue - luminance) * (1.0 + saturation)};
+            }
+            if (intensity > 0) {
+                const auto target = legacyFilterTarget(color, preset);
+                const auto blend = [=](double value, double filtered) {
+                    if (value == filtered)
+                        return value;
+                    if (preset == "vivid")
+                        return std::clamp(value + (filtered - value) * intensity, 0.0, 1.0);
+                    return value + (std::clamp(filtered, 0.0, 1.0) - value) * intensity;
+                };
+                color = {blend(color.red, target.red), blend(color.green, target.green),
+                         blend(color.blue, target.blue)};
+            }
+            const double before[]{original.red, original.green, original.blue};
+            const double after[]{color.red, color.green, color.blue};
+            for (int c = 0; c < 3; ++c) {
+                if (after[c] == before[c])
+                    continue;
+                if (half)
+                    halves[offset + c] = qfloat16(float(after[c] * scale));
+                else
+                    floats[offset + c] = float(after[c] * scale);
+            }
+            // Alpha is never rewritten, including half/float payload bits.
+        }
+    }
+    return result;
+}
+
+QImage legacyApply(const QImage &source, const Parameters &parameters)
+{
+    if (source.isNull())
+        return {};
+
+    const auto legacyBounded = [](double value, double limit) {
+        return std::isfinite(value) ? std::clamp(value, -limit, limit) : 0.0;
+    };
+    const double exposure = legacyBounded(parameters.exposure, 4.0);
+    const double brightness = legacyBounded(parameters.brightness, 1.0);
+    const double contrast = legacyBounded(parameters.contrast, 1.0);
+    const double saturation = legacyBounded(parameters.saturation, 1.0);
+    const double intensity = std::isfinite(parameters.filterIntensity)
+        ? std::clamp(parameters.filterIntensity, 0.0, 1.0)
+        : 0.0;
+    const auto preset = parameters.filterPreset;
+    if (exposure == 0.0 && brightness == 0.0 && contrast == 0.0 && saturation == 0.0
+        && (preset.isEmpty() || preset == "none" || intensity == 0.0))
+        return source;
+
+    if (legacyIsFloating(source.format()))
+        return legacyApplyFloating(source, exposure, brightness, contrast, saturation, preset,
+                                   intensity);
+
+    QImage result = source.convertToFormat(QImage::Format_RGBA64);
+    if (result.isNull())
+        return {};
+
+    const double exposureFactor = std::exp2(exposure);
+    const double contrastFactor = 1.0 + contrast;
+    const double saturationFactor = 1.0 + saturation;
+    for (int y = 0; y < result.height(); ++y) {
+        auto *pixels = reinterpret_cast<QRgba64 *>(result.scanLine(y));
+        for (int x = 0; x < result.width(); ++x) {
+            const QRgba64 pixel = pixels[x];
+            auto tone = [=](quint16 value) {
+                return (value / 65535.0 * exposureFactor - 0.5) * contrastFactor
+                    + 0.5 + brightness;
+            };
+            const double red = tone(pixel.red());
+            const double green = tone(pixel.green());
+            const double blue = tone(pixel.blue());
+            const double luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+            pixels[x] = QRgba64::fromRgba64(
+                legacyChannel(luminance + (red - luminance) * saturationFactor),
+                legacyChannel(luminance + (green - luminance) * saturationFactor),
+                legacyChannel(luminance + (blue - luminance) * saturationFactor), pixel.alpha());
+        }
+    }
+    if (!preset.isEmpty() && intensity > 0.0) {
+        for (int y = 0; y < result.height(); ++y) {
+            auto *pixels = reinterpret_cast<QRgba64 *>(result.scanLine(y));
+            for (int x = 0; x < result.width(); ++x) {
+                const QRgba64 pixel = pixels[x];
+                double red = pixel.red() / 65535.0;
+                double green = pixel.green() / 65535.0;
+                double blue = pixel.blue() / 65535.0;
+                const double luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+                double targetRed = red;
+                double targetGreen = green;
+                double targetBlue = blue;
+                if (preset == "mono") {
+                    targetRed = targetGreen = targetBlue = luminance;
+                } else if (preset == "vivid") {
+                    targetRed = std::clamp((red - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+                    targetGreen = std::clamp((green - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+                    targetBlue = std::clamp((blue - 0.5) * 1.18 + 0.5, 0.0, 1.0);
+                    targetRed = luminance + (targetRed - luminance) * 1.25;
+                    targetGreen = luminance + (targetGreen - luminance) * 1.25;
+                    targetBlue = luminance + (targetBlue - luminance) * 1.25;
+                } else if (preset == "warm" || preset == "vintage") {
+                    const double amount = preset == "warm" ? 0.12 : 0.08;
+                    targetRed = std::min(1.0, red + amount * (1.0 - red));
+                    targetBlue = std::max(0.0, blue - amount * blue);
+                    if (preset == "vintage") {
+                        targetRed = (targetRed - 0.5) * 0.82 + 0.54;
+                        targetGreen = (green - 0.5) * 0.82 + 0.52;
+                        targetBlue = (targetBlue - 0.5) * 0.82 + 0.48;
+                    }
+                } else if (preset == "cool") {
+                    targetRed = std::max(0.0, red - 0.12 * red);
+                    targetBlue = std::min(1.0, blue + 0.12 * (1.0 - blue));
+                }
+                red += (targetRed - red) * intensity;
+                green += (targetGreen - green) * intensity;
+                blue += (targetBlue - blue) * intensity;
+                pixels[x] =
+                    QRgba64::fromRgba64(legacyChannel(red), legacyChannel(green),
+                                        legacyChannel(blue), pixel.alpha());
+            }
+        }
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+struct ParameterCase {
+    QString name;
+    Parameters parameters;
+};
+
+void addTone(ParameterCase &c, double exposure, double brightness, double contrast)
+{
+    c.parameters.exposure = exposure;
+    c.parameters.brightness = brightness;
+    c.parameters.contrast = contrast;
+}
+
+void addFilter(ParameterCase &c, const char *preset, double intensity)
+{
+    c.parameters.filterPreset = QString::fromLatin1(preset);
+    c.parameters.filterIntensity = intensity;
+}
+
+std::vector<ParameterCase> allParameterCases()
+{
+    std::vector<ParameterCase> cases;
+    cases.push_back({QStringLiteral("identity"), Parameters{}});
+    {
+        ParameterCase c{QStringLiteral("exposure +2"), {}};
+        c.parameters.exposure = 2.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("exposure -2"), {}};
+        c.parameters.exposure = -2.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("brightness +1"), {}};
+        c.parameters.brightness = 1.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("brightness -1"), {}};
+        c.parameters.brightness = -1.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("contrast +1"), {}};
+        c.parameters.contrast = 1.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("contrast -1"), {}};
+        c.parameters.contrast = -1.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("saturation +1"), {}};
+        c.parameters.saturation = 1.0;
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("saturation -1"), {}};
+        c.parameters.saturation = -1.0;
+        cases.push_back(c);
+    }
+    for (const char *preset : {"mono", "vivid", "warm", "cool", "vintage"}) {
+        for (double intensity : {0.0, 0.5, 1.0}) {
+            ParameterCase c{QStringLiteral("%1 @ %2")
+                                .arg(QString::fromLatin1(preset))
+                                .arg(intensity),
+                            {}};
+            addFilter(c, preset, intensity);
+            cases.push_back(c);
+        }
+    }
+    {
+        ParameterCase c{QStringLiteral("tone + saturation + vintage"), {}};
+        addTone(c, 1.2, 0.0, 0.0);
+        c.parameters.saturation = 0.3;
+        addFilter(c, "vintage", 0.7);
+        cases.push_back(c);
+    }
+    {
+        ParameterCase c{QStringLiteral("tone + saturation + warm"), {}};
+        addTone(c, -1.0, 0.5, -0.3);
+        c.parameters.saturation = -0.5;
+        addFilter(c, "warm", 0.4);
+        cases.push_back(c);
+    }
+    return cases;
+}
+
+std::vector<ParameterCase> largeParameterCases()
+{
+    return {
+        {QStringLiteral("exposure +2"), [] {
+             Parameters p;
+             p.exposure = 2.0;
+             return p;
+         }()},
+        {QStringLiteral("saturation -1"), [] {
+             Parameters p;
+             p.saturation = -1.0;
+             return p;
+         }()},
+        {QStringLiteral("combined vintage"), [] {
+             Parameters p;
+             p.exposure = 1.2;
+             p.saturation = 0.3;
+             p.filterPreset = QStringLiteral("vintage");
+             p.filterIntensity = 0.7;
+             return p;
+         }()},
+    };
+}
+
+QImage makeImage(int width, int height, QImage::Format format, quint32 seed)
+{
+    QImage image(width, height, format);
+    if (image.isNull())
+        return image;
+    const quint16 alphaEdges[]{0, 1, 0x7fff, 0x8000, 0xfffe, 0xffff};
+    quint32 state = seed;
+    auto next = [&state] {
+        state = state * 1664525u + 1013904223u;
+        return state;
+    };
+    const bool floating = legacyIsFloating(format);
+    const bool half = format == QImage::Format_RGBX16FPx4
+        || format == QImage::Format_RGBA16FPx4
+        || format == QImage::Format_RGBA16FPx4_Premultiplied;
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const quint32 a = next();
+            const quint32 b = next();
+            const quint32 c = next();
+            const quint32 d = next();
+            const quint16 alpha = alphaEdges[d % 6];
+            if (floating) {
+                float channels[4]{
+                    float((a & 0xffff) / 65535.0) * 1.6f,
+                    float((b & 0xffff) / 65535.0),
+                    float((c & 0xffff) / 65535.0) * 0.75f,
+                    float(alpha / 65535.0),
+                };
+                if (half) {
+                    auto *pixel = reinterpret_cast<qfloat16 *>(image.scanLine(y)) + x * 4;
+                    for (int i = 0; i < 4; ++i)
+                        pixel[i] = qfloat16(channels[i]);
+                } else {
+                    auto *pixel = reinterpret_cast<float *>(image.scanLine(y)) + x * 4;
+                    for (int i = 0; i < 4; ++i)
+                        pixel[i] = channels[i];
+                }
+            } else if (format == QImage::Format_RGBA8888) {
+                auto *pixel = image.scanLine(y) + x * 4;
+                pixel[0] = a & 0xff;
+                pixel[1] = (b >> 8) & 0xff;
+                pixel[2] = (c >> 16) & 0xff;
+                pixel[3] = alpha >> 8;
+            } else {
+                auto *pixel = reinterpret_cast<QRgba64 *>(image.scanLine(y)) + x;
+                *pixel = QRgba64::fromRgba64(a & 0xffff, (b >> 3) & 0xffff,
+                                             (c >> 7) & 0xffff, alpha);
+            }
+        }
+    }
+    return image;
+}
+
+bool sameImage(const QImage &actual, const QImage &expected)
+{
+    if (actual.format() != expected.format() || actual.size() != expected.size())
+        return false;
+    if (actual.colorSpace() != expected.colorSpace())
+        return false;
+    if (actual.dotsPerMeterX() != expected.dotsPerMeterX()
+        || actual.dotsPerMeterY() != expected.dotsPerMeterY())
+        return false;
+    if (actual.sizeInBytes() != expected.sizeInBytes())
+        return false;
+    const qsizetype rowBytes = qsizetype(actual.width()) * actual.depth() / 8;
+    for (int y = 0; y < actual.height(); ++y) {
+        if (std::memcmp(actual.constScanLine(y), expected.constScanLine(y), rowBytes) != 0)
+            return false;
+    }
+    return true;
+}
+
+void compareAgainstLegacy(const QImage &source, const QString &label)
+{
+    const QImage sourceBefore = source.copy();
+    for (const auto &testCase : allParameterCases()) {
+        const QImage expected = legacyApply(source, testCase.parameters);
+        const QImage actual = apply(source, testCase.parameters);
+        QVERIFY2(sameImage(actual, expected),
+                 qPrintable(QStringLiteral("%1 / %2").arg(label, testCase.name)));
+    }
+    QVERIFY2(sameImage(source, sourceBefore), qPrintable(label + QStringLiteral(" source")));
+}
+
+} // namespace
 
 class AdjustmentsTest : public QObject {
     Q_OBJECT
@@ -23,6 +446,14 @@ private slots:
     void floatingExposurePreservesHdrPrecision();
     void rgba64FilterHasExactChannels();
     void floatingVividMatchesIntegerAtPartialIntensity();
+    void matchesLegacyReferenceSmall_data();
+    void matchesLegacyReferenceSmall();
+    void matchesLegacyReferenceLarge_data();
+    void matchesLegacyReferenceLarge();
+    void matchesLegacyForEveryChannelValue();
+    void parallelPathMatchesSerialReference();
+    void alphaAndMetadataArePreservedExactly();
+    void rowParallelThresholdSelectsSerialForSmallImages();
 };
 
 void AdjustmentsTest::identityPreservesImage()
@@ -158,9 +589,11 @@ void AdjustmentsTest::floatingFilterPreservesStorage()
     QCOMPARE(result.format(), format);
     const qsizetype channelBytes = image.depth() / 32;
     QCOMPARE(std::memcmp(result.constBits() + 3 * channelBytes,
-                         image.constBits() + 3 * channelBytes, channelBytes), 0);
+                         image.constBits() + 3 * channelBytes, channelBytes),
+             0);
     QCOMPARE(std::memcmp(result.constBits() + channelBytes,
-                         image.constBits() + channelBytes, channelBytes), 0);
+                         image.constBits() + channelBytes, channelBytes),
+             0);
     QVERIFY(std::memcmp(result.constBits(), image.constBits(), channelBytes) != 0);
     QCOMPARE(image, original);
     p.filterIntensity = 0;
@@ -227,6 +660,254 @@ void AdjustmentsTest::floatingVividMatchesIntegerAtPartialIntensity()
         QVERIFY(std::abs(actual.greenF() - expected.greenF()) < 2.0 / 65535);
         QVERIFY(std::abs(actual.blueF() - expected.blueF()) < 2.0 / 65535);
     }
+}
+
+void AdjustmentsTest::matchesLegacyReferenceSmall_data()
+{
+    QTest::addColumn<int>("width");
+    QTest::addColumn<int>("height");
+    QTest::addColumn<int>("format");
+
+    const struct {
+        int width;
+        int height;
+    } sizes[]{{1, 1}, {1, 257}, {257, 1}, {64, 64}};
+    const struct {
+        const char *name;
+        QImage::Format format;
+    } formats[]{{"rgba8888", QImage::Format_RGBA8888},
+                {"rgba64", QImage::Format_RGBA64},
+                {"rgba32f", QImage::Format_RGBA32FPx4},
+                {"rgba16f-premultiplied", QImage::Format_RGBA16FPx4_Premultiplied}};
+
+    for (const auto &size : sizes) {
+        for (const auto &format : formats) {
+            QTest::newRow(qPrintable(QStringLiteral("%1x%2-%3")
+                                         .arg(size.width)
+                                         .arg(size.height)
+                                         .arg(QString::fromLatin1(format.name))))
+                << size.width << size.height << int(format.format);
+        }
+    }
+}
+
+void AdjustmentsTest::matchesLegacyReferenceSmall()
+{
+    QFETCH(int, width);
+    QFETCH(int, height);
+    QFETCH(int, format);
+    const QImage source =
+        makeImage(width, height, QImage::Format(format), 0x9e3779b9u + quint32(width * 31 + height));
+    compareAgainstLegacy(source,
+                         QStringLiteral("%1x%2/%3").arg(width).arg(height).arg(format));
+}
+
+void AdjustmentsTest::matchesLegacyReferenceLarge_data()
+{
+    QTest::addColumn<int>("width");
+    QTest::addColumn<int>("height");
+    QTest::addColumn<int>("format");
+
+    const struct {
+        int width;
+        int height;
+    } sizes[]{{1024, 768}, {2048, 1536}};
+    const struct {
+        const char *name;
+        QImage::Format format;
+    } formats[]{{"rgba8888", QImage::Format_RGBA8888},
+                {"rgba64", QImage::Format_RGBA64},
+                {"rgba32f", QImage::Format_RGBA32FPx4}};
+
+    for (const auto &size : sizes) {
+        for (const auto &format : formats) {
+            QTest::newRow(qPrintable(QStringLiteral("%1x%2-%3")
+                                         .arg(size.width)
+                                         .arg(size.height)
+                                         .arg(QString::fromLatin1(format.name))))
+                << size.width << size.height << int(format.format);
+        }
+    }
+}
+
+void AdjustmentsTest::matchesLegacyReferenceLarge()
+{
+    QFETCH(int, width);
+    QFETCH(int, height);
+    QFETCH(int, format);
+    const QImage source =
+        makeImage(width, height, QImage::Format(format), 0x51ed270bu + quint32(width + height));
+    for (const auto &testCase : largeParameterCases()) {
+        const QImage expected = legacyApply(source, testCase.parameters);
+        const QImage actual = apply(source, testCase.parameters);
+        QVERIFY2(sameImage(actual, expected),
+                 qPrintable(QStringLiteral("%1x%2/%3 / %4")
+                                .arg(width)
+                                .arg(height)
+                                .arg(format)
+                                .arg(testCase.name)));
+    }
+}
+
+void AdjustmentsTest::matchesLegacyForEveryChannelValue()
+{
+    // 256x256 images whose red channel covers every 16-bit value, paired with
+    // three deterministic permutations for green and blue. This exercises the
+    // tone-only shortcut at every possible 16-bit input.
+    const std::vector<ParameterCase> cases{
+        {QStringLiteral("exposure +2"), [] {
+             Parameters p;
+             p.exposure = 2.0;
+             return p;
+         }()},
+        {QStringLiteral("exposure -2"), [] {
+             Parameters p;
+             p.exposure = -2.0;
+             return p;
+         }()},
+        {QStringLiteral("contrast -1"), [] {
+             Parameters p;
+             p.contrast = -1.0;
+             return p;
+         }()},
+        {QStringLiteral("brightness -1"), [] {
+             Parameters p;
+             p.brightness = -1.0;
+             return p;
+         }()},
+        {QStringLiteral("mixed tone"), [] {
+             Parameters p;
+             p.exposure = 0.3;
+             p.brightness = 0.2;
+             p.contrast = -0.4;
+             return p;
+         }()},
+        {QStringLiteral("mono filter"), [] {
+             Parameters p;
+             p.exposure = 0.7;
+             p.filterPreset = QStringLiteral("mono");
+             p.filterIntensity = 0.75;
+             return p;
+         }()},
+    };
+
+    for (int variant = 0; variant < 3; ++variant) {
+        QImage image(256, 256, QImage::Format_RGBA64);
+        for (int i = 0; i < 65536; ++i) {
+            const int x = i % 256;
+            const int y = i / 256;
+            const quint16 red = quint16(i);
+            const quint16 green = quint16((i * 257 + variant * 7919) & 0xffff);
+            const quint16 blue = quint16((i * 8191 + variant * 104729) & 0xffff);
+            auto *pixel = reinterpret_cast<QRgba64 *>(image.scanLine(y)) + x;
+            *pixel = QRgba64::fromRgba64(red, green, blue, 0xffff);
+        }
+        for (const auto &testCase : cases) {
+            const QImage expected = legacyApply(image, testCase.parameters);
+            const QImage actual = apply(image, testCase.parameters);
+            QVERIFY2(sameImage(actual, expected),
+                     qPrintable(QStringLiteral("variant %1 / %2")
+                                    .arg(variant)
+                                    .arg(testCase.name)));
+        }
+    }
+}
+
+void AdjustmentsTest::parallelPathMatchesSerialReference()
+{
+    // 1024x1024 is above the row-parallel threshold; the legacy reference is
+    // serial, so this checks the threaded path across chunk boundaries.
+    const struct {
+        int width;
+        int height;
+    } sizes[]{{1024, 1024}, {1600, 800}};
+    for (const auto &size : sizes) {
+        for (QImage::Format format :
+             {QImage::Format_RGBA64, QImage::Format_RGBA8888, QImage::Format_RGBA32FPx4}) {
+            const QImage source =
+                makeImage(size.width, size.height, format, 0x2545f491u + quint32(size.width));
+            for (const auto &testCase : largeParameterCases()) {
+                const QImage expected = legacyApply(source, testCase.parameters);
+                const QImage actual = apply(source, testCase.parameters);
+                QVERIFY2(sameImage(actual, expected),
+                         qPrintable(QStringLiteral("%1x%2 format %3 / %4")
+                                        .arg(size.width)
+                                        .arg(size.height)
+                                        .arg(int(format))
+                                        .arg(testCase.name)));
+            }
+        }
+    }
+}
+
+void AdjustmentsTest::alphaAndMetadataArePreservedExactly()
+{
+    QImage image(16, 4, QImage::Format_RGBA64);
+    const quint16 alphaEdges[]{0, 1, 0x7fff, 0x8000, 0xfffe, 0xffff};
+    for (int y = 0; y < image.height(); ++y) {
+        auto *pixels = reinterpret_cast<QRgba64 *>(image.scanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            pixels[x] = QRgba64::fromRgba64(quint16(x * 4096), quint16(y * 16000),
+                                            quint16(x * y * 997), alphaEdges[(x + y) % 6]);
+        }
+    }
+    image.setColorSpace(QColorSpace::DisplayP3);
+    image.setDotsPerMeterX(2835);
+    image.setDotsPerMeterY(2836);
+    const QImage sourceBefore = image.copy();
+
+    for (const auto &testCase : allParameterCases()) {
+        const QImage actual = apply(image, testCase.parameters);
+        const QImage expected = legacyApply(image, testCase.parameters);
+        QVERIFY2(sameImage(actual, expected), qPrintable(testCase.name));
+        QCOMPARE(actual.format(), expected.format());
+        QCOMPARE(actual.colorSpace(), image.colorSpace());
+        QCOMPARE(actual.dotsPerMeterX(), 2835);
+        QCOMPARE(actual.dotsPerMeterY(), 2836);
+        for (int y = 0; y < actual.height(); ++y) {
+            const auto *pixels = reinterpret_cast<const QRgba64 *>(actual.constScanLine(y));
+            for (int x = 0; x < actual.width(); ++x)
+                QCOMPARE(pixels[x].alpha(), alphaEdges[(x + y) % 6]);
+        }
+    }
+    QVERIFY(sameImage(image, sourceBefore));
+
+    // Alpha edges on premultiplied floating storage, where alpha == 0 pixels
+    // are skipped and nonzero pixels are scaled.
+    for (QImage::Format format :
+         {QImage::Format_RGBA16FPx4_Premultiplied, QImage::Format_RGBA32FPx4_Premultiplied}) {
+        const QImage floating = makeImage(8, 4, format, 0xabcdef01u);
+        for (const auto &testCase : largeParameterCases()) {
+            const QImage actual = apply(floating, testCase.parameters);
+            const QImage expected = legacyApply(floating, testCase.parameters);
+            QVERIFY2(sameImage(actual, expected),
+                     qPrintable(QStringLiteral("float format %1 / %2")
+                                    .arg(int(format))
+                                    .arg(testCase.name)));
+        }
+    }
+}
+
+void AdjustmentsTest::rowParallelThresholdSelectsSerialForSmallImages()
+{
+    using NekoPic::Detail::rowWorkerCount;
+    const int hardwareLimit = NekoPic::Detail::hardwareWorkerLimit();
+
+    QCOMPARE(static_cast<int>(rowWorkerCount(1, 1)), 1);
+    QCOMPARE(static_cast<int>(rowWorkerCount(0, 2000)), 1);
+    QCOMPARE(static_cast<int>(rowWorkerCount(1024, 1023)), 1); // just below 1 MP
+    QCOMPARE(static_cast<int>(rowWorkerCount(4096, 1)), 1);    // single scanline
+    QCOMPARE(static_cast<int>(rowWorkerCount(32, 100000)), 1); // too narrow to split
+    QCOMPARE(static_cast<int>(rowWorkerCount(1024, 1024)), hardwareLimit);
+    QCOMPARE(static_cast<int>(rowWorkerCount(4000, 3000)), hardwareLimit);
+
+    // A sub-threshold image must still match the reference exactly.
+    const QImage small = makeImage(1024, 1023, QImage::Format_RGBA64, 0xfeedfaceu);
+    Parameters p;
+    p.saturation = -1.0;
+    p.filterPreset = QStringLiteral("vivid");
+    p.filterIntensity = 0.5;
+    QVERIFY(sameImage(apply(small, p), legacyApply(small, p)));
 }
 
 QTEST_GUILESS_MAIN(AdjustmentsTest)
