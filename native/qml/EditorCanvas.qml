@@ -58,6 +58,7 @@ Item {
     signal textCancelled()
     signal moveObjectRequested(var id, real dx, real dy)
     signal removeObjectRequested(var id)
+    signal objectDoubleClicked(var id)
     signal shapeCommitted(string kind, rect area)
     signal shapeCancelled()
     signal brushStrokeCommitted(var points)
@@ -298,6 +299,7 @@ Item {
                     objectBounds: root.objectBounds
                     onMoveRequested: function(id, dx, dy) { root.moveObjectRequested(id, dx, dy) }
                     onRemoveRequested: function(id) { root.removeObjectRequested(id) }
+                    onDoubleClicked: function(id) { root.objectDoubleClicked(id) }
                 }
                 ScrollBar.horizontal: ScrollBar { }
                 ScrollBar.vertical: ScrollBar { }

@@ -290,6 +290,12 @@ ApplicationWindow {
                                  color, alignment, outlineColor, outlineWidth,
                                  lineHeight, padding)
         }
+        onTextUpdateRequested: function(info) {
+            editor.updateText(info.id, info.text, info.x, info.y,
+                              info.fontFamily, info.fontWeight, info.fontSize,
+                              info.color, info.alignment, info.outlineColor,
+                              info.outlineWidth, info.lineHeight, info.padding)
+        }
         onClosed: if (window.activeTool === "text") window.activeTool = "adjust"
     }
     SettingsDialog {
@@ -557,6 +563,14 @@ ApplicationWindow {
                 objectBounds: function(id) { return editor.objectBounds(id) }
                 onMoveObjectRequested: function(id, dx, dy) { editor.moveObject(id, dx, dy) }
                 onRemoveObjectRequested: function(id) { editor.removeObject(id) }
+                onObjectDoubleClicked: function(id) {
+                    const info = editor.textInfo(id)
+                    if (!info || Object.keys(info).length === 0) return
+                    textDialog.imageWidth = editor.imageWidth
+                    textDialog.imageHeight = editor.imageHeight
+                    textDialog.loadTextInfo(info)
+                    textDialog.open()
+                }
                 onTextPointSelected: function(imageX, imageY) { window.openTextDialog(imageX, imageY) }
                 onTextCancelled: window.activeTool = "adjust"
                 colorSampler: function(x, y) { return editor.colorAt(x, y) }
