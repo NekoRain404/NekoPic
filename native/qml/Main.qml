@@ -793,6 +793,8 @@ ApplicationWindow {
                     }
                 }
             }
+            MenuSeparator {}
+            MenuItem { action: settingsAction }
         }
     }
 
