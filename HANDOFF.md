@@ -2,6 +2,8 @@
 
 交接日期：2026-11-05。本文依据当前工作目录、代码和本次执行的测试整理，供后续产品、设计、前后端和测试团队接手。
 
+> **2026-11-05 后续迭代（`develop` 分支）**：已完成分层架构（`core/io/document/render/platform/app`）、设计系统与主界面接入、GPU 交互预览、格式能力注册表、语言/主题完善、最近文件、剪贴板、命令行打开，以及图片/画布尺寸后端。Rust 已按 ADR-0002 完成基准评估，结论为暂不引入。最新状态、验证命令与限制见 [路线图](docs/roadmap.md)、[架构总览](docs/architecture/overview.md) 和 `git log`；本文第 3–8 节保留交接当时的状态。
+
 ## 1. 先读这几条
 
 - 项目目录：`/home/nekorain/Development/NekoPic`。根目录是 H5 交互原型，`native/` 是正在开发的 Qt Quick / C++20 应用；两者不是两套都要持续维护的产品。

@@ -11,8 +11,9 @@
 
 ```text
 master  ffacd62 chore: baseline H5 prototype and first native milestone
-develop 4359683 refactor: introduce layered foundation and capability registry
-       6fb7ffd chore: preserve full handoff state on develop
+develop 6fb7ffd chore: preserve full handoff state on develop
+        （其后的分层、设计系统、GPU 预览、数值/格式/i18n 增量为线性提交；
+         以 `git log --oneline --decorate develop` 为准）
 ```
 
 ## 提交约定
