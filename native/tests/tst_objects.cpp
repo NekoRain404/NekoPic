@@ -11,6 +11,7 @@
 #include <QtTest>
 
 #include <cmath>
+#include <limits>
 
 using NekoPic::Document::DocumentObject;
 using NekoPic::Document::InvalidObjectId;
@@ -105,6 +106,7 @@ private slots:
     void shiftConstraints();
     void strokeRoundCapsAndBounds();
     void strokeSampleLimit();
+    void strokeSoftnessClampsAndFeathers();
     void layerZOrderAndTopmostHit();
     void layerVisibilityAndLockFiltering();
     void layerReordering();
@@ -316,6 +318,51 @@ void ObjectsTest::strokeSampleLimit()
     tooMany.resize(StrokeObject::MaxSamples + 100);
     stroke.setPoints(tooMany);
     QCOMPARE(stroke.sampleCount(), StrokeObject::MaxSamples);
+}
+
+void ObjectsTest::strokeSoftnessClampsAndFeathers()
+{
+    StrokeObject hard;
+    hard.setPoints({{20.0, 60.0}, {80.0, 60.0}});
+    hard.setDiameter(16.0);
+    hard.setColor(Qt::black);
+    QCOMPARE(hard.softness(), 0.0);
+
+    hard.setSoftness(-0.5);
+    QCOMPARE(hard.softness(), 0.0);
+    hard.setSoftness(2.0);
+    QCOMPARE(hard.softness(), 1.0);
+    hard.setSoftness(std::numeric_limits<qreal>::quiet_NaN());
+    QCOMPARE(hard.softness(), 0.0);
+
+    StrokeObject feather = hard;
+    feather.setSoftness(1.0);
+    QCOMPARE(feather.softness(), 1.0);
+    QVERIFY2(rectDiff(feather.bounds(), hard.bounds(), 0.75).isEmpty(),
+             "softening must not grow the hard-brush bounds");
+
+    const QImage hardImage = renderObject(hard, 110, 120);
+    const QImage softImage = renderObject(feather, 110, 120);
+    const int hardCentre = qAlpha(hardImage.pixel(50, 60));
+    const int softCentre = qAlpha(softImage.pixel(50, 60));
+    const int softRim = qAlpha(softImage.pixel(50, 53));
+    QVERIFY(hardCentre > 200);
+    QVERIFY(softCentre > 200);
+    QVERIFY2(softRim > 0, "the feathered stroke must still reach its soft rim");
+    QVERIFY2(softRim < softCentre, "the soft rim must fade towards the edge");
+
+    // Single points use the radial-gradient path.
+    StrokeObject dot;
+    dot.setPoints({{50.0, 60.0}});
+    dot.setDiameter(40.0);
+    dot.setColor(Qt::black);
+    dot.setSoftness(1.0);
+    const QImage dotImage = renderObject(dot, 110, 120);
+    const int dotCentre = qAlpha(dotImage.pixel(50, 60));
+    const int dotMid = qAlpha(dotImage.pixel(62, 60));
+    QVERIFY(dotCentre > 200);
+    QVERIFY(dotMid > 0);
+    QVERIFY(dotMid < dotCentre);
 }
 
 void ObjectsTest::layerZOrderAndTopmostHit()

@@ -165,7 +165,8 @@ public:
     // AlignTop/VCenter/Bottom). One undo step; false for no flags, no valid
     // ids, or when nothing would move.
     Q_INVOKABLE bool alignObjects(const QVariantList &ids, int alignment);
-    Q_INVOKABLE void addBrushStroke(const QVariantList &points, double diameter, const QColor &color);
+    Q_INVOKABLE void addBrushStroke(const QVariantList &points, double diameter,
+                                    const QColor &color, double softness = 0.0);
     Q_INVOKABLE void addShape(const QString &kind, const QRectF &rect,
                               const QColor &fillColor, const QColor &strokeColor,
                               double strokeWidth, double cornerRadius);

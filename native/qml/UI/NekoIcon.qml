@@ -185,6 +185,12 @@ Canvas {
             c.moveTo(3, 20); c.lineTo(21, 20)
             c.rect(6, 4, 4, 13); c.rect(14, 9, 4, 8)
             break
+        case "fit":
+            c.moveTo(4, 9); c.lineTo(4, 4); c.lineTo(9, 4)
+            c.moveTo(15, 4); c.lineTo(20, 4); c.lineTo(20, 9)
+            c.moveTo(20, 15); c.lineTo(20, 20); c.lineTo(15, 20)
+            c.moveTo(9, 20); c.lineTo(4, 20); c.lineTo(4, 15)
+            break
         default:
             // Unknown names intentionally paint nothing rather than guessing.
             break

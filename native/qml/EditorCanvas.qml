@@ -49,6 +49,8 @@ Item {
     property bool brushActive: false
     property real brushDiameter: 24
     property color brushColor: "#000000"
+    property real brushOpacity: 100
+    property real brushSoftness: 0
     property string shapeKind: "rectangle"
     property color shapeFillColor: "#ffffff"
     property color shapeStrokeColor: "#000000"
@@ -105,6 +107,11 @@ Item {
     }
     function actualSize() { zoomAt(1 / zoom, viewport.width / 2, viewport.height / 2) }
     function changeZoom(factor) { zoomAt(factor, viewport.width / 2, viewport.height / 2) }
+    /*! Absolute zoom (1 = 100%), used by the status-bar slider. */
+    function setZoomValue(value) {
+        if (!hasImage || !(value > 0) || !isFinite(value)) return
+        zoomAt(value / zoom, viewport.width / 2, viewport.height / 2)
+    }
     function zoomAt(factor, x, y) {
         if (!hasImage || zoom <= 0 || factor <= 0) return
         const imageX = (view.contentX + x - picture.x) / zoom
@@ -292,6 +299,8 @@ Item {
                     viewScale: root.zoom
                     diameter: root.brushDiameter
                     color: root.brushColor
+                    inkOpacity: root.brushOpacity
+                    softness: root.brushSoftness
                     visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
                                          view.width, view.height)
                     onStrokeCommitted: function(points) { root.brushStrokeCommitted(points) }

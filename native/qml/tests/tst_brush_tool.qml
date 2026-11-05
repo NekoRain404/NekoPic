@@ -77,6 +77,10 @@ TestCase {
             scroller.contentY = 0
         panel.diameter = 24
         panel.color = panel.blackColor
+        panel.inkOpacity = panel.defaultOpacity
+        panel.softness = panel.defaultSoftness
+        overlay.inkOpacity = 100
+        overlay.softness = 0
     }
 
     function cleanup() {
@@ -370,10 +374,19 @@ TestCase {
         compare(slider.value, 24)
         compare(panelChild("brush-diameter-value").text, "24 px")
 
+        compare(panel.inkOpacity, 100)
+        compare(panel.softness, 0)
+        compare(panelChild("brush-opacity").value, 100)
+        compare(panelChild("brush-softness").value, 0)
+        compare(panelChild("brush-opacity-value").text, "100%")
+        compare(panelChild("brush-softness-value").text, "0%")
+
         const names = ["brush-color-black", "brush-color-white",
                        "brush-color-warm-grey", "brush-color-peach",
                        "brush-color-red", "brush-color-blue",
-                       "brush-hex-field", "brush-reset", "brush-hint"]
+                       "brush-hex-field", "brush-reset", "brush-hint",
+                       "brush-opacity", "brush-opacity-value",
+                       "brush-softness", "brush-softness-value"]
         for (let i = 0; i < names.length; ++i)
             verify(panelChild(names[i]) !== null, "missing " + names[i])
 
@@ -397,6 +410,40 @@ TestCase {
         // External changes follow without dragging the handle.
         panel.diameter = 96
         compare(slider.value, 96)
+    }
+
+    function test_panelOpacityAndSoftnessSliders() {
+        const opacity = panelChild("brush-opacity")
+        const softness = panelChild("brush-softness")
+        compare(opacity.from, 0)
+        compare(opacity.to, 100)
+        compare(softness.from, 0)
+        compare(softness.to, 100)
+
+        opacity.forceActiveFocus()
+        keyClick(Qt.Key_Left)
+        compare(panel.inkOpacity, 99)
+        keyClick(Qt.Key_Right)
+        compare(panel.inkOpacity, 100)
+        keyClick(Qt.Key_Home)
+        compare(panel.inkOpacity, 0)
+        keyClick(Qt.Key_End)
+        compare(panel.inkOpacity, 100)
+
+        softness.forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        compare(panel.softness, 1)
+        keyClick(Qt.Key_End)
+        compare(panel.softness, 100)
+
+        panel.inkOpacity = 40
+        compare(opacity.value, 40)
+        verify(Math.abs(panel.effectiveColor.a - 0.4) < 0.01,
+               "opacity must be carried by the stroke colour alpha")
+        compare(panelChild("brush-opacity-value").text, "40%")
+
+        panel.inkOpacity = 100
+        compare(panel.effectiveColor.a, 1)
     }
 
     function test_panelColourSwatches() {
@@ -446,9 +493,56 @@ TestCase {
     function test_panelResetRestoresDefaults() {
         panel.diameter = 100
         panel.color = "#123456"
+        panel.inkOpacity = 35
+        panel.softness = 60
         mouseClick(panelChild("brush-reset"))
         compare(panel.diameter, 24)
         verify(Qt.colorEqual(panel.color, panel.blackColor))
+        compare(panel.inkOpacity, panel.defaultOpacity)
+        compare(panel.softness, panel.defaultSoftness)
+        compare(panelChild("brush-opacity").value, 100)
+        compare(panelChild("brush-softness").value, 0)
+    }
+
+    function test_previewHonoursOpacityAndSoftness() {
+        // Hard, fully opaque dot: the preview and committed stroke use the
+        // same layer model as StrokeObject.
+        overlay.inkOpacity = 100
+        overlay.softness = 0
+        mousePress(overlay, 62, 31)
+        tryVerify(function() { return alphaAt(62, 31) > 0 }, 1000,
+                  "preview should paint")
+        waitForRendering(overlay)
+        const hardAlpha = alphaAt(62, 31)
+        mouseRelease(overlay, 62, 31)
+        strokes.clear()
+
+        // Half opacity must reduce the ink alpha roughly by half.
+        overlay.inkOpacity = 50
+        mousePress(overlay, 62, 31)
+        waitForRendering(overlay)
+        tryVerify(function() { return alphaAt(62, 31) > 0 }, 1000,
+                  "half-opacity preview should paint")
+        const faintAlpha = alphaAt(62, 31)
+        verify(faintAlpha < hardAlpha, "50% opacity must be lighter than 100%")
+        verify(faintAlpha > hardAlpha * 0.35 && faintAlpha < hardAlpha * 0.65,
+               "50% opacity should be about half the alpha")
+        mouseRelease(overlay, 62, 31)
+        strokes.clear()
+
+        // A feathered dot keeps a solid-ish centre but fades at the rim.
+        overlay.inkOpacity = 100
+        overlay.softness = 100
+        mousePress(overlay, 62, 31)
+        waitForRendering(overlay)
+        tryVerify(function() { return alphaAt(62, 31) > 0 }, 1000,
+                  "soft preview should paint")
+        const centre = alphaAt(62, 31)
+        const rim = alphaAt(60, 31)
+        verify(rim < centre, "soft edge must fade towards the rim")
+        verify(rim > 0, "soft edge must not clip the brush footprint")
+        mouseRelease(overlay, 62, 31)
+        compare(strokes.count, 1)
     }
 
     function test_panelDisabledLocksControls() {

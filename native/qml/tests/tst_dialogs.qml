@@ -73,6 +73,51 @@ TestCase {
         verify(child(dialog, "export-format-label") !== null)
         verify(child(dialog, "export-metadata-note").text.length > 0)
         verify(child(dialog, "export-background-transparent") !== null)
+        verify(child(dialog, "export-file-name") !== null)
+        verify(child(dialog, "export-file-name-error") !== null)
+        verify(child(dialog, "export-file-name-note").text.length > 0)
+    }
+
+    function test_exportFileNameValidation() {
+        const dialog = make(exportComponent, {
+            fileName: "photo.jpg", formatId: "jpeg", formatSuffix: "jpg"
+        })
+        openDialog(dialog)
+        const accept = child(dialog, "export-accept")
+        const input = child(dialog, "export-file-name")
+        const error = child(dialog, "export-file-name-error")
+
+        compare(input.text, "photo.jpg")
+        compare(dialog.fileNameValid, true)
+        compare(error.visible, false)
+        compare(accept.enabled, true)
+
+        // A mismatched extension is rejected before saving.
+        dialog.fileName = "photo.png"
+        compare(dialog.fileNameValid, false)
+        compare(error.visible, true)
+        compare(error.text.length > 0, true)
+        compare(accept.enabled, false)
+
+        // Extensions are case-insensitive and may be omitted entirely.
+        dialog.fileName = "photo.JPG"
+        compare(dialog.fileNameValid, true)
+        dialog.fileName = "vacation"
+        compare(dialog.fileNameValid, true)
+        compare(error.visible, false)
+
+        // Path separators would escape the Save As folder.
+        dialog.fileName = "sub/photo.jpg"
+        compare(dialog.fileNameValid, false)
+        verify(error.text.indexOf("Save As") >= 0)
+        dialog.fileName = "photo.jpg"
+        dialog.fileName = ".."
+        compare(dialog.fileNameValid, false)
+
+        dialog.fileName = "   "
+        compare(dialog.fileNameValid, false)
+        compare(dialog.trimmedFileName, "")
+        compare(accept.enabled, false)
     }
 
     function test_exportQualityClampsAndReports() {

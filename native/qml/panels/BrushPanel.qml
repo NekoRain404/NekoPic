@@ -19,6 +19,8 @@ import "../dialogs"
     Contract:
       • diameter — brush width in image pixels, constrained to 4–512.
       • color    — brush ink; the six swatches and the hex field set it.
+      • inkOpacity — ink opacity 0–100 %; carried into the stroke colour alpha.
+      • softness — feather strength 0–100 %; 0 keeps the original hard edge.
       • enabled  — inherited Item property; false locks every control.
       • theme    — the shell token map (panel/text/muted/raised/border/accent).
 
@@ -26,9 +28,10 @@ import "../dialogs"
     every other colour comes from Theme or the supplied theme map.
 
     Test hooks (objectName): brush-diameter, brush-diameter-value,
-    brush-color-black, brush-color-white, brush-color-warm-grey,
-    brush-color-peach, brush-color-red, brush-color-blue, brush-hex-field,
-    brush-reset, brush-hint.
+    brush-opacity, brush-opacity-value, brush-softness,
+    brush-softness-value, brush-color-black, brush-color-white,
+    brush-color-warm-grey, brush-color-peach, brush-color-red,
+    brush-color-blue, brush-hex-field, brush-reset, brush-hint.
 
     The visible surface is `panelBackground`. The root stays an Item so the
     public `color` property can mean brush ink; a Rectangle root already owns
@@ -45,10 +48,16 @@ Item {
     property real diameter: 24
     /*! Brush ink. Defaults to black, matching the controller fallback. */
     property color color: root.blackColor
+    /*! Ink opacity in percent. */
+    property real inkOpacity: root.defaultOpacity
+    /*! Feather strength in percent: 0 = hard edge, 100 = fully soft. */
+    property real softness: root.defaultSoftness
 
     readonly property real minDiameter: 4
     readonly property real maxDiameter: 512
     readonly property real defaultDiameter: 24
+    readonly property real defaultOpacity: 100
+    readonly property real defaultSoftness: 0
 
     /* Sample colours are content values, not design tokens. */
     readonly property color whiteColor: "#ffffff"
@@ -59,6 +68,9 @@ Item {
     readonly property color blueColor: "#4a6fa5"
 
     readonly property string hexText: hexFor(color)
+    /*! The ink handed to the stroke pipeline: opacity lives in the alpha. */
+    readonly property color effectiveColor: Qt.rgba(color.r, color.g, color.b,
+                                                    color.a * Math.max(0, Math.min(100, inkOpacity)) / 100)
 
     implicitWidth: 292
     implicitHeight: content.implicitHeight + 2 * Theme.spacing2xl
@@ -108,6 +120,8 @@ Item {
     /*! Restores the documented defaults. */
     function reset() {
         diameter = defaultDiameter
+        inkOpacity = defaultOpacity
+        softness = defaultSoftness
         color = blackColor
         _syncHex()
     }
@@ -202,6 +216,96 @@ Item {
                         if (!diameterSlider.dragging
                                 && diameterSlider.value !== root.diameter)
                             diameterSlider.value = root.diameter
+                    }
+                }
+            }
+        }
+
+        // ── Opacity ───────────────────────────────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingSm
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: qsTr("Opacity")
+                    color: root.theme.muted
+                    font.pixelSize: Theme.fontSmall
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    objectName: "brush-opacity-value"
+                    text: Math.round(root.inkOpacity) + "%"
+                    color: root.theme.text
+                    font.pixelSize: Theme.fontCaption
+                }
+            }
+
+            NekoSlider {
+                id: opacitySlider
+                objectName: "brush-opacity"
+                Layout.fillWidth: true
+                from: 0
+                to: 100
+                stepSize: 1
+                defaultValue: root.defaultOpacity
+                enabled: root.enabled
+                accessibleName: qsTr("Brush opacity")
+                onPreview: function(value) { root.inkOpacity = Math.round(value) }
+                onFinish: function(value) { root.inkOpacity = Math.round(value) }
+                Component.onCompleted: value = root.inkOpacity
+                Connections {
+                    target: root
+                    function onInkOpacityChanged() {
+                        if (!opacitySlider.dragging
+                                && opacitySlider.value !== root.inkOpacity)
+                            opacitySlider.value = root.inkOpacity
+                    }
+                }
+            }
+        }
+
+        // ── Soft edge ─────────────────────────────────────────────────────
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingSm
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: qsTr("Softness")
+                    color: root.theme.muted
+                    font.pixelSize: Theme.fontSmall
+                }
+                Item { Layout.fillWidth: true }
+                Text {
+                    objectName: "brush-softness-value"
+                    text: Math.round(root.softness) + "%"
+                    color: root.theme.text
+                    font.pixelSize: Theme.fontCaption
+                }
+            }
+
+            NekoSlider {
+                id: softnessSlider
+                objectName: "brush-softness"
+                Layout.fillWidth: true
+                from: 0
+                to: 100
+                stepSize: 1
+                defaultValue: root.defaultSoftness
+                enabled: root.enabled
+                accessibleName: qsTr("Brush softness")
+                onPreview: function(value) { root.softness = Math.round(value) }
+                onFinish: function(value) { root.softness = Math.round(value) }
+                Component.onCompleted: value = root.softness
+                Connections {
+                    target: root
+                    function onSoftnessChanged() {
+                        if (!softnessSlider.dragging
+                                && softnessSlider.value !== root.softness)
+                            softnessSlider.value = root.softness
                     }
                 }
             }
@@ -313,7 +417,8 @@ Item {
             color: root.theme.muted
             font.pixelSize: Theme.fontSmall
             text: qsTr("Drag on the image to paint. Release commits one stroke. "
-                       + "Press Esc to cancel the current stroke.")
+                       + "Opacity is baked into the ink alpha; softness feathers "
+                       + "the edge inside the same diameter. Press Esc to cancel.")
         }
 
         Item { Layout.fillHeight: true }
