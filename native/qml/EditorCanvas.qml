@@ -16,7 +16,7 @@ Item {
     property real previewBrightness: 0
     property real previewContrast: 0
     property real previewSaturation: 0
-    readonly property bool gpuPreviewing: adjustmentPreviewActive && gpuPreviewAvailable && hasImage && !compareActive
+    readonly property bool gpuPreviewing: adjustmentPreviewActive && gpuPreviewAvailable && hasImage && !comparing
     property bool hasImage: false
     property int imageWidth: 0
     property int imageHeight: 0
@@ -33,6 +33,7 @@ Item {
     property bool textActive: false
     property bool selectionActive: false
     property bool compareActive: false
+    readonly property bool comparing: compareActive || compareButton.pressed
     property bool showCheckerboard: true
     property bool shapeActive: false
     property bool brushActive: false
@@ -123,10 +124,8 @@ Item {
                     variant: "ghost"
                     implicitHeight: 26
                     enabled: root.hasImage
-                    onPressedChanged: root.compareActive = pressed
-                    onCanceled: root.compareActive = false
                 }
-                Label { visible: parent.width > 330; text: root.compareActive ? qsTr("ORIGINAL") : qsTr("WORKSPACE"); color: root.theme ? root.theme.muted : "#aaa"; font.pixelSize: 9 }
+                Label { visible: parent.width > 330; text: root.comparing ? qsTr("ORIGINAL") : qsTr("WORKSPACE"); color: root.theme ? root.theme.muted : "#aaa"; font.pixelSize: 9 }
             }
             Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: root.theme ? root.theme.border : "#343638" }
         }
@@ -186,7 +185,7 @@ Item {
                     x: (view.contentWidth - width) / 2; y: (view.contentHeight - height) / 2
                     width: root.hasImage ? root.imageWidth * root.zoom : 0
                     height: root.hasImage ? root.imageHeight * root.zoom : 0
-                    source: root.compareActive ? root.baseImageUrl
+                    source: root.comparing ? root.baseImageUrl
                             : root.gpuPreviewing ? root.baseImageUrl : root.imageUrl
                     cache: false; fillMode: Image.PreserveAspectFit
                     CropOverlay {
