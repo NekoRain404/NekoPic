@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
+import "UI"
 
 ApplicationWindow {
     id: window
@@ -15,6 +16,7 @@ ApplicationWindow {
     property url pendingImage
     property string activeTool: "adjust"
     property string transientStatus: ""
+    property bool reduceMotion: false
     function showStatus(message) { transientStatus = message; statusTimer.restart() }
     function applyCrop(area) {
         if (!editor.hasImage || editor.busy) return
@@ -29,7 +31,9 @@ ApplicationWindow {
             if (!editor.busy) { closingRequested = true; discardDialog.open() }
         }
     }
-    Settings { category: "ui"; property alias darkTheme: window.darkTheme }
+    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion }
+    Binding { target: Theme; property: "dark"; value: window.darkTheme }
+    Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
     color: theme.background
     palette.window: theme.panel
     palette.windowText: theme.text
@@ -42,57 +46,26 @@ ApplicationWindow {
 
     QtObject {
         id: theme
-        readonly property color background: window.darkTheme ? "#181a1b" : "#edece8"
-        readonly property color panel: window.darkTheme ? "#222426" : "#f7f6f2"
-        readonly property color canvas: window.darkTheme ? "#151718" : "#dcded9"
-        readonly property color raised: window.darkTheme ? "#2b2d2f" : "#ffffff"
-        readonly property color hover: window.darkTheme ? "#343638" : "#e6e5df"
-        readonly property color text: window.darkTheme ? "#e9e9e6" : "#303734"
-        readonly property color muted: window.darkTheme ? "#929794" : "#68716b"
-        readonly property color border: window.darkTheme ? "#343638" : "#d6d7d1"
-        readonly property color accent: window.darkTheme ? "#edbc9d" : "#a45934"
-        readonly property color accentInk: window.darkTheme ? "#292420" : "#fff6ed"
+        readonly property color background: Theme.background
+        readonly property color panel: Theme.panel
+        readonly property color canvas: Theme.canvas
+        readonly property color raised: Theme.surfaceRaised
+        readonly property color hover: Theme.hover
+        readonly property color text: Theme.textPrimary
+        readonly property color muted: Theme.textSecondary
+        readonly property color border: Theme.border
+        readonly property color accent: Theme.accent
+        readonly property color accentInk: Theme.accentInk
     }
 
-    component Icon: Canvas {
-        property string name: ""
-        property color ink: theme.muted
-        implicitWidth: 18; implicitHeight: 18
-        onNameChanged: requestPaint()
-        onInkChanged: requestPaint()
-        onPaint: {
-            const c = getContext("2d"); c.reset(); c.scale(width / 24, height / 24)
-            c.strokeStyle = ink; c.lineWidth = 1.7; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath()
-            if (name === "logo") { c.moveTo(4,18); c.lineTo(4,5); c.lineTo(12,12); c.lineTo(20,5); c.lineTo(20,18); c.moveTo(8,18); c.lineTo(8,14); c.moveTo(16,18); c.lineTo(16,14) }
-            else if (name === "folder") { c.moveTo(3,7); c.lineTo(10,7); c.lineTo(12,9); c.lineTo(21,9); c.lineTo(21,19); c.lineTo(3,19); c.closePath() }
-            else if (name === "save") { c.moveTo(4,3); c.lineTo(17,3); c.lineTo(21,7); c.lineTo(21,21); c.lineTo(3,21); c.lineTo(3,3); c.moveTo(7,3); c.lineTo(7,9); c.lineTo(17,9); c.lineTo(17,3); c.moveTo(7,21); c.lineTo(7,13); c.lineTo(17,13); c.lineTo(17,21) }
-            else if (name === "undo" || name === "redo") { if (name === "redo") { c.translate(24,0); c.scale(-1,1) }; c.moveTo(8,4); c.lineTo(3,9); c.lineTo(8,14); c.moveTo(3,9); c.lineTo(14,9); c.quadraticCurveTo(21,9,21,16); c.lineTo(21,20) }
-            else if (name === "rotate") { c.arc(12,12,9,-2.9,2.4); c.moveTo(3,3); c.lineTo(3,10); c.lineTo(10,10) }
-            else if (name === "crop") { c.moveTo(6,2); c.lineTo(6,16); c.lineTo(22,16); c.moveTo(2,6); c.lineTo(18,6); c.lineTo(18,22) }
-            else if (name === "adjust") { c.moveTo(3,7); c.lineTo(21,7); c.moveTo(3,17); c.lineTo(21,17); c.moveTo(12,7); c.arc(9,7,3,0,Math.PI*2); c.moveTo(19,17); c.arc(16,17,3,0,Math.PI*2) }
-            else if (name === "filters") { c.moveTo(12,3); c.lineTo(14.5,9.5); c.lineTo(21,12); c.lineTo(14.5,14.5); c.lineTo(12,21); c.lineTo(9.5,14.5); c.lineTo(3,12); c.lineTo(9.5,9.5); c.closePath() }
-            else if (name === "brush") { c.moveTo(11,12); c.lineTo(19,3); c.lineTo(21,5); c.lineTo(13,14); c.moveTo(11,12); c.lineTo(13,14); c.moveTo(10,13); c.quadraticCurveTo(4,12,4,17); c.lineTo(2,21); c.quadraticCurveTo(10,21,10,17) }
-            else if (name === "text") { c.moveTo(4,6); c.lineTo(4,3); c.lineTo(20,3); c.lineTo(20,6); c.moveTo(12,3); c.lineTo(12,21); c.moveTo(8,21); c.lineTo(16,21) }
-            else if (name === "shapes") { c.rect(3,3,12,12); c.moveTo(22,16); c.arc(16,16,6,0,Math.PI*2) }
-            else if (name === "mosaic") { c.rect(3,3,7,7); c.rect(14,3,7,7); c.rect(3,14,7,7); c.rect(14,14,7,7) }
-            else if (name === "copy") { c.rect(8, 8, 12, 12); c.moveTo(16, 8); c.lineTo(16, 4); c.lineTo(4, 4); c.lineTo(4, 16); c.lineTo(8, 16) }
-            else if (name === "select") { c.moveTo(5,3); c.lineTo(20,13); c.lineTo(13,14); c.lineTo(10,21); c.closePath() }
-            else if (name === "pan") { c.moveTo(8,12); c.lineTo(8,5); c.quadraticCurveTo(10,2,12,5); c.lineTo(12,11); c.lineTo(12,4); c.quadraticCurveTo(14,1,16,4); c.lineTo(16,11); c.lineTo(16,6); c.quadraticCurveTo(18,3,20,6); c.lineTo(20,15); c.quadraticCurveTo(20,22,13,22); c.quadraticCurveTo(9,22,7,18); c.lineTo(3,12); c.quadraticCurveTo(4,9,6,11); c.lineTo(8,13) }
-            c.stroke()
-        }
+    component Icon: NekoIcon {
+        property color ink: Theme.textSecondary
+        color: ink
     }
-    component CommandButton: Button {
+    component CommandButton: NekoButton {
         id: command
-        property string iconName: ""
         property bool primary: false
-        implicitHeight: 34; implicitWidth: content.implicitWidth + 20
-        padding: 0
-        background: Rectangle { radius: 5; color: command.primary && command.enabled ? theme.accent : command.hovered && command.enabled ? theme.hover : "transparent" }
-        contentItem: RowLayout {
-            id: content; spacing: 7
-            Icon { visible: command.iconName !== ""; name: command.iconName; ink: command.primary && command.enabled ? theme.accentInk : theme.muted; opacity: command.enabled ? 1 : 0.35; Layout.preferredWidth: 16; Layout.preferredHeight: 16 }
-            Label { visible: command.text.length > 0; text: command.text; color: command.primary && command.enabled ? theme.accentInk : theme.text; opacity: command.enabled ? 1 : 0.35; font.pixelSize: 11; font.weight: command.primary ? Font.DemiBold : Font.Normal }
-        }
+        variant: primary ? "primary" : "secondary"
     }
 
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
@@ -261,27 +234,22 @@ ApplicationWindow {
                                 { icon: "shapes", label: qsTr("Shapes") }, { icon: "mosaic", label: qsTr("Mosaic") },
                                 { icon: "crop", label: qsTr("Crop") }
                             ]
-                            delegate: ToolButton {
+                            delegate: NekoToolButton {
                                 id: toolButton
-                                required property var modelData; required property int index
-                                Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 52; Layout.preferredHeight: 52
+                                required property var modelData
+                                required property int index
+                                Layout.alignment: Qt.AlignHCenter
                                 Layout.topMargin: index === 2 || index === 4 ? 10 : 0
                                 objectName: "tool-" + modelData.icon
+                                text: modelData.label
+                                iconName: modelData.icon
+                                accessibleName: modelData.label
                                 readonly property bool available: modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "crop"
                                 enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
-                                checkable: available; checked: available && window.activeTool === modelData.icon
+                                checked: available && window.activeTool === modelData.icon
                                 onClicked: window.activeTool = modelData.icon
-                                ToolTip.visible: hovered; ToolTip.text: available ? modelData.label : modelData.label + " · " + qsTr("Coming soon")
-                                background: Rectangle {
-                                    radius: 6; color: toolButton.checked ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.08) : toolButton.hovered && toolButton.enabled ? theme.hover : "transparent"
-                                    Rectangle { visible: toolButton.checked; x: -11; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 18; radius: 1; color: theme.accent }
-                                    Rectangle { visible: toolButton.index === 2 || toolButton.index === 4; x: 0; y: -7; width: parent.width; height: 1; color: theme.border }
-                                }
-                                contentItem: ColumnLayout {
-                                    spacing: 3
-                                    Icon { Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 19; Layout.preferredHeight: 19; name: toolButton.modelData.icon; ink: toolButton.checked ? theme.accent : theme.muted; opacity: toolButton.enabled ? 1 : 0.4 }
-                                    Label { Layout.alignment: Qt.AlignHCenter; text: toolButton.modelData.label; color: toolButton.checked ? theme.accent : theme.muted; opacity: toolButton.enabled ? 1 : 0.4; font.pixelSize: 9 }
-                                }
+                                ToolTip.visible: hovered
+                                ToolTip.text: available ? modelData.label : modelData.label + " · " + qsTr("Coming soon")
                             }
                         }
                     }

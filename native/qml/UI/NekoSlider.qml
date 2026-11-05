@@ -91,10 +91,14 @@ Item {
     // Keyboard and double-click commit as a complete begin/preview/finish
     // gesture so controllers can treat them exactly like a drag.
     function commit(v) {
+        // Treat keyboard/double-click like a drag so external value syncs do
+        // not snap the handle back between preview and finish.
+        dragging = true
         begin()
         value = clamped(v)
         preview(value)
         finish(value)
+        dragging = false
     }
 
     function resetToDefault() {

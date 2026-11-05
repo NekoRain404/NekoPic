@@ -8,6 +8,10 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickImageProvider>
+#include <QQuickWindow>
+#include <QTimer>
+
+#include <memory>
 
 class DocumentImageProvider final : public QQuickImageProvider {
 public:
@@ -47,6 +51,37 @@ int main(int argc, char *argv[])
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
+
+    // Optional command-line image: `nekopic photo.jpg`.
+    const auto arguments = app.arguments();
+    QString screenshotPath;
+    for (int index = 1; index < arguments.size(); ++index) {
+        const auto argument = arguments.at(index);
+        if (argument == QLatin1String("--screenshot") && index + 1 < arguments.size()) {
+            screenshotPath = arguments.at(++index);
+            continue;
+        }
+        if (argument.startsWith(QLatin1String("--"))) continue;
+        editor.openImage(QUrl::fromLocalFile(argument));
+    }
+
+    // Development/visual-regression hook: render the window offscreen once the
+    // document is idle, then exit. Never used by normal launches.
+    if (!screenshotPath.isEmpty()) {
+        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
+        if (window) {
+            auto *poll = new QTimer(&app);
+            auto attempts = std::make_shared<int>(0);
+            QObject::connect(poll, &QTimer::timeout, &app, [&, window, poll, attempts, screenshotPath] {
+                if (editor.busy() && ++(*attempts) < 40) return;
+                poll->stop();
+                window->grabWindow().save(screenshotPath);
+                QCoreApplication::quit();
+            });
+            poll->start(100);
+        }
+    }
+
     renderCapabilities.probe();
     return app.exec();
 }

@@ -96,7 +96,7 @@ TestCase {
         compare(finished.count, 1)
         compare(finished.signalArguments[0][0], "exposure")
         verify(finished.signalArguments[0][1] > 0)
-        compare(slider.value, 0)
+        verify(slider.value > 0)
     }
 
     function test_keyboardAdjustment() {
@@ -109,7 +109,7 @@ TestCase {
         compare(finished.count, 1)
         compare(finished.signalArguments[0][0], "brightness")
         verify(finished.signalArguments[0][1] > 0)
-        compare(slider.value, 0)
+        verify(slider.value > 0)
     }
 
     function test_selectingPresetEmitsBackendId() {

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "UI"
 
 Rectangle {
     id: root
@@ -33,17 +34,17 @@ Rectangle {
             Label { text: qsTr("LIGHT & COLOR"); font.pixelSize: 9; font.weight: Font.DemiBold; color: root.theme.muted }
             Label { text: root.currentTab === 0 ? qsTr("Adjust") : qsTr("Filters"); font.pixelSize: 19; font.weight: Font.DemiBold; color: root.theme.text }
         }
-        RowLayout {
-            Layout.fillWidth: true; Layout.leftMargin: 23; Layout.rightMargin: 23; spacing: 3
-            Repeater {
-                model: [qsTr("Adjust"), qsTr("Filters")]
-                delegate: Button {
-                    id: tab
-                    required property string modelData; required property int index
-                    Layout.fillWidth: true; implicitHeight: 32; text: modelData
-                    onClicked: root.currentTab = index
-                    background: Rectangle { radius: 5; color: root.currentTab === tab.index ? root.theme.raised : tab.hovered ? root.theme.hover : "transparent"; border.color: tab.visualFocus ? root.theme.accent : "transparent" }
-                    contentItem: Label { text: tab.text; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; color: root.currentTab === tab.index ? root.theme.text : root.theme.muted; font.pixelSize: 11 }
+        NekoSegmentedControl {
+            id: tabs
+            Layout.fillWidth: true; Layout.leftMargin: 23; Layout.rightMargin: 23
+            model: [qsTr("Adjust"), qsTr("Filters")]
+            accessibleName: qsTr("Adjustment sections")
+            Component.onCompleted: currentIndex = root.currentTab
+            onActivated: function(index) { root.currentTab = index }
+            Connections {
+                target: root
+                function onCurrentTabChanged() {
+                    if (tabs.currentIndex !== root.currentTab) tabs.currentIndex = root.currentTab
                 }
             }
         }
@@ -56,14 +57,13 @@ Rectangle {
                     Layout.fillWidth: true; Layout.leftMargin: 23; Layout.rightMargin: 23; Layout.bottomMargin: 15
                     Label { text: root.currentTab === 0 ? qsTr("Basic adjustments") : qsTr("Presets"); color: root.theme.text; font.pixelSize: 11; font.weight: Font.DemiBold }
                     Item { Layout.fillWidth: true }
-                    Button {
+                    NekoButton {
                         id: resetButton
                         objectName: "adjustment-reset"
                         visible: root.currentTab === 0; enabled: root.adjustmentsEnabled
-                        text: qsTr("Reset"); implicitHeight: 24; leftPadding: 7; rightPadding: 7
+                        text: qsTr("Reset"); variant: "ghost"
+                        implicitHeight: 26; leftPadding: Theme.spacingSm; rightPadding: Theme.spacingSm
                         onClicked: root.adjustmentReset()
-                        background: Rectangle { radius: 4; color: resetButton.hovered && resetButton.enabled ? root.theme.hover : "transparent"; border.color: resetButton.visualFocus ? root.theme.accent : "transparent" }
-                        contentItem: Label { text: resetButton.text; color: root.theme.muted; opacity: resetButton.enabled ? 1 : 0.5; font.pixelSize: 10; verticalAlignment: Text.AlignVCenter }
                     }
                 }
                 Label {
@@ -133,40 +133,23 @@ Rectangle {
                         Item { Layout.fillWidth: true }
                         Label { objectName: "filter-intensity-value"; text: Math.round(intensitySlider.value) + "%"; color: root.theme.muted; font.pixelSize: 10 }
                     }
-                    Slider {
+                    NekoSlider {
                         id: intensitySlider
                         objectName: "filter-intensity"
-                        Layout.fillWidth: true; implicitHeight: 20; enabled: root.filterIntensityEnabled && root.filterPreset !== "none"
-                        from: 0; to: 100; stepSize: 1; value: root.filterIntensity
-                        property bool editing: false
-                        function syncValue() { if (!editing) value = root.filterIntensity }
-                        Component.onCompleted: syncValue()
-                        onPressedChanged: {
-                            if (pressed) { editing = true; root.filterIntensityStarted() }
-                            else if (editing) { root.filterIntensityFinished(value); editing = false }
-                        }
-                        onMoved: {
-                            if (!pressed) {
-                                editing = true
-                                root.filterIntensityStarted()
-                            }
-                            root.filterIntensityPreview(value)
-                            if (!pressed) {
-                                root.filterIntensityFinished(value)
-                                editing = false
-                                syncValue()
+                        Layout.fillWidth: true
+                        from: 0; to: 100; stepSize: 1; defaultValue: 100
+                        enabled: root.filterIntensityEnabled && root.filterPreset !== "none"
+                        accessibleName: qsTr("Filter strength")
+                        onBegin: root.filterIntensityStarted()
+                        onPreview: function(value) { root.filterIntensityPreview(value) }
+                        onFinish: function(value) { root.filterIntensityFinished(value) }
+                        Component.onCompleted: value = root.filterIntensity
+                        Connections {
+                            target: root
+                            function onFilterIntensityChanged() {
+                                if (!intensitySlider.dragging) intensitySlider.value = root.filterIntensity
                             }
                         }
-                        background: Rectangle {
-                            x: intensitySlider.leftPadding; y: intensitySlider.topPadding + intensitySlider.availableHeight / 2 - height / 2
-                            width: intensitySlider.availableWidth; height: 3; radius: 2; color: root.theme.border
-                            Rectangle { width: parent.width * intensitySlider.visualPosition; height: parent.height; radius: parent.radius; color: root.theme.accent }
-                        }
-                        handle: Rectangle { x: intensitySlider.leftPadding + intensitySlider.visualPosition * (intensitySlider.availableWidth - width); y: intensitySlider.topPadding + intensitySlider.availableHeight / 2 - height / 2; width: 12; height: 12; radius: 6; color: root.theme.text; border.width: intensitySlider.visualFocus ? 2 : 1; border.color: intensitySlider.visualFocus ? root.theme.accent : root.theme.panel }
-                    }
-                    Connections {
-                        target: root
-                        function onFilterIntensityChanged() { intensitySlider.syncValue() }
                     }
                 }
                 Repeater {
@@ -195,46 +178,24 @@ Rectangle {
                                 Label { anchors.centerIn: parent; text: (slider.value > 0 ? "+" : "") + Math.round(slider.value); color: root.theme.muted; font.pixelSize: 10 }
                             }
                         }
-                        Slider {
+                        NekoSlider {
                             id: slider
                             objectName: "adjustment-" + adjustment.modelData.key
-                            visible: root.currentTab === 0; Layout.fillWidth: true; implicitHeight: 20; enabled: root.adjustmentsEnabled
-                            from: -100; to: 100; value: 0; stepSize: 1
-                            property bool editing: false
+                            visible: root.currentTab === 0
+                            Layout.fillWidth: true
+                            enabled: root.adjustmentsEnabled
+                            from: -100; to: 100; stepSize: 1; defaultValue: 0
+                            accessibleName: adjustment.modelData.label
+                            onBegin: root.adjustmentStarted(adjustment.modelData.key)
+                            onPreview: function(value) { root.adjustmentPreview(adjustment.modelData.key, value) }
+                            onFinish: function(value) { root.adjustmentFinished(adjustment.modelData.key, value) }
                             function syncValue() {
-                                if (!editing && root.adjustmentValues && root.adjustmentValues[adjustment.modelData.key] !== undefined)
+                                if (!dragging && root.adjustmentValues
+                                        && root.adjustmentValues[adjustment.modelData.key] !== undefined)
                                     value = root.adjustmentValues[adjustment.modelData.key]
                             }
                             Component.onCompleted: syncValue()
                             Connections { target: root; function onAdjustmentValuesChanged() { slider.syncValue() } }
-                            onPressedChanged: {
-                                if (pressed) {
-                                    editing = true
-                                    root.adjustmentStarted(adjustment.modelData.key)
-                                }
-                                else {
-                                    root.adjustmentFinished(adjustment.modelData.key, value)
-                                    editing = false
-                                    syncValue()
-                                }
-                            }
-                            onMoved: {
-                                if (!pressed) {
-                                    editing = true
-                                    root.adjustmentStarted(adjustment.modelData.key)
-                                }
-                                root.adjustmentPreview(adjustment.modelData.key, value)
-                                if (!pressed) {
-                                    root.adjustmentFinished(adjustment.modelData.key, value)
-                                    editing = false
-                                    syncValue()
-                                }
-                            }
-                            background: Rectangle {
-                                x: slider.leftPadding; y: slider.topPadding + slider.availableHeight / 2 - height / 2; width: slider.availableWidth; height: 3; radius: 2; color: root.theme.border
-                                Rectangle { width: parent.width * slider.visualPosition; height: parent.height; radius: parent.radius; color: root.theme.accent }
-                            }
-                            handle: Rectangle { x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width); y: slider.topPadding + slider.availableHeight / 2 - height / 2; width: 12; height: 12; radius: 6; color: root.theme.text; border.width: slider.visualFocus ? 2 : 1; border.color: slider.visualFocus ? root.theme.accent : root.theme.panel }
                         }
                     }
                 }
