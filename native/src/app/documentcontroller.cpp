@@ -53,6 +53,25 @@ QStringList DocumentController::readableImagePatterns() const
     return NekoPic::Io::FormatRegistry::instance().readablePatterns();
 }
 
+int DocumentController::exportQuality() const { return exportQuality_; }
+void DocumentController::setExportQuality(int quality)
+{
+    const int clamped = std::clamp(quality, -1, 100);
+    if (clamped == exportQuality_) return;
+    exportQuality_ = clamped;
+    emit exportOptionsChanged();
+}
+QColor DocumentController::jpegBackground() const { return jpegBackground_; }
+void DocumentController::setJpegBackground(const QColor &color)
+{
+    if (!color.isValid()) return;
+    QColor opaque = color;
+    opaque.setAlpha(255);
+    if (opaque == jpegBackground_) return;
+    jpegBackground_ = opaque;
+    emit exportOptionsChanged();
+}
+
 QVariantList DocumentController::writableFormats() const
 {
     const auto &registry = NekoPic::Io::FormatRegistry::instance();
@@ -102,6 +121,14 @@ void DocumentController::copyImageToClipboard()
         return;
     }
     emit imageCopied();
+}
+
+QColor DocumentController::colorAt(qreal x, qreal y) const
+{
+    if (image_.isNull() || !std::isfinite(x) || !std::isfinite(y)) return {};
+    const int px = std::clamp(static_cast<int>(std::floor(x)), 0, image_.width() - 1);
+    const int py = std::clamp(static_cast<int>(std::floor(y)), 0, image_.height() - 1);
+    return image_.pixelColor(px, py);
 }
 
 void DocumentController::beginAdjustment(const QString &key)
@@ -346,6 +373,8 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
         return;
     }
     const auto image = image_;
+    const int quality = exportQuality_;
+    const auto background = jpegBackground_;
     setError({});
     setBusy(true);
     auto *watcher = new QFutureWatcher<NekoPic::ImageIO::SaveResult>(this);
@@ -356,9 +385,11 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
         else { path_ = path; savedState_ = currentState_; emit documentChanged(); }
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([path, image, format] {
+    watcher->setFuture(QtConcurrent::run([path, image, format, quality, background] {
         NekoPic::ImageIO::SaveOptions options;
         options.format = format.toLatin1();
+        options.quality = quality;
+        options.jpegBackground = background;
         return NekoPic::ImageIO::save(path, image, options);
     }));
 }

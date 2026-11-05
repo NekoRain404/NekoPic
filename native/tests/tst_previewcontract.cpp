@@ -3,6 +3,8 @@
 #include <QImage>
 #include <QSignalSpy>
 #include <QTemporaryDir>
+
+#include <limits>
 #include <QtTest>
 
 namespace {
@@ -59,6 +61,20 @@ private slots:
         QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("exposure")).toDouble()), 50);
         QCOMPARE(qRound(controller.pendingAdjustmentValues().value(QStringLiteral("exposure")).toDouble()), 50);
         QVERIFY(controller.canUndo());
+    }
+
+    void samplesRenderedPixelsByImageCoordinates()
+    {
+        QTemporaryDir dir;
+        QVERIFY(sourceImage().save(dir.filePath(QStringLiteral("source.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("source.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        const auto image = controller.image();
+        QCOMPARE(controller.colorAt(0, 0), image.pixelColor(0, 0));
+        QCOMPARE(controller.colorAt(-10, -10), image.pixelColor(0, 0));
+        QCOMPARE(controller.colorAt(99999, 99999), image.pixelColor(image.width() - 1, image.height() - 1));
+        QVERIFY(!controller.colorAt(std::numeric_limits<double>::quiet_NaN(), 0).isValid());
     }
 
     void baseUrlRevisionChangesAfterEdits()

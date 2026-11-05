@@ -35,6 +35,8 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
     Q_PROPERTY(QVariantList writableFormats READ writableFormats CONSTANT)
+    Q_PROPERTY(int exportQuality READ exportQuality WRITE setExportQuality NOTIFY exportOptionsChanged)
+    Q_PROPERTY(QColor jpegBackground READ jpegBackground WRITE setJpegBackground NOTIFY exportOptionsChanged)
 
 public:
     explicit DocumentController(QObject *parent = nullptr);
@@ -59,6 +61,10 @@ public:
     bool canRedo() const;
     QStringList readableImagePatterns() const;
     QVariantList writableFormats() const;
+    int exportQuality() const;
+    void setExportQuality(int quality);
+    QColor jpegBackground() const;
+    void setJpegBackground(const QColor &color);
     QImage image() const;
     QImage baseImage() const;
     NekoPic::Adjustments::Parameters adjustmentParameters() const;
@@ -69,6 +75,7 @@ public:
     Q_INVOKABLE void saveAs(const QUrl &url, const QString &format);
     Q_INVOKABLE void clearError();
     Q_INVOKABLE void copyImageToClipboard();
+    Q_INVOKABLE QColor colorAt(qreal x, qreal y) const;
     Q_INVOKABLE void rotateClockwise();
     Q_INVOKABLE void rotateCounterClockwise();
     Q_INVOKABLE void flipHorizontal();
@@ -99,6 +106,7 @@ signals:
     void errorChanged();
     void imageOpened(const QUrl &url);
     void imageCopied();
+    void exportOptionsChanged();
 
 private:
     enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };
@@ -130,4 +138,6 @@ private:
     quint64 savedState_ = 0;
     quint64 nextState_ = 0;
     NekoPic::Document::HistoryStore history_;
+    int exportQuality_ = -1;
+    QColor jpegBackground_ = Qt::white;
 };

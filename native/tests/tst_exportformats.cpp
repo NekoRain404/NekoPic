@@ -49,6 +49,39 @@ private slots:
         QCOMPARE(controller.fileName(), QStringLiteral("export.webp"));
     }
 
+    void exportOptionsClampAndPersist()
+    {
+        DocumentController controller;
+        controller.setExportQuality(500);
+        QCOMPARE(controller.exportQuality(), 100);
+        controller.setExportQuality(-50);
+        QCOMPARE(controller.exportQuality(), -1);
+        controller.setJpegBackground(QColor(10, 20, 30, 40));
+        QCOMPARE(controller.jpegBackground(), QColor(10, 20, 30, 255));
+    }
+
+    void savesJpegWithChosenQuality()
+    {
+        if (!QImageWriter::supportedImageFormats().contains("jpeg"))
+            QSKIP("JPEG writer is not available in this build");
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        QImage image(32, 24, QImage::Format_RGBA8888);
+        image.fill(QColor(120, 80, 40, 128));
+        const auto source = dir.filePath(QStringLiteral("source.png"));
+        QVERIFY(image.save(source));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(source));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        controller.setExportQuality(20);
+        controller.setJpegBackground(QColor(255, 0, 0));
+        const auto target = dir.filePath(QStringLiteral("export.jpg"));
+        controller.saveAs(QUrl::fromLocalFile(target), QStringLiteral("jpeg"));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QVERIFY2(controller.errorMessage().isEmpty(), qPrintable(controller.errorMessage()));
+        QVERIFY(QFileInfo::exists(target));
+    }
+
     void rejectsMismatchedExtension()
     {
         QTemporaryDir dir;
