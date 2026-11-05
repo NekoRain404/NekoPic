@@ -30,6 +30,7 @@ Item {
     property bool inputEnabled: true
     property bool cropActive: false
     property bool eyedropperActive: false
+    property bool textActive: false
     property var colorSampler: null
     property real cropAspectRatio: 0
     readonly property rect cropSelection: cropOverlay.selection
@@ -37,6 +38,8 @@ Item {
     signal cropCancelled()
     signal colorPicked(color value)
     signal eyedropperCancelled()
+    signal textPointSelected(real imageX, real imageY)
+    signal textCancelled()
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
     signal recentRequested(url url)
@@ -180,6 +183,18 @@ Item {
                                              view.width, view.height)
                         onRectangleCommitted: function(area) { root.mosaicRectangleCommitted(area) }
                         onStrokeCommitted: function(points) { root.mosaicStrokeCommitted(points) }
+                    }
+                    TextPlacementOverlay {
+                        objectName: "textPlacementOverlay"
+                        anchors.fill: parent
+                        active: root.textActive && root.hasImage
+                        inputEnabled: root.inputEnabled
+                        imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                        viewScale: root.zoom
+                        visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                             view.width, view.height)
+                        onPointSelected: function(imageX, imageY) { root.textPointSelected(imageX, imageY) }
+                        onCancelled: root.textCancelled()
                     }
                     EyedropperOverlay {
                         objectName: "eyedropperOverlay"
