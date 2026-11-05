@@ -49,6 +49,7 @@ private slots:
     void rejectsUnsupportedManifestVersion();
     void rejectsSnapshotWithWrongHash();
     void cleanSaveRemovesSnapshot();
+    void disabledAutosaveSkipsSnapshotsUntilReenabled();
     void cleanExitRemovesSnapshot();
     void restoreMarksDocumentDirtyAndPreservesPixels();
     void restoreRejectsCorruptSnapshotWithoutError();
@@ -199,6 +200,41 @@ void RecoveryStoreTest::cleanSaveRemovesSnapshot()
     QVERIFY(!store.hasRecovery());
     QVERIFY(!QFileInfo::exists(manifestFile(store.storageDirectory())));
     QVERIFY(!QFileInfo::exists(snapshotFile(store.storageDirectory())));
+}
+
+void RecoveryStoreTest::disabledAutosaveSkipsSnapshotsUntilReenabled()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString source = dir.filePath(QStringLiteral("source.png"));
+    QVERIFY(sampleImage(64, 48).save(source, "PNG"));
+
+    DocumentController controller;
+    RecoveryStore store(&controller, dir.filePath(QStringLiteral("recovery")));
+    store.setAutosaveDelay(10);
+    QSignalSpy enabledSpy(&store, &RecoveryStore::autosaveEnabledChanged);
+    store.setAutosaveEnabled(false);
+    QCOMPARE(store.autosaveEnabled(), false);
+    QCOMPARE(enabledSpy.count(), 1);
+
+    controller.openImage(QUrl::fromLocalFile(source));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.rotateClockwise();
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QVERIFY(controller.dirty());
+
+    // No debounce is armed while autosave is off, even though the document is
+    // dirty; the store stays idle until it is re-enabled.
+    QTest::qWait(120);
+    QVERIFY(!store.hasRecovery());
+    QVERIFY(!QFileInfo::exists(manifestFile(store.storageDirectory())));
+    QVERIFY(!QFileInfo::exists(snapshotFile(store.storageDirectory())));
+
+    store.setAutosaveEnabled(true);
+    QCOMPARE(store.autosaveEnabled(), true);
+    QCOMPARE(enabledSpy.count(), 2);
+    QTRY_VERIFY_WITH_TIMEOUT(store.hasRecovery(), 5000);
+    QVERIFY(QFileInfo::exists(manifestFile(store.storageDirectory())));
 }
 
 void RecoveryStoreTest::cleanExitRemovesSnapshot()

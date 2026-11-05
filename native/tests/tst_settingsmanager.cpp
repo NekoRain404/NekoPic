@@ -34,6 +34,8 @@ private slots:
         QCOMPARE(settings.locale(), QStringLiteral("zh_CN"));
         QCOMPARE(settings.confirmOnClose(), true);
         QCOMPARE(settings.showCheckerboard(), true);
+        QCOMPARE(settings.recoveryEnabled(), true);
+        QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
     }
 
     void validatesThemeMode()
@@ -111,6 +113,25 @@ private slots:
                  QStringLiteral("zh_CN"));
     }
 
+    void validatesStartupTool()
+    {
+        SettingsManager settings;
+
+        settings.setStartupTool(QStringLiteral("brush"));
+        QCOMPARE(settings.startupTool(), QStringLiteral("brush"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/startupTool")).toString(),
+                 QStringLiteral("brush"));
+
+        settings.setStartupTool(QStringLiteral("adjust"));
+        QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
+
+        // Unknown tools fall back to the documented default.
+        settings.setStartupTool(QStringLiteral("neko"));
+        QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/startupTool")).toString(),
+                 QStringLiteral("adjust"));
+    }
+
     void persistsAcrossInstances()
     {
         {
@@ -123,6 +144,8 @@ private slots:
             settings.setLocale(QStringLiteral("en"));
             settings.setConfirmOnClose(false);
             settings.setShowCheckerboard(false);
+            settings.setRecoveryEnabled(false);
+            settings.setStartupTool(QStringLiteral("brush"));
         }
 
         SettingsManager restored;
@@ -137,6 +160,8 @@ private slots:
         QCOMPARE(restored.locale(), QStringLiteral("en"));
         QCOMPARE(restored.confirmOnClose(), false);
         QCOMPARE(restored.showCheckerboard(), false);
+        QCOMPARE(restored.recoveryEnabled(), false);
+        QCOMPARE(restored.startupTool(), QStringLiteral("brush"));
     }
 
     void migratesLegacyDarkTheme_data()
@@ -181,6 +206,8 @@ private slots:
         settings.setLocale(QStringLiteral("en"));
         settings.setConfirmOnClose(false);
         settings.setShowCheckerboard(false);
+        settings.setRecoveryEnabled(false);
+        settings.setStartupTool(QStringLiteral("brush"));
 
         QSignalSpy changed(&settings, &SettingsManager::changed);
         QSignalSpy theme(&settings, &SettingsManager::themeModeChanged);
@@ -191,6 +218,8 @@ private slots:
         QSignalSpy locale(&settings, &SettingsManager::localeChanged);
         QSignalSpy close(&settings, &SettingsManager::confirmOnCloseChanged);
         QSignalSpy checkerboard(&settings, &SettingsManager::showCheckerboardChanged);
+        QSignalSpy recovery(&settings, &SettingsManager::recoveryEnabledChanged);
+        QSignalSpy startupTool(&settings, &SettingsManager::startupToolChanged);
 
         settings.resetToDefaults();
 
@@ -202,6 +231,8 @@ private slots:
         QCOMPARE(settings.locale(), QStringLiteral("zh_CN"));
         QCOMPARE(settings.confirmOnClose(), true);
         QCOMPARE(settings.showCheckerboard(), true);
+        QCOMPARE(settings.recoveryEnabled(), true);
+        QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
 
         QCOMPARE(changed.count(), 1);
         QCOMPARE(theme.count(), 1);
@@ -212,6 +243,8 @@ private slots:
         QCOMPARE(locale.count(), 1);
         QCOMPARE(close.count(), 1);
         QCOMPARE(checkerboard.count(), 1);
+        QCOMPARE(recovery.count(), 1);
+        QCOMPARE(startupTool.count(), 1);
 
         SettingsManager restored;
         QCOMPARE(restored.themeMode(), QStringLiteral("dark"));
@@ -222,6 +255,8 @@ private slots:
         QCOMPARE(restored.locale(), QStringLiteral("zh_CN"));
         QCOMPARE(restored.confirmOnClose(), true);
         QCOMPARE(restored.showCheckerboard(), true);
+        QCOMPARE(restored.recoveryEnabled(), true);
+        QCOMPARE(restored.startupTool(), QStringLiteral("adjust"));
     }
 
     void changedOnlyWhenValueDiffers()

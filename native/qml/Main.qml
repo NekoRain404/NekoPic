@@ -244,6 +244,12 @@ ApplicationWindow {
         window.reduceMotion = settings.reduceMotion
         editor.exportQuality = settings.exportQuality
         editor.jpegBackground = settings.jpegBackground
+        if (typeof recovery !== "undefined" && recovery !== null)
+            recovery.autosaveEnabled = settings.recoveryEnabled
+        // The persisted startup tool applies until a command-line --tool
+        // override (set after component creation) replaces it.
+        if (settings.startupTool.length > 0)
+            window.startupTool = settings.startupTool
         if (typeof language !== "undefined" && settings.locale.length > 0
                 && language.locale !== settings.locale)
             language.setLanguage(settings.locale)
@@ -270,6 +276,8 @@ ApplicationWindow {
             settingsDialog.localeId = settings.locale
             settingsDialog.confirmOnClose = settings.confirmOnClose
             settingsDialog.showCheckerboard = settings.showCheckerboard
+            settingsDialog.recoveryEnabled = settings.recoveryEnabled
+            settingsDialog.startupTool = settings.startupTool
         } else {
             settingsDialog.themeMode = window.followSystemTheme ? "system"
                                      : window.darkTheme ? "dark" : "light"
@@ -634,6 +642,17 @@ ApplicationWindow {
         objectName: "settingsDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
+        recoveryAvailable: typeof recovery !== "undefined" && recovery !== null
+                           && recovery.hasRecovery
+        recoverySourceName: typeof recovery !== "undefined" && recovery !== null
+                            ? recovery.sourceName : ""
+        recoveryCapturedAt: typeof recovery !== "undefined" && recovery !== null
+                            ? recovery.capturedAtText : ""
+        recoveryImageSize: typeof recovery !== "undefined" && recovery !== null
+                           ? recovery.imageSizeText : ""
+        formatCapabilities: typeof formatRegistryInfo !== "undefined"
+                            ? formatRegistryInfo
+                            : ({ readableCount: 0, writableCount: 0 })
         onSettingChanged: function(key, value) {
             if (typeof settings === "undefined") return
             settings[key] = value
@@ -646,11 +665,23 @@ ApplicationWindow {
                 editor.exportQuality = value
             } else if (key === "jpegBackground") {
                 editor.jpegBackground = value
+            } else if (key === "recoveryEnabled") {
+                if (typeof recovery !== "undefined" && recovery !== null)
+                    recovery.autosaveEnabled = value
+            } else if (key === "startupTool") {
+                // Consumed by onImageOpened, so it takes effect the next time
+                // a document is opened even if one is already on screen.
+                window.startupTool = value
             }
         }
         onLocaleSelected: function(id) {
             if (typeof settings !== "undefined") settings.locale = id
             if (typeof language !== "undefined") language.setLanguage(id)
+        }
+        onShortcutsRequested: if (!shortcutsDialog.opened) shortcutsDialog.open()
+        onRecoveryDiscardRequested: {
+            if (typeof recovery !== "undefined" && recovery !== null)
+                recovery.discardRecovery()
         }
     }
     ShortcutsDialog {

@@ -24,6 +24,8 @@ class SettingsManager final : public QObject {
     Q_PROPERTY(QString locale READ locale WRITE setLocale NOTIFY localeChanged)
     Q_PROPERTY(bool confirmOnClose READ confirmOnClose WRITE setConfirmOnClose NOTIFY confirmOnCloseChanged)
     Q_PROPERTY(bool showCheckerboard READ showCheckerboard WRITE setShowCheckerboard NOTIFY showCheckerboardChanged)
+    Q_PROPERTY(bool recoveryEnabled READ recoveryEnabled WRITE setRecoveryEnabled NOTIFY recoveryEnabledChanged)
+    Q_PROPERTY(QString startupTool READ startupTool WRITE setStartupTool NOTIFY startupToolChanged)
 
 public:
     explicit SettingsManager(QObject *parent = nullptr);
@@ -40,6 +42,10 @@ public:
     QString locale() const;
     bool confirmOnClose() const;
     bool showCheckerboard() const;
+    /*! Whether dirty documents are snapshotted for crash recovery. */
+    bool recoveryEnabled() const;
+    /*! Tool selected after the next image opens; defaults to "adjust". */
+    QString startupTool() const;
 
     void setThemeMode(const QString &mode);
     void setReduceMotion(bool enabled);
@@ -49,6 +55,8 @@ public:
     void setLocale(const QString &locale);
     void setConfirmOnClose(bool enabled);
     void setShowCheckerboard(bool enabled);
+    void setRecoveryEnabled(bool enabled);
+    void setStartupTool(const QString &tool);
 
     /*! Restores every preference to its documented default and persists them. */
     Q_INVOKABLE void resetToDefaults();
@@ -64,11 +72,14 @@ signals:
     void localeChanged();
     void confirmOnCloseChanged();
     void showCheckerboardChanged();
+    void recoveryEnabledChanged();
+    void startupToolChanged();
 
 private:
     static QString normaliseThemeMode(const QString &mode);
     static QString normaliseLocale(const QString &locale);
     static int normaliseQuality(int quality);
+    static QString normaliseStartupTool(const QString &tool);
     static QColor opaqueColor(const QColor &color);
 
     void load();
@@ -81,4 +92,6 @@ private:
     QString locale_ = QStringLiteral("zh_CN");
     bool confirmOnClose_ = true;
     bool showCheckerboard_ = true;
+    bool recoveryEnabled_ = true;
+    QString startupTool_ = QStringLiteral("adjust");
 };

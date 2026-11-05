@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtTest
 import "../dialogs"
 import "../UI"
@@ -9,6 +10,9 @@ import "../UI"
     The dialog is intentionally decoupled from SettingsManager: these tests
     create it directly, drive the real controls, and assert the emitted
     settingChanged()/localeSelected() payloads that the integrator persists.
+
+    The page is a two-column preferences surface, so tests switch categories
+    before clicking controls in the right-hand panel.
 */
 TestCase {
     id: testCase
@@ -46,6 +50,18 @@ TestCase {
         tryVerify(function() { return dialog.opened }, 3000)
     }
 
+    function categoryButton(dialog, id) {
+        return child(dialog, "settings-category-" + id)
+    }
+
+    function activateCategory(dialog, id) {
+        const button = categoryButton(dialog, id)
+        verify(button !== null, "missing category " + id)
+        mouseClick(button)
+        tryCompare(dialog, "currentCategory", id)
+        wait(20)
+    }
+
     function settingValue(spy, key) {
         for (let i = 0; i < spy.count; ++i) {
             const args = spy.signalArguments[i]
@@ -73,6 +89,13 @@ TestCase {
         wait(30)
     }
 
+    function visibleInScroller(dialog, item) {
+        const scroller = child(dialog, "settings-scroll")
+        scrollTo(dialog, item)
+        const point = item.mapToItem(scroller, 0, 0)
+        return point.y >= -0.5 && point.y + item.height <= scroller.height + 0.5
+    }
+
     // ── Structure ───────────────────────────────────────────────────────────
 
     function test_loadsWithDefaultsAndEverySection() {
@@ -87,11 +110,34 @@ TestCase {
         compare(dialog.localeId, "zh_CN")
         compare(dialog.confirmOnClose, true)
         compare(dialog.showCheckerboard, true)
+        compare(dialog.recoveryEnabled, true)
+        compare(dialog.startupTool, "adjust")
+        compare(dialog.currentCategory, "appearance")
         compare(dialog.localeOptions.length, 2)
         compare(dialog.localeOptions[0].id, "en")
         compare(dialog.localeOptions[1].id, "zh_CN")
+        compare(dialog.startupToolOptions.length, 10)
+        compare(dialog.categories.length, 6)
 
-        const sections = ["appearance", "editing", "export", "language", "about"]
+        verify(child(dialog, "settings-page") !== null)
+        verify(child(dialog, "settings-nav") !== null)
+
+        // Two-column page geometry: a preferences surface, not a popup.
+        verify(dialog.width >= 760 && dialog.width <= 840,
+               "unexpected width " + dialog.width)
+        verify(dialog.height <= 700, "dialog height was " + dialog.height)
+
+        const categoryIds = ["appearance", "editing", "export", "language", "recovery", "about"]
+        for (let i = 0; i < categoryIds.length; ++i) {
+            const button = categoryButton(dialog, categoryIds[i])
+            verify(button !== null, "missing category button " + categoryIds[i])
+            verify(button.text.length > 0)
+            verify(button.Accessible.name.length > 0)
+        }
+        compare(categoryButton(dialog, "appearance").text, "外观")
+        compare(categoryButton(dialog, "recovery").text, "恢复与安全")
+
+        const sections = ["appearance", "editing", "export", "language", "recovery", "about"]
         for (let i = 0; i < sections.length; ++i) {
             const header = child(dialog, "settings-section-" + sections[i])
             verify(header !== null, "missing section " + sections[i])
@@ -101,6 +147,7 @@ TestCase {
         compare(child(dialog, "settings-section-editing").text, "编辑")
         compare(child(dialog, "settings-section-export").text, "导出")
         compare(child(dialog, "settings-section-language").text, "语言")
+        compare(child(dialog, "settings-section-recovery").text, "恢复与安全")
         compare(child(dialog, "settings-section-about").text, "关于")
 
         const controls = [
@@ -109,7 +156,11 @@ TestCase {
             "settings-quality-default", "settings-quality-value",
             "settings-background-white", "settings-background-black",
             "settings-background-warm-grey", "settings-locale-en", "settings-locale-zh_CN",
-            "settings-reset", "settings-about-version", "settings-about-qt"
+            "settings-recovery-enabled", "settings-recovery-status",
+            "settings-recovery-details", "settings-recovery-discard",
+            "settings-startup-tool-adjust", "settings-startup-tool-brush",
+            "settings-reset", "settings-shortcuts", "settings-about-version",
+            "settings-about-qt", "settings-about-formats", "settings-done"
         ]
         for (let i = 0; i < controls.length; ++i)
             verify(child(dialog, controls[i]) !== null, "missing control " + controls[i])
@@ -119,8 +170,50 @@ TestCase {
         compare(theme.currentIndex, 2)
 
         openDialog(dialog)
-        verify(dialog.width <= 900)
-        verify(dialog.height <= 700, "dialog height was " + dialog.height)
+        verify(dialog.opened)
+    }
+
+    // ── Category navigation ────────────────────────────────────────────────
+
+    function test_categorySwitchingShowsOnePanelAndResetsScroll() {
+        const dialog = make()
+        openDialog(dialog)
+        const scroller = child(dialog, "settings-scroll")
+
+        compare(child(dialog, "settings-panel-appearance").visible, true)
+        compare(child(dialog, "settings-panel-editing").visible, false)
+
+        const ids = ["editing", "export", "language", "recovery", "about", "appearance"]
+        for (let i = 0; i < ids.length; ++i) {
+            const id = ids[i]
+            scroller.contentY = 10
+            activateCategory(dialog, id)
+            compare(child(dialog, "settings-panel-" + id).visible, true)
+            compare(scroller.contentY, 0, "scroll did not reset for " + id)
+            for (let j = 0; j < ids.length; ++j) {
+                if (ids[j] !== id)
+                    compare(child(dialog, "settings-panel-" + ids[j]).visible, false)
+            }
+        }
+    }
+
+    function test_categoryRailKeyboardNavigation() {
+        const dialog = make()
+        openDialog(dialog)
+        const appearance = categoryButton(dialog, "appearance")
+        const editing = categoryButton(dialog, "editing")
+
+        appearance.forceActiveFocus()
+        tryVerify(function() { return appearance.activeFocus }, 1000)
+        keyClick(Qt.Key_Down)
+        tryVerify(function() { return editing.activeFocus }, 1000)
+        keyClick(Qt.Key_Return)
+        tryCompare(dialog, "currentCategory", "editing")
+
+        keyClick(Qt.Key_Up)
+        tryVerify(function() { return appearance.activeFocus }, 1000)
+        keyClick(Qt.Key_Return)
+        tryCompare(dialog, "currentCategory", "appearance")
     }
 
     // ── Appearance ──────────────────────────────────────────────────────────
@@ -168,14 +261,14 @@ TestCase {
 
     // ── Editing ─────────────────────────────────────────────────────────────
 
-    function test_editingTogglesEmit() {
+    function test_editingTogglesAndStartupToolEmit() {
         const dialog = make()
         openDialog(dialog)
+        activateCategory(dialog, "editing")
         const spy = makeSpy(dialog, "settingChanged")
         const cases = [
             { name: "settings-gpu-preview", key: "gpuPreviewEnabled", property: "gpuPreviewEnabled" },
-            { name: "settings-checkerboard", key: "showCheckerboard", property: "showCheckerboard" },
-            { name: "settings-confirm-on-close", key: "confirmOnClose", property: "confirmOnClose" }
+            { name: "settings-checkerboard", key: "showCheckerboard", property: "showCheckerboard" }
         ]
 
         for (let i = 0; i < cases.length; ++i) {
@@ -197,6 +290,28 @@ TestCase {
             compare(dialog[entry.property], true)
             compare(spy.count, 2)
         }
+
+        // Startup tool chips are exclusive and only emit on a real change.
+        const brush = child(dialog, "settings-startup-tool-brush")
+        verify(brush !== null && brush.visible)
+        spy.clear()
+        mouseClick(brush)
+        compare(dialog.startupTool, "brush")
+        compare(spy.count, 1)
+        compare(spy.signalArguments[0][0], "startupTool")
+        compare(spy.signalArguments[0][1], "brush")
+        mouseClick(brush)
+        compare(spy.count, 1)
+
+        const adjust = child(dialog, "settings-startup-tool-adjust")
+        mouseClick(adjust)
+        compare(dialog.startupTool, "adjust")
+        compare(spy.count, 2)
+        compare(spy.signalArguments[1][1], "adjust")
+
+        // Unknown external values fall back to the documented default.
+        dialog.startupTool = "neko"
+        compare(dialog.startupTool, "adjust")
     }
 
     // ── Export ──────────────────────────────────────────────────────────────
@@ -204,6 +319,7 @@ TestCase {
     function test_qualityClampsAndCodecDefaultOption() {
         const dialog = make({ localeId: "en" })
         openDialog(dialog)
+        activateCategory(dialog, "export")
         const slider = child(dialog, "settings-quality")
         const value = child(dialog, "settings-quality-value")
         const defaultToggle = child(dialog, "settings-quality-default")
@@ -256,6 +372,7 @@ TestCase {
     function test_backgroundSwatchesStayOpaque() {
         const dialog = make({ localeId: "en" })
         openDialog(dialog)
+        activateCategory(dialog, "export")
         const spy = makeSpy(dialog, "settingChanged")
 
         const blackSwatch = child(dialog, "settings-background-black")
@@ -291,6 +408,7 @@ TestCase {
     function test_localeSelectionEmitsAndRelocalises() {
         const dialog = make()
         openDialog(dialog)
+        activateCategory(dialog, "language")
         const settingSpy = makeSpy(dialog, "settingChanged")
         const localeSpy = makeSpy(dialog, "localeSelected")
         const english = child(dialog, "settings-locale-en")
@@ -304,6 +422,7 @@ TestCase {
         compare(localeSpy.signalArguments[0][0], "en")
         compare(settingValue(settingSpy, "locale"), "en")
         compare(child(dialog, "settings-section-appearance").text, "Appearance")
+        compare(categoryButton(dialog, "recovery").text, "Recovery & Safety")
 
         const chinese = child(dialog, "settings-locale-zh_CN")
         scrollTo(dialog, chinese)
@@ -311,6 +430,81 @@ TestCase {
         compare(dialog.localeId, "zh_CN")
         compare(localeSpy.count, 2)
         compare(localeSpy.signalArguments[1][0], "zh_CN")
+    }
+
+    // ── Recovery and safety ────────────────────────────────────────────────
+
+    function test_recoverySectionReportsStatusAndDiscard() {
+        const dialog = make({
+            recoveryAvailable: true,
+            recoverySourceName: "shot.png",
+            recoveryCapturedAt: "2026-11-05 08:30",
+            recoveryImageSize: "640 × 480 px"
+        })
+        openDialog(dialog)
+        activateCategory(dialog, "recovery")
+
+        const status = child(dialog, "settings-recovery-status")
+        const details = child(dialog, "settings-recovery-details")
+        const discard = child(dialog, "settings-recovery-discard")
+        compare(status.text, "发现可恢复的快照")
+        verify(details.text.indexOf("shot.png") >= 0)
+        verify(details.text.indexOf("640 × 480 px") >= 0)
+        compare(discard.visible, true)
+
+        const discardSpy = makeSpy(dialog, "recoveryDiscardRequested")
+        scrollTo(dialog, discard)
+        mouseClick(discard)
+        compare(discardSpy.count, 1)
+
+        const settingSpy = makeSpy(dialog, "settingChanged")
+        const recovery = child(dialog, "settings-recovery-enabled")
+        compare(recovery.checked, true)
+        mouseClick(recovery)
+        compare(recovery.checked, false)
+        compare(dialog.recoveryEnabled, false)
+        compare(spyValue(settingSpy, "recoveryEnabled"), false)
+
+        const confirm = child(dialog, "settings-confirm-on-close")
+        compare(confirm.checked, true)
+        scrollTo(dialog, confirm)
+        mouseClick(confirm)
+        compare(dialog.confirmOnClose, false)
+        compare(spyValue(settingSpy, "confirmOnClose"), false)
+    }
+
+    function test_recoverySectionWithoutSnapshotHidesDiscard() {
+        const dialog = make()
+        openDialog(dialog)
+        activateCategory(dialog, "recovery")
+        compare(child(dialog, "settings-recovery-status").text, "当前没有恢复快照")
+        compare(child(dialog, "settings-recovery-details").visible, false)
+        compare(child(dialog, "settings-recovery-discard").visible, false)
+    }
+
+    function spyValue(spy, key) {
+        return settingValue(spy, key)
+    }
+
+    // ── About ───────────────────────────────────────────────────────────────
+
+    function test_aboutShowsCapabilitiesAndShortcutsEntry() {
+        const dialog = make({
+            localeId: "en",
+            formatCapabilities: { readableCount: 12, writableCount: 6 }
+        })
+        openDialog(dialog)
+        activateCategory(dialog, "about")
+
+        verify(child(dialog, "settings-about-version").text.indexOf("NekoPic") === 0)
+        compare(child(dialog, "settings-about-formats").text,
+                "Reads 12 formats · writes 6 formats")
+
+        const spy = makeSpy(dialog, "shortcutsRequested")
+        const shortcuts = child(dialog, "settings-shortcuts")
+        scrollTo(dialog, shortcuts)
+        mouseClick(shortcuts)
+        compare(spy.count, 1)
     }
 
     // ── Reset, busy and lifecycle ───────────────────────────────────────────
@@ -325,11 +519,16 @@ TestCase {
         dialog.jpegBackground = "#000000"
         dialog.confirmOnClose = false
         dialog.showCheckerboard = false
+        dialog.recoveryEnabled = false
+        dialog.startupTool = "brush"
 
         const spy = makeSpy(dialog, "settingChanged")
         const localeSpy = makeSpy(dialog, "localeSelected")
 
-        mouseClick(child(dialog, "settings-reset"))
+        activateCategory(dialog, "recovery")
+        const reset = child(dialog, "settings-reset")
+        scrollTo(dialog, reset)
+        mouseClick(reset)
 
         compare(dialog.themeMode, "dark")
         compare(dialog.reduceMotion, false)
@@ -339,13 +538,16 @@ TestCase {
         fuzzyCompare(dialog.jpegBackground.r, 1, 0.001)
         compare(dialog.confirmOnClose, true)
         compare(dialog.showCheckerboard, true)
+        compare(dialog.recoveryEnabled, true)
+        compare(dialog.startupTool, "adjust")
         compare(dialog.localeId, "zh_CN")
         compare(child(dialog, "settings-theme").currentIndex, 2)
         compare(child(dialog, "settings-quality").value, 90)
         compare(child(dialog, "settings-quality-default").checked, true)
 
         const keys = ["themeMode", "reduceMotion", "gpuPreviewEnabled", "exportQuality",
-                      "jpegBackground", "confirmOnClose", "showCheckerboard", "locale"]
+                      "jpegBackground", "confirmOnClose", "showCheckerboard",
+                      "recoveryEnabled", "startupTool", "locale"]
         for (let i = 0; i < keys.length; ++i)
             verify(settingValue(spy, keys[i]) !== undefined, "missing reset signal " + keys[i])
 
@@ -354,24 +556,36 @@ TestCase {
     }
 
     function test_busyDisablesControls() {
-        const dialog = make()
+        const dialog = make({ recoveryAvailable: true })
         openDialog(dialog)
 
         dialog.busy = true
         compare(child(dialog, "settings-theme").enabled, false)
         compare(child(dialog, "settings-reduce-motion").enabled, false)
+
+        activateCategory(dialog, "editing")
         compare(child(dialog, "settings-gpu-preview").enabled, false)
         compare(child(dialog, "settings-checkerboard").enabled, false)
-        compare(child(dialog, "settings-confirm-on-close").enabled, false)
+        compare(child(dialog, "settings-startup-tool-adjust").enabled, false)
+
+        activateCategory(dialog, "export")
         compare(child(dialog, "settings-quality").enabled, false)
         compare(child(dialog, "settings-quality-default").enabled, false)
         compare(child(dialog, "settings-background-white").enabled, false)
+
+        activateCategory(dialog, "language")
         compare(child(dialog, "settings-locale-en").enabled, false)
+
+        activateCategory(dialog, "recovery")
+        compare(child(dialog, "settings-recovery-enabled").enabled, false)
+        compare(child(dialog, "settings-recovery-discard").enabled, false)
+        compare(child(dialog, "settings-confirm-on-close").enabled, false)
         compare(child(dialog, "settings-reset").enabled, false)
 
         dialog.busy = false
         compare(child(dialog, "settings-theme").enabled, true)
         compare(child(dialog, "settings-quality-default").enabled, true)
+        compare(child(dialog, "settings-recovery-enabled").enabled, true)
         compare(child(dialog, "settings-reset").enabled, true)
     }
 
@@ -397,6 +611,10 @@ TestCase {
         dialog.exportQuality = 42
         dialog.jpegBackground = "#8b8780"
         dialog.reduceMotion = true
+        dialog.recoveryEnabled = false
+        dialog.startupTool = "text"
+        dialog.currentCategory = "recovery"
+        dialog.currentCategory = "about"
         dialog.busy = true
         dialog.busy = false
         dialog.resetToDefaults()
@@ -404,35 +622,93 @@ TestCase {
         tryVerify(function() { return !dialog.opened }, 3000)
     }
 
-    function test_smallWindowsKeepExportReachableAboveFooter() {
-        const sizes = [[900, 700], [860, 600]]
-        for (let i = 0; i < sizes.length; ++i) {
-            testCase.width = sizes[i][0]
-            testCase.height = sizes[i][1]
+    // ── Scrollbar and compact geometry ─────────────────────────────────────
+
+    function test_scrollbarIsInvisibleButWheelStillScrolls() {
+        testCase.width = 860
+        testCase.height = 600
+        const dialog = make()
+        openDialog(dialog)
+        activateCategory(dialog, "recovery")
+        // Constrain the viewport so the wheel gesture has somewhere to go.
+        dialog.height = 420
+        wait(50)
+
+        const scroller = child(dialog, "settings-scroll")
+        const scrollbar = child(dialog, "settings-scrollbar")
+        verify(scrollbar !== null)
+        compare(scrollbar.policy, ScrollBar.AlwaysOff)
+        compare(scrollbar.visible, false)
+
+        verify(scroller.contentHeight > scroller.height,
+               "recovery content should overflow in a compact window")
+        compare(scroller.contentY, 0)
+        mouseWheel(scroller, 40, 40, 0, -120, Qt.NoButton)
+        tryVerify(function() { return scroller.contentY > 0 }, 2000)
+
+        dialog.close()
+        tryVerify(function() { return !dialog.opened }, 3000)
+        testCase.width = 1000
+        testCase.height = 800
+    }
+
+    function test_compactGeometryKeepsEveryCategoryReachable() {
+        const sizes = [[1100, 720], [1440, 900], [860, 600]]
+        const checks = {
+            "appearance": ["settings-theme", "settings-reduce-motion"],
+            "editing": ["settings-gpu-preview", "settings-checkerboard",
+                        "settings-startup-tool-brush"],
+            "export": ["settings-quality", "settings-quality-default",
+                       "settings-background-black"],
+            "language": ["settings-locale-en"],
+            "recovery": ["settings-recovery-enabled", "settings-confirm-on-close",
+                         "settings-reset"],
+            "about": ["settings-shortcuts", "settings-about-formats"]
+        }
+        const categoryIds = ["appearance", "editing", "export", "language", "recovery", "about"]
+
+        for (let s = 0; s < sizes.length; ++s) {
+            testCase.width = sizes[s][0]
+            testCase.height = sizes[s][1]
             const dialog = make()
             openDialog(dialog)
-            verify(dialog.height <= sizes[i][1], "dialog is taller than the window")
-            const scroller = child(dialog, "settings-scroll")
-            const reset = child(dialog, "settings-reset")
-            verify(scroller !== null && reset !== null)
-            const scrollPoint = scroller.mapToItem(dialog.contentItem, 0, 0)
-            const resetPoint = reset.mapToItem(dialog.contentItem, 0, 0)
-            verify(scrollPoint.y + scroller.height <= resetPoint.y + 0.5,
-                   "scroll body overlaps the reset row at " + sizes[i][0] + "x" + sizes[i][1])
-            verify(scroller.contentHeight > scroller.height,
-                   "settings body should scroll at " + sizes[i][0] + "x" + sizes[i][1])
 
-            const warm = child(dialog, "settings-background-warm-grey")
-            scrollTo(dialog, warm)
-            wait(10)
-            const warmPoint = warm.mapToItem(scroller, 0, 0)
-            verify(warmPoint.y >= -0.5,
-                   "export background is above the scroll viewport")
-            verify(warmPoint.y + warm.height <= scroller.height + 0.5,
-                   "export background is below the scroll viewport")
+            verify(dialog.width >= 760 && dialog.width <= 840,
+                   "width at " + sizes[s][0] + "x" + sizes[s][1] + " was " + dialog.width)
+            verify(dialog.height <= sizes[s][1], "dialog is taller than the window")
+
+            const scroller = child(dialog, "settings-scroll")
+            const done = child(dialog, "settings-done")
+            verify(scroller !== null && done !== null)
+            const scrollerPoint = scroller.mapToItem(dialog.contentItem, 0, 0)
+            const donePoint = done.mapToItem(dialog.contentItem, 0, 0)
+            verify(scrollerPoint.y + scroller.height <= donePoint.y + 0.5,
+                   "scroll body overlaps the fixed footer at "
+                   + sizes[s][0] + "x" + sizes[s][1])
+            verify(scroller.contentWidth <= scroller.width + 0.5,
+                   "scroll body has horizontal overflow")
+
+            for (let c = 0; c < categoryIds.length; ++c) {
+                const id = categoryIds[c]
+                activateCategory(dialog, id)
+                const panel = child(dialog, "settings-panel-" + id)
+                verify(panel.visible, "panel not visible: " + id)
+                verify(panel.width <= scroller.width + 0.5,
+                       "panel exceeds scroll width for " + id)
+                const names = checks[id]
+                for (let n = 0; n < names.length; ++n) {
+                    const control = child(dialog, names[n])
+                    verify(control !== null, "missing " + names[n])
+                    verify(visibleInScroller(dialog, control),
+                           names[n] + " is clipped at "
+                           + sizes[s][0] + "x" + sizes[s][1])
+                }
+            }
+
             dialog.close()
             tryVerify(function() { return !dialog.opened }, 3000)
         }
+
         testCase.width = 1000
         testCase.height = 800
     }

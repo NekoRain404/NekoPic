@@ -23,6 +23,8 @@ Popup {
     property string acceptObjectName: ""
     property string rejectObjectName: ""
     property bool showCloseButton: true
+    /*! Let declared body content stretch to the dialog's available height. */
+    property bool bodyFillHeight: false
 
     signal accepted()
     signal rejected()
@@ -128,6 +130,7 @@ Popup {
         ColumnLayout {
             id: bodyColumn
             Layout.fillWidth: true
+            Layout.fillHeight: root.bodyFillHeight
             spacing: Theme.spacingMd
         }
 

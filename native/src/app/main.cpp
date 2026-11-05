@@ -1,5 +1,6 @@
 #include "documentcontroller.h"
 #include "filterpreviews.h"
+#include "io/formatregistry.h"
 #include "languagemanager.h"
 #include "platform/recentfiles.h"
 #include "recoverystore.h"
@@ -13,6 +14,7 @@
 #include <QQuickWindow>
 #include <QTextStream>
 #include <QTimer>
+#include <QVariantMap>
 
 #include <memory>
 
@@ -74,6 +76,15 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("renderCapabilities"), &renderCapabilities);
     engine.rootContext()->setContextProperty(QStringLiteral("recentFiles"), &recentFiles);
     engine.rootContext()->setContextProperty(QStringLiteral("settings"), &settings);
+
+    // Read-only capability summary for the settings page's About section.
+    const auto &formatRegistry = NekoPic::Io::FormatRegistry::instance();
+    QVariantMap formatInfo;
+    formatInfo.insert(QStringLiteral("readableCount"), formatRegistry.readableExtensions().size());
+    formatInfo.insert(QStringLiteral("writableCount"), formatRegistry.writableExtensions().size());
+    formatInfo.insert(QStringLiteral("readable"), formatRegistry.readableExtensions());
+    formatInfo.insert(QStringLiteral("writable"), formatRegistry.writableExtensions());
+    engine.rootContext()->setContextProperty(QStringLiteral("formatRegistryInfo"), formatInfo);
     QObject::connect(&editor, &DocumentController::imageOpened, &recentFiles,
                      [&recentFiles](const QUrl &url) { recentFiles.add(url); });
     engine.addImageProvider(QStringLiteral("document"), new DocumentImageProvider(editor));

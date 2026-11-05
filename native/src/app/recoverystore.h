@@ -49,6 +49,8 @@ class RecoveryStore final : public QObject {
     Q_PROPERTY(int imageWidth READ imageWidth NOTIFY recoveryChanged)
     Q_PROPERTY(int imageHeight READ imageHeight NOTIFY recoveryChanged)
     Q_PROPERTY(bool flattened READ flattened NOTIFY recoveryChanged)
+    Q_PROPERTY(bool autosaveEnabled READ autosaveEnabled WRITE setAutosaveEnabled
+               NOTIFY autosaveEnabledChanged)
 
 public:
     /*!
@@ -82,6 +84,14 @@ public:
     int autosaveDelay() const;
 
     /*!
+        Whether dirty documents schedule crash snapshots. Disabling stops the
+        pending debounce but leaves any existing snapshot on disk so a user can
+        still recover it; enabling immediately reschedules a dirty document.
+    */
+    bool autosaveEnabled() const;
+    void setAutosaveEnabled(bool enabled);
+
+    /*!
         Synchronously writes a snapshot (PNG + manifest) and refreshes the
         exposed metadata. Returns false on any failure. GUI thread only; the
         asynchronous autosave path uses an equivalent private writer.
@@ -107,6 +117,7 @@ public:
 
 signals:
     void recoveryChanged();
+    void autosaveEnabledChanged();
 
 private:
     struct SnapshotMeta {
@@ -136,4 +147,5 @@ private:
     quint64 writeGeneration_ = 0;
     quint64 activeWriteGeneration_ = 0;
     int autosaveDelay_ = 1200;
+    bool autosaveEnabled_ = true;
 };
