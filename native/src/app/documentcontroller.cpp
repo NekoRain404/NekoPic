@@ -46,6 +46,7 @@ bool DocumentController::hasImage() const { return !image_.isNull(); }
 int DocumentController::imageWidth() const { return image_.width(); }
 int DocumentController::imageHeight() const { return image_.height(); }
 bool DocumentController::dirty() const { return hasImage() && currentState_ != savedState_; }
+bool DocumentController::hasPath() const { return !path_.isEmpty(); }
 bool DocumentController::canUndo() const { return history_.canUndo(); }
 bool DocumentController::canRedo() const { return history_.canRedo(); }
 QStringList DocumentController::readableImagePatterns() const
@@ -382,7 +383,12 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
         const auto result = watcher->result();
         watcher->deleteLater();
         if (!result.success) setError(result.error);
-        else { path_ = path; savedState_ = currentState_; emit documentChanged(); }
+        else {
+            path_ = path;
+            savedState_ = currentState_;
+            emit documentChanged();
+            emit imageSaved();
+        }
         setBusy(false);
     });
     watcher->setFuture(QtConcurrent::run([path, image, format, quality, background] {

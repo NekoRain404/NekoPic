@@ -14,6 +14,7 @@ ApplicationWindow {
     property bool followSystemTheme: false
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     property bool discardConfirmed: false
+    property bool saveBeforePending: false
     property bool closingRequested: false
     property url pendingImage
     property string activeTool: "adjust"
@@ -109,6 +110,7 @@ ApplicationWindow {
         })
         defaultSuffix: formats[selectedFormat].suffix
         onAccepted: editor.saveAs(selectedFile, formats[selectedFormat].id)
+        onRejected: if (window.saveBeforePending) window.saveBeforePending = false
     }
     Dialog {
         id: errorDialog; title: qsTr("Unable to complete operation"); modal: true
@@ -117,8 +119,13 @@ ApplicationWindow {
         Label { text: editor.errorMessage; wrapMode: Text.WordWrap; width: 360; color: theme.text }
     }
     Dialog {
-        id: discardDialog; title: qsTr("Discard unsaved changes?"); modal: true
-        anchors.centerIn: parent; standardButtons: Dialog.Discard | Dialog.Cancel
+        id: discardDialog; title: qsTr("Save changes before continuing?"); modal: true
+        anchors.centerIn: parent; standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
+        onAccepted: {
+            window.saveBeforePending = true
+            if (editor.hasPath) editor.saveImage()
+            else saveDialog.open()
+        }
         onDiscarded: {
             if (window.closingRequested) {
                 window.discardConfirmed = true
@@ -129,7 +136,22 @@ ApplicationWindow {
         }
         Label { text: qsTr("Your unsaved changes will be lost."); color: theme.text; wrapMode: Text.WordWrap; width: 340 }
     }
-    Connections { target: editor; function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() } }
+    Connections {
+        target: editor
+        function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
+        function onImageSaved() {
+            if (!window.saveBeforePending) return
+            window.saveBeforePending = false
+            if (window.closingRequested) {
+                window.discardConfirmed = true
+                window.close()
+            } else if (window.pendingImage) {
+                const target = window.pendingImage
+                window.pendingImage = ""
+                editor.openImage(target)
+            }
+        }
+    }
 
     menuBar: MenuBar {
         background: Rectangle { color: theme.background }

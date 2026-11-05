@@ -31,6 +31,7 @@ class DocumentController final : public QObject {
     Q_PROPERTY(int imageWidth READ imageWidth NOTIFY documentChanged)
     Q_PROPERTY(int imageHeight READ imageHeight NOTIFY documentChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY documentChanged)
+    Q_PROPERTY(bool hasPath READ hasPath NOTIFY documentChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
@@ -57,6 +58,7 @@ public:
     int imageWidth() const;
     int imageHeight() const;
     bool dirty() const;
+    bool hasPath() const;
     bool canUndo() const;
     bool canRedo() const;
     QStringList readableImagePatterns() const;
@@ -106,6 +108,7 @@ signals:
     void errorChanged();
     void imageOpened(const QUrl &url);
     void imageCopied();
+    void imageSaved();
     void exportOptionsChanged();
 
 private:
