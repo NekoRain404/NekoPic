@@ -117,7 +117,7 @@
 - **工程拆分**：`colorpipeline.cpp` 拆成 registry/tone/curves/grade/detail/dispatch
   六个单元（最大 436 行）；`SettingsDialog.qml` 从 1114 行降到 542 行并拆出
   `qml/settings/*`；`Main.qml` 拆出 `qml/shell/{TopActionBar,ToolRail,StatusBar,ToolInfoPanel,AppMenuBar,
-  CommandCatalog}.qml`，剩余约 1219 行仍是组合根（快捷键、菜单、对话框绑定），
+  CommandCatalog,AppDialogs,EditorSurface,DropTarget}.qml`，剩余约 882 行仍是组合根（快捷键、菜单、对话框绑定），
   已记录为后续拆分项。
 - **打包**：CMake install + CPack 生成 TGZ/DEB/RPM；`packaging/` 含 desktop、
   AppStream、SVG 与 16–512 px hicolor PNG；`scripts/build-appimage.sh` 产出

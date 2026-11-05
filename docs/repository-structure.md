@@ -80,7 +80,7 @@ page, panel, tool) with tests preserved.
 Already split: `src/core/colorpipeline.cpp` into six stage units (largest 436
 lines), `SettingsDialog.qml` into `qml/settings/*` pages (shell 542 lines), and
 `Main.qml` into `qml/shell/*` (tool rail, top bar, status bar, info panel).
-`Main.qml` remains the composition root at ~1219 lines; do not add new feature
+`Main.qml` remains the composition root at ~882 lines; do not add new feature
 logic there—extract a shell component or a page, and keep reducing it toward the
 800-line review stop.
 

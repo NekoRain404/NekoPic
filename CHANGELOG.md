@@ -19,7 +19,7 @@ All notable changes to NekoPic are recorded here. The format follows
   XWayland for reliable first-frame presentation; native Wayland is available
   with `NEKOPIC_APPIMAGE_PLATFORM=wayland`.
 - `colorpipeline.cpp` split into six stage units; settings and shell pages split
-  into `qml/settings/*` and `qml/shell/*`.
+  into `qml/settings/*` and `qml/shell/*`; `Main.qml` is now 882 lines.
 
 ## [0.1.0] — 2026-11-05
 
