@@ -10,7 +10,7 @@
 - [开发流程](docs/development.md)：分支、提交、校验与版本管理。
 - [开发规范](CONTRIBUTING.md)：分层、命名、文件体积上限、测试与发布门禁。
 - [仓库结构](docs/repository-structure.md)：目录职责与新增文件放置规则。
-- [打包与发布](docs/packaging.md)：Linux 安装规则、CPack/DEB、Flatpak 实验清单与发布检查。
+- [打包与发布](docs/packaging.md)：Linux 安装、CPack TGZ/DEB/RPM、AppImage、图标与发布检查。
 - [架构决策](docs/adr/)：分层、Rust 边界、GPU 预览、设计系统。
 - [性能基准与预算](docs/performance.md)：`scripts/bench.sh` 可复现；包含实测数据与已知瓶颈。
 
@@ -30,6 +30,17 @@ cmake --build native/build
 ctest --test-dir native/build --output-on-failure
 ./native/build/nekopic
 ./native/build/nekopic photo.jpg
+```
+
+### 打包
+
+安装规则、CPack（TGZ/DEB/RPM）、AppImage、图标生成与校验命令见 [打包与发布](docs/packaging.md)。
+
+```sh
+./scripts/package.sh                     # Release + ctest + TGZ/DEB/RPM + SHA256SUMS
+./scripts/build-appimage.sh              # 需要 linuxdeploy + linuxdeploy-plugin-qt
+./scripts/build-appimage.sh --stage-only # 无 AppImage 工具时校验 AppDir
+./scripts/generate-icons.sh              # 修改 packaging/nekopic.svg 后重新生成 PNG
 ```
 
 开发/视觉回归可加 `--screenshot /tmp/ui.png`，程序会在文档空闲后抓取窗口并退出；`--tool filters` / `--tool brush` 可直接打开某个工具，`--settings` 直接打开设置页。

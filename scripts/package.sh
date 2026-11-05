@@ -1,32 +1,67 @@
 #!/usr/bin/env bash
 # Build a clean Release tree and produce distributable NekoPic packages.
 #
-#   scripts/package.sh                     # native/build-package, TGZ + DEB
+#   scripts/package.sh                     # native/build-package, TGZ + DEB + RPM
 #   scripts/package.sh --build-dir /tmp/nekopic-package
 #   scripts/package.sh --no-tests          # skip ctest
 #   scripts/package.sh --generators "TGZ"  # one or more CPack generators
 #   scripts/package.sh --no-build          # package an existing build tree
 #   JOBS=8 scripts/package.sh
 #
-# The script never touches the source tree; packages land in
-# <build-dir>/packages and their absolute paths are printed at the end.
+# Missing dpkg-deb/rpmbuild tool chains are skipped with a warning. Packages
+# land in <build-dir>/packages, with a SHA256SUMS file.
 set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "${script_dir}/.." && pwd -P)"
 build_dir="${NEKOPIC_PACKAGE_BUILD_DIR:-${repo_root}/native/build-package}"
-generators="TGZ;DEB"
+generators="TGZ;DEB;RPM"
 run_tests=1
 run_build=1
 jobs="${JOBS:-$(nproc 2>/dev/null || echo 2)}"
 
 usage() {
-    sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 die() {
     printf 'package.sh: %s\n' "$*" >&2
     exit 1
+}
+
+filter_generators() {
+    local requested="$1" gen joined=""
+    local -a requested_list available=()
+    IFS=';' read -r -a requested_list <<< "${requested}"
+    for gen in "${requested_list[@]}"; do
+        case "${gen^^}" in
+            TGZ)
+                available+=("TGZ")
+                ;;
+            DEB)
+                if command -v dpkg-deb >/dev/null 2>&1; then
+                    available+=("DEB")
+                else
+                    printf 'package.sh: skipping DEB: dpkg-deb not found\n' >&2
+                fi
+                ;;
+            RPM)
+                if command -v rpmbuild >/dev/null 2>&1; then
+                    available+=("RPM")
+                else
+                    printf 'package.sh: skipping RPM: rpmbuild not found (install rpm-build)\n' >&2
+                fi
+                ;;
+            *)
+                available+=("${gen}")
+                ;;
+        esac
+    done
+    ((${#available[@]} > 0)) || die "none of the requested generators are available"
+    for gen in "${available[@]}"; do
+        joined+="${joined:+;}${gen}"
+    done
+    printf '%s' "${joined}"
 }
 
 while (($# > 0)); do
@@ -74,6 +109,7 @@ done
 
 [[ -n "${generators}" ]] || die "--generators must not be empty"
 [[ "${jobs}" =~ ^[1-9][0-9]*$ ]] || die "--jobs must be a positive integer"
+generators="$(filter_generators "${generators}")"
 
 # Resolve relative build directories against the repository root so the caller
 # can run the script from anywhere.
@@ -137,11 +173,24 @@ cpack --config "${build_dir}/CPackConfig.cmake" \
     -G "${generators}" \
     -B "${package_dir}"
 
+mapfile -t checksum_files < <(
+    find "${package_dir}" -maxdepth 1 -type f \
+        \( -name '*.tar.gz' -o -name '*.deb' -o -name '*.rpm' \) \
+        -printf '%f\n' | sort
+)
+((${#checksum_files[@]} > 0)) || die "cpack produced no package artifacts in ${package_dir}"
+(
+    cd "${package_dir}"
+    sha256sum -- "${checksum_files[@]}" > SHA256SUMS
+)
+
 mapfile -t artifacts < <(find "${package_dir}" -maxdepth 1 -type f -printf '%p\n' | sort)
-((${#artifacts[@]} > 0)) || die "cpack produced no artifacts in ${package_dir}"
 
 echo
 echo "== artifacts =="
 for artifact in "${artifacts[@]}"; do
     printf '%s (%s)\n' "${artifact}" "$(du -h "${artifact}" | cut -f1)"
 done
+echo
+echo "== checksums =="
+cat "${package_dir}/SHA256SUMS"
