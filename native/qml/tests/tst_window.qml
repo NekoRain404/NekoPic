@@ -307,7 +307,7 @@ TestCase {
         window.destroy()
     }
 
-    function test_textToolCreatesTextThroughDialog() {
+    function test_textToolCreatesTextFromPanel() {
         editor.hasImage = true
         editor.imageWidth = 800
         editor.imageHeight = 600
@@ -316,18 +316,15 @@ TestCase {
         compare(component.status, Component.Ready, component.errorString())
         const window = component.createObject(null)
         try {
-            window.openTextDialog(120, 80)
+            window.activeTool = "text"
             wait(0)
-            const dialog = findChild(window, "textDialog")
-            verify(dialog !== null)
-            const input = findChild(dialog, "text-dialog-text")
-            verify(input !== null)
-            input.text = "Hello"
-            wait(0)
-            mouseClick(findChild(dialog, "text-dialog-accept"))
+            const panel = findChild(window, "textPanel")
+            verify(panel !== null)
+            verify(panel.visible)
+            panel.text = "Hello"
+            window.createTextAt(120, 80)
             wait(0)
             verify(editor.textCall.indexOf("Hello:120:80") === 0)
-            compare(window.activeTool, "adjust")
         } finally {
             window.destroy()
             editor.hasImage = false

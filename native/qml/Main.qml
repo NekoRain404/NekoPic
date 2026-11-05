@@ -19,13 +19,15 @@ ApplicationWindow {
     property bool followSystemTheme: false
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     // Letter shortcuts must not fire while the user is typing in a modal.
-    readonly property bool blockingModal: commandPalette.opened || textDialog.opened
+    readonly property bool blockingModal: commandPalette.opened
         || exportDialog.opened || resizeDialog.opened || canvasSizeDialog.opened
         || shortcutsDialog.opened || aboutDialog.opened || settingsDialog.opened
         || discardDialog.opened || errorDialog.opened
     property bool discardConfirmed: false
     property bool saveBeforePending: false
     property string startupTool: ""
+    property var textEditInfo: ({})
+    property point pendingTextAnchor: Qt.point(-1, -1)
     property bool closingRequested: false
     property url pendingImage
     property url pendingExportUrl
@@ -194,11 +196,62 @@ ApplicationWindow {
         settingsDialog.open()
     }
     Component.onCompleted: applySettings()
-    function openTextDialog(imageX, imageY) {
-        textDialog.text = ""
-        textDialog.anchorX = imageX
-        textDialog.anchorY = imageY
-        textDialog.open()
+    function applyTextInfo(info) {
+        textPanel.editId = info.id
+        textPanel.text = info.text
+        textPanel.fontFamily = info.fontFamily
+        textPanel.fontSize = info.fontSize
+        textPanel.alignment = info.alignment
+        textPanel.outline = Number(info.outlineWidth) > 0
+        textPanel.color = info.color
+        window.textEditInfo = info
+    }
+    function refreshTextPanel() {
+        const ids = canvas.selectionIds
+        if (ids && ids.length === 1) {
+            const info = editor.textInfo(ids[0])
+            if (info && info.id !== undefined) {
+                applyTextInfo(info)
+                return
+            }
+        }
+        textPanel.editId = 0
+        window.textEditInfo = ({})
+    }
+    function textPanelArgs() {
+        const info = window.textEditInfo
+        return {
+            text: textPanel.text,
+            x: info.x,
+            y: info.y,
+            fontFamily: textPanel.fontFamily,
+            fontWeight: textPanel.outline ? 700 : 400,
+            fontSize: textPanel.fontSize,
+            color: textPanel.color,
+            alignment: textPanel.alignment,
+            outlineColor: textPanel.outline ? "#151718" : "transparent",
+            outlineWidth: textPanel.outline ? 2 : 0,
+            lineHeight: info.lineHeight !== undefined ? info.lineHeight : 1.0,
+            padding: info.padding !== undefined ? info.padding : 4.0
+        }
+    }
+    function commitTextUpdate() {
+        const info = window.textEditInfo
+        if (!info || info.id === undefined || editor.busy) return
+        const args = textPanelArgs()
+        editor.updateText(info.id, args.text, args.x, args.y, args.fontFamily,
+                          args.fontWeight, args.fontSize, args.color, args.alignment,
+                          args.outlineColor, args.outlineWidth, args.lineHeight, args.padding)
+    }
+    function createTextAt(imageX, imageY) {
+        if (!editor.hasImage || editor.busy) return
+        const content = textPanel.text.trim().length > 0 ? textPanel.text : qsTr("Text")
+        window.pendingTextAnchor = Qt.point(imageX, imageY)
+        editor.addTextStyled(content, imageX, imageY, textPanel.fontFamily,
+                             textPanel.outline ? 700 : 400, textPanel.fontSize,
+                             textPanel.color, textPanel.alignment,
+                             textPanel.outline ? "#151718" : "transparent",
+                             textPanel.outline ? 2 : 0, 1.0, 4.0)
     }
     function formatSupportsQuality(id) {
         return ["jpeg", "webp", "avif", "heic", "heif", "jxl", "tiff", "png"].indexOf(id) >= 0
@@ -416,29 +469,6 @@ ApplicationWindow {
             editor.resizeCanvas(width, height, anchor, background)
         }
     }
-    TextDialog {
-        id: textDialog
-        objectName: "textDialog"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        imageWidth: editor.imageWidth
-        imageHeight: editor.imageHeight
-        busy: editor.busy
-        onStyledTextRequested: function(text, imageX, imageY, fontFamily, fontWeight,
-                                        fontSize, color, alignment, outlineColor,
-                                        outlineWidth, lineHeight, padding) {
-            editor.addTextStyled(text, imageX, imageY, fontFamily, fontWeight, fontSize,
-                                 color, alignment, outlineColor, outlineWidth,
-                                 lineHeight, padding)
-        }
-        onTextUpdateRequested: function(info) {
-            editor.updateText(info.id, info.text, info.x, info.y,
-                              info.fontFamily, info.fontWeight, info.fontSize,
-                              info.color, info.alignment, info.outlineColor,
-                              info.outlineWidth, info.lineHeight, info.padding)
-        }
-        onClosed: if (window.activeTool === "text") window.activeTool = "adjust"
-    }
     SettingsDialog {
         id: settingsDialog
         objectName: "settingsDialog"
@@ -469,8 +499,24 @@ ApplicationWindow {
         anchors.centerIn: parent
     }
     Connections {
+        target: canvas
+        function onSelectionIdsChanged() {
+            if (window.activeTool === "text") window.refreshTextPanel()
+        }
+    }
+    Connections {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
+        function onBusyChanged() {
+            if (editor.busy || window.pendingTextAnchor.x < 0) return
+            const anchor = window.pendingTextAnchor
+            window.pendingTextAnchor = Qt.point(-1, -1)
+            const id = editor.objectAt(anchor.x, anchor.y)
+            if (id !== 0) {
+                canvas.setSelectionIds([id])
+                window.refreshTextPanel()
+            }
+        }
         function onImageOpened(url) {
             window.resetInteractionOverrides()
             window.activeTool = window.startupTool.length > 0 ? window.startupTool : "adjust"
@@ -722,13 +768,12 @@ ApplicationWindow {
                 onRemoveObjectsRequested: function(ids) { editor.removeObjects(ids) }
                 onObjectDoubleClicked: function(id) {
                     const info = editor.textInfo(id)
-                    if (!info || Object.keys(info).length === 0) return
-                    textDialog.imageWidth = editor.imageWidth
-                    textDialog.imageHeight = editor.imageHeight
-                    textDialog.loadTextInfo(info)
-                    textDialog.open()
+                    if (!info || info.id === undefined) return
+                    window.activeTool = "text"
+                    canvas.setSelectionIds([id])
+                    window.applyTextInfo(info)
                 }
-                onTextPointSelected: function(imageX, imageY) { window.openTextDialog(imageX, imageY) }
+                onTextPointSelected: function(imageX, imageY) { window.createTextAt(imageX, imageY) }
                 onTextCancelled: window.activeTool = "adjust"
                 colorSampler: function(x, y) { return editor.colorAt(x, y) }
                 onColorPicked: function(value) { window.showStatus(qsTr("Picked %1").arg(value.toString())) }
@@ -828,6 +873,30 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.preferredWidth: window.width < 1100 ? 260 : 292
                 theme: theme
+            }
+            TextPanel {
+                id: textPanel
+                objectName: "textPanel"
+                visible: window.activeTool === "text"
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                theme: theme
+                enabled: editor.hasImage && !editor.busy
+                busy: editor.busy
+                onTextEdited: function(text) {
+                    if (textPanel.editMode) textCommitTimer.restart()
+                }
+                onStyleEdited: function(key, value) {
+                    if (textPanel.editMode) window.commitTextUpdate()
+                }
+                onResetRequested: function() {
+                    if (textPanel.editMode) window.commitTextUpdate()
+                }
+            }
+            Timer {
+                id: textCommitTimer
+                interval: 450
+                onTriggered: window.commitTextUpdate()
             }
             LayerPanel {
                 id: layerPanel
