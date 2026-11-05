@@ -23,6 +23,7 @@ ApplicationWindow {
         || exportDialog.opened || resizeDialog.opened || canvasSizeDialog.opened
         || shortcutsDialog.opened || aboutDialog.opened || settingsDialog.opened
         || discardDialog.opened || errorDialog.opened || foregroundColorDialog.visible
+        || recoveryDialog.opened
     property bool discardConfirmed: false
     property bool saveBeforePending: false
     property string startupTool: ""
@@ -244,6 +245,18 @@ ApplicationWindow {
                 && language.locale !== settings.locale)
             language.setLanguage(settings.locale)
     }
+    // A recovery snapshot only makes sense before a document exists. If a
+    // command-line image is still decoding, wait for it and then re-check, so
+    // an explicitly opened file wins over the crash prompt.
+    function maybeShowRecovery() {
+        if (typeof recovery === "undefined" || recovery === null) return
+        if (!recovery.hasRecovery || editor.hasImage) return
+        if (editor.busy) {
+            recoveryCheckTimer.restart()
+            return
+        }
+        recoveryDialog.open()
+    }
     function openSettings() {
         if (typeof settings !== "undefined") {
             settingsDialog.themeMode = settings.themeMode
@@ -262,7 +275,12 @@ ApplicationWindow {
         }
         settingsDialog.open()
     }
-    Component.onCompleted: { applySettings(); syncPersistedToolSettings(); refreshObjectCount() }
+    Component.onCompleted: {
+        applySettings()
+        syncPersistedToolSettings()
+        refreshObjectCount()
+        Qt.callLater(window.maybeShowRecovery)
+    }
     function applyTextInfo(info) {
         textPanel.editId = info.id
         textPanel.text = info.text
@@ -347,7 +365,13 @@ ApplicationWindow {
         if (editor.busy || (editor.dirty && shouldConfirm && !discardConfirmed)) {
             close.accepted = false
             if (!editor.busy) { closingRequested = true; discardDialog.open() }
+            return
         }
+        // Normal exit with nothing unsaved, or an explicit discard, must not
+        // resurrect the session on the next launch.
+        if (typeof recovery !== "undefined" && recovery !== null
+                && (!editor.dirty || discardConfirmed))
+            recovery.discardRecovery()
     }
     Settings { category: "ui"; property alias lastFolder: window.lastFolder }
     Settings {
@@ -538,6 +562,34 @@ ApplicationWindow {
                 font.pixelSize: Theme.fontCaption
             }
         }
+    }
+    RecoveryDialog {
+        id: recoveryDialog
+        objectName: "recoveryDialog"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        sourceName: typeof recovery !== "undefined" && recovery !== null
+                    ? recovery.sourceName : ""
+        sourcePath: typeof recovery !== "undefined" && recovery !== null
+                    ? recovery.sourcePath : ""
+        capturedAtText: typeof recovery !== "undefined" && recovery !== null
+                        ? recovery.capturedAtText : ""
+        imageSizeText: typeof recovery !== "undefined" && recovery !== null
+                       ? recovery.imageSizeText : ""
+        flattened: typeof recovery !== "undefined" && recovery !== null
+                   ? recovery.flattened : true
+        onAccepted: if (typeof recovery !== "undefined" && recovery !== null)
+                        recovery.restoreRecovery()
+        onRejected: if (typeof recovery !== "undefined" && recovery !== null)
+                        recovery.discardRecovery()
+    }
+    // Single-shot retry while a startup image is decoding; avoids spinning the
+    // event loop with Qt.callLater.
+    Timer {
+        id: recoveryCheckTimer
+        interval: 120
+        repeat: false
+        onTriggered: window.maybeShowRecovery()
     }
     ExportDialog {
         id: exportDialog

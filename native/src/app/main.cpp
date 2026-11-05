@@ -2,6 +2,7 @@
 #include "filterpreviews.h"
 #include "languagemanager.h"
 #include "platform/recentfiles.h"
+#include "recoverystore.h"
 #include "settingsmanager.h"
 #include "render/rendercapabilities.h"
 
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     DocumentController editor;
+    RecoveryStore recovery(&editor);
     FilterPreviews filterPreviews(editor);
     NekoPic::Render::RenderCapabilities renderCapabilities;
     NekoPic::Platform::RecentFiles recentFiles;
@@ -59,6 +61,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     LanguageManager language(engine);
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
+    engine.rootContext()->setContextProperty(QStringLiteral("recovery"), &recovery);
     engine.rootContext()->setContextProperty(QStringLiteral("filterPreviews"), &filterPreviews);
     engine.rootContext()->setContextProperty(QStringLiteral("language"), &language);
     engine.rootContext()->setContextProperty(QStringLiteral("renderCapabilities"), &renderCapabilities);
