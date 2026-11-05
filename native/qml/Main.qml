@@ -81,7 +81,7 @@ ApplicationWindow {
     Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: openDialog.open() }
     Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
     Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: saveDialog.open() }
-    Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.open() }
+    Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
     Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
     Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: editor.undo() }
     Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: editor.redo() }
@@ -514,7 +514,7 @@ ApplicationWindow {
                 anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 15
                 Label { text: editor.hasImage ? editor.imageWidth + " × " + editor.imageHeight + " px" : "— × — px"; color: theme.muted; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
-                Label { text: window.transientStatus.length > 0 ? window.transientStatus : (editor.busy ? qsTr("Working…") : qsTr("Local editing")); color: theme.muted; font.pixelSize: 10 }
+                Label { text: window.transientStatus.length > 0 ? window.transientStatus : (editor.busy ? qsTr("Working…") : editor.dirty ? qsTr("Unsaved changes") : qsTr("Local editing")); color: theme.muted; font.pixelSize: 10 }
                 Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
             }
         }
