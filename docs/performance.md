@@ -304,3 +304,29 @@ Notes on policy:
   task scheduling under a full editor session.
 - Correctness of the GPU preview. The existing `previewmath` tests cover
   CPU/CPU parity; this harness only times the mirror.
+
+## 8. 2026-11-05 adjustment-path optimization
+
+The authoritative CPU adjustment path was optimized after the baseline above:
+
+- per-apply 16-bit tone transfer table instead of per-pixel `exp2`/division;
+- tone-only path skips luminance/saturation (with a rounding-boundary guard);
+- filter pass fused into the first scan; preset parsed once; warm/vintage/cool use channel LUTs;
+- `std::lround` replaced by exact non-negative rounding;
+- row-parallel processing (`src/core/rowparallel.h`): ≥1 MP, up to 8 workers, serial fallback for small/narrow/single-core inputs.
+
+Exactness: a verbatim legacy reference implementation is compared byte-for-byte in `tests/tst_adjustments.cpp` across 1x1, 1xN, Nx1, 64x64, 1024x768, 2048x1536, RGBA8888/RGBA64/float formats, 26 parameter sets, all 16-bit channel values, alpha edges and P3/DPI metadata. 45 test functions pass; ASan+UBSan pass (TSAN was not run).
+
+Focused `Adjustments::apply`, Release, shared host, median of 5:
+
+| Size | Case | Before ms | After ms | Speedup |
+| --- | --- | ---: | ---: | ---: |
+| 2 MP | exposure +1 | 208.8 | 7.9 | 26.4x |
+| 2 MP | combined vintage | 322.4 | 16.0 | 20.2x |
+| 12 MP | exposure +1 | 1137.0 | 28.8 | 39.4x |
+| 12 MP | exposure +2 contrast | 1241.6 | 76.1 | 16.3x |
+| 12 MP | saturation -1 | 1297.2 | 65.0 | 20.0x |
+| 12 MP | mono | 908.4 | 89.3 | 10.2x |
+| 12 MP | combined vintage | 1931.6 | 82.6 | 23.4x |
+
+Remaining bottlenecks: `QImage::convertToFormat(RGBA64)` is now a significant serial share of RGBA8888 tone-only cases; mono/vivid still need cross-channel math; tables are rebuilt per call (negligible at large sizes). Integrated `bench_pipeline --quick` cases run concurrently and therefore show different (higher) medians than the focused table.

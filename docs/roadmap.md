@@ -18,7 +18,7 @@
 - [x] CMake 模块化、可选特性开关、CI 校验脚本与 ASan/UBSan 脚本。
 - [ ] 真实显示器视觉抽查与流畅度记录（已完成离屏/OpenGL RHI 截图与 QML 测试，待真实屏幕与多后端复核）。
 - [x] 性能基线与预算：`native/tests/bench_pipeline.cpp`、`scripts/bench.sh`、`docs/performance.md`。
-- [ ] 调色 CPU 热路径并行化（进行中，目标是保持逐像素结果不变并显著降低提交延迟）。
+- [x] 调色 CPU 热路径优化：查找表 + 融合滤镜 + 行并行；逐像素结果不变，12 MP 提交延迟降低 8.6–39.5 倍。
 
 ### 阶段 1 附带落地
 
