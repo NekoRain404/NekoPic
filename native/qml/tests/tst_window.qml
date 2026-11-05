@@ -232,6 +232,48 @@ TestCase {
         window.destroy()
     }
 
+    function test_toolPanelsAreMutuallyExclusive() {
+        const component = Qt.createComponent("../Main.qml")
+        const window = component.createObject(null)
+        verify(window !== null, component.errorString())
+        editor.hasImage = true
+        editor.imageWidth = 800; editor.imageHeight = 600
+        const canvas = findChild(window, "editorCanvas")
+        const inspector = findChild(window, "inspector")
+        verify(canvas !== null && inspector !== null)
+
+        visualChild(window.contentItem, "tool-text").clicked()
+        compare(window.activeTool, "text")
+        verify(canvas.textActive)
+        verify(!canvas.cropActive && !canvas.mosaicActive && !canvas.brushActive && !canvas.shapeActive)
+        verify(!inspector.visible)
+
+        visualChild(window.contentItem, "tool-brush").clicked()
+        compare(window.activeTool, "brush")
+        verify(canvas.brushActive)
+        verify(!canvas.textActive && !canvas.cropActive)
+        verify(findChild(window, "brushPanel").visible)
+
+        visualChild(window.contentItem, "tool-shapes").clicked()
+        compare(window.activeTool, "shapes")
+        verify(canvas.shapeActive)
+        verify(findChild(window, "shapePanel").visible)
+
+        visualChild(window.contentItem, "tool-crop").clicked()
+        compare(window.activeTool, "crop")
+        verify(canvas.cropActive)
+        verify(!canvas.shapeActive && !canvas.brushActive)
+        verify(findChild(window, "cropPanel").visible)
+
+        visualChild(window.contentItem, "tool-select").clicked()
+        compare(window.activeTool, "select")
+        verify(canvas.selectionActive)
+        verify(!canvas.cropActive)
+
+        editor.hasImage = false
+        window.destroy()
+    }
+
     function test_textToolCreatesTextThroughDialog() {
         editor.hasImage = true
         editor.imageWidth = 800
@@ -303,14 +345,15 @@ TestCase {
         visualChild(window.contentItem, "tool-filters").clicked()
         compare(window.activeTool, "filters")
         verify(!panel.visible)
-        verify(inspector.visible)
-        compare(inspector.currentTab, 1)
+        verify(!inspector.visible)
+        verify(findChild(window, "filtersToolPanel").visible)
         verify(!canvas.mosaicActive)
-        inspector.currentTab = 0
+        visualChild(window.contentItem, "tool-adjust").clicked()
         compare(window.activeTool, "adjust")
+        verify(inspector.visible)
         visualChild(window.contentItem, "tool-filters").clicked()
         compare(window.activeTool, "filters")
-        compare(inspector.currentTab, 1)
+        verify(findChild(window, "filtersToolPanel").visible)
         editor.hasImage = false
         editor.imageWidth = 0; editor.imageHeight = 0
         window.destroy()

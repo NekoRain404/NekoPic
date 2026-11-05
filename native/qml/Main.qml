@@ -7,6 +7,7 @@ import "UI"
 import "shell"
 import "dialogs"
 import "panels"
+import "filters"
 
 ApplicationWindow {
     id: window
@@ -465,6 +466,11 @@ ApplicationWindow {
                 CommandButton { action: cropAction; iconName: "crop" }
                 Item { Layout.fillWidth: true }
                 NekoButton {
+                    text: qsTr("Settings"); variant: "ghost"
+                    onClicked: window.openSettings()
+                    ToolTip.visible: hovered; ToolTip.text: qsTr("Preferences (Ctrl+,)")
+                }
+                NekoButton {
                     text: qsTr("Search"); variant: "ghost"
                     onClicked: commandPalette.open()
                     ToolTip.visible: hovered; ToolTip.text: qsTr("Command palette (Ctrl+K)")
@@ -604,8 +610,7 @@ ApplicationWindow {
             Inspector {
                 id: inspector
                 objectName: "inspector"
-                visible: window.activeTool === "adjust" || window.activeTool === "filters"
-                onCurrentTabChanged: if (visible) window.activeTool = currentTab === 1 ? "filters" : "adjust"
+                visible: window.activeTool === "adjust"
                 Layout.fillHeight: true
                 Layout.preferredWidth: window.width < 1100 ? 260 : 292
                 theme: theme
@@ -627,6 +632,37 @@ ApplicationWindow {
                 onFilterIntensityStarted: editor.beginFilterIntensity()
                 onFilterIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
                 onFilterIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
+            }
+            Rectangle {
+                id: filtersToolPanel
+                objectName: "filtersToolPanel"
+                visible: window.activeTool === "filters"
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                color: theme.panel
+                Flickable {
+                    anchors.fill: parent
+                    anchors.margins: 20
+                    contentWidth: width
+                    contentHeight: filtersContent.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    FiltersPanel {
+                        id: filtersContent
+                        width: parent.width
+                        currentPreset: editor.filterPreset
+                        intensity: editor.filterIntensity
+                        presetsEnabled: editor.hasImage && !editor.busy
+                        intensityEnabled: editor.hasImage && (!editor.busy || editor.filterIntensityInteractive)
+                        previewsAvailable: filterPreviews.ready
+                        previewRevision: filterPreviews.revision
+                        onFilterSelected: function(preset) { editor.selectFilter(preset) }
+                        onIntensityStarted: editor.beginFilterIntensity()
+                        onIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
+                        onIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
+                    }
+                    ScrollBar.vertical: NekoScrollBar { }
+                }
             }
             MosaicPanel {
                 id: mosaicPanel
