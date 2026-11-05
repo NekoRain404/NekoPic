@@ -49,9 +49,12 @@ build: add optional Rust module gate
 ```sh
 ./scripts/check.sh                # 默认 native/build-check
 ./scripts/check.sh native/build-ci  # 指定构建目录
+./scripts/check-source-size.sh    # 文件体积预算（--strict 为发布门禁）
+./scripts/validate-packaging.sh   # desktop/AppStream/图标（--strict 为发布门禁）
 ```
 
-脚本依次执行配置、构建、C++ 测试、QML 测试和空白检查。CI 环境应使用独立构建目录，`NEKOPIC_WITH_RUST` 默认关闭，另跑一次 `ON` 验证可选模块。
+`check.sh` 依次执行配置、构建、C++ 测试、QML 测试和空白检查；后两个脚本
+分别检查源码体积和打包元数据，CI 已接入。CI 环境应使用独立构建目录，`NEKOPIC_WITH_RUST` 默认关闭，另跑一次 `ON` 验证可选模块。
 
 GPU/着色器路径另跑一次 RHI：
 

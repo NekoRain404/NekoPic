@@ -32,7 +32,8 @@ if [[ -n "$theme" && -f "$conf" ]]; then
         dark) set_theme_key themeMode dark;;
         light) set_theme_key themeMode light;;
         system) set_theme_key followSystemTheme true; set_theme_key themeMode system;;
-        *) echo "theme must be dark|light|system" >&2; exit 1 ;;
+        midnight|warm|graphite|contrast) set_theme_key themeMode "$theme";;
+        *) echo "theme must be dark|light|system|midnight|warm|graphite|contrast" >&2; exit 1 ;;
     esac
 fi
 
