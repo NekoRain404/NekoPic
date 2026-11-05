@@ -604,29 +604,10 @@ ApplicationWindow {
         onClearRecentRequested: if (typeof recentFiles !== "undefined") recentFiles.clear()
     }
 
-    Rectangle {
+    DropTarget {
         anchors.fill: parent
-        visible: dropArea.containsDrag
-        color: Theme.alpha(Theme.accent, 0.06)
-        border.width: 2
-        border.color: Theme.accent
-        z: 1000
-        Label {
-            anchors.centerIn: parent
-            text: qsTr("Drop to open image")
-            color: Theme.textPrimary
-            font.pixelSize: Theme.fontHeadline
-            font.weight: Theme.fontWeightDemiBold
-        }
-    }
-    DropArea {
-        id: dropArea
-        anchors.fill: parent
-        onDropped: function(drop) {
-            if (editor.busy || !drop.hasUrls || drop.urls.length === 0) return
-            window.requestOpen(drop.urls[0])
-            drop.acceptProposedAction()
-        }
+        busy: editor.busy
+        onOpenRequested: function(url) { window.requestOpen(url) }
     }
 
     ColumnLayout {
@@ -657,143 +638,31 @@ ApplicationWindow {
                 onToolSelected: function(tool) { window.activeTool = tool }
                 onForegroundColorRequested: dialogs.pickForegroundColor(window.foregroundColor)
             }
-            Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
-            EditorCanvas {
-                id: canvas; Layout.fillWidth: true; Layout.fillHeight: true; theme: theme
-                objectName: "editorCanvas"
-                hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
-                baseImageUrl: typeof editor.baseImageUrl !== "undefined" ? editor.baseImageUrl : ""
-                gpuPreviewAvailable: typeof renderCapabilities !== "undefined" && renderCapabilities.gpuPreviewAvailable
-                                     && (typeof settings === "undefined" || settings.gpuPreviewEnabled)
-                showCheckerboard: typeof settings === "undefined" || settings.showCheckerboard
-                adjustmentPreviewActive: typeof editor.adjustmentPreviewGpuEligible !== "undefined"
-                                         && editor.adjustmentPreviewGpuEligible
-                                         && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
-                previewExposure: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 25 : 0
-                previewBrightness: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.brightness / 100 : 0
-                previewContrast: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.contrast / 100 : 0
-                previewSaturation: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.saturation / 100 : 0
-                previewHighlights: typeof editor.pendingAdjustmentValues !== "undefined"
-                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.highlights / 100 : 0
-                previewShadows: typeof editor.pendingAdjustmentValues !== "undefined"
-                                && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.shadows / 100 : 0
-                previewWhites: typeof editor.pendingAdjustmentValues !== "undefined"
-                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.whites / 100 : 0
-                previewBlacks: typeof editor.pendingAdjustmentValues !== "undefined"
-                               && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.blacks / 100 : 0
-                previewTemperature: typeof editor.pendingAdjustmentValues !== "undefined"
-                                    && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.temperature / 100 : 0
-                previewTint: typeof editor.pendingAdjustmentValues !== "undefined"
-                             && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.tint / 100 : 0
-                previewVibrance: typeof editor.pendingAdjustmentValues !== "undefined"
-                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.vibrance / 100 : 0
-                fileName: editor.fileName; dirty: editor.dirty
-                mosaicActive: window.activeTool === "mosaic"
-                cropActive: window.activeTool === "crop"
-                eyedropperActive: window.activeTool === "eye"
-                textActive: window.activeTool === "text"
-                panActive: window.activeTool === "pan"
-                spacePanActive: window.spacePanActive
-                busy: editor.busy
+            EditorSurface {
+                id: canvas
+                editorModel: editor
+                panels: ({ brush: brushPanel, text: textPanel, shape: shapePanel,
+                           mosaic: mosaicPanel, crop: cropPanel })
+                settingsObject: typeof settings !== "undefined" ? settings : null
+                renderCapabilitiesObject: typeof renderCapabilities !== "undefined"
+                                          ? renderCapabilities : null
+                recentFilesObject: typeof recentFiles !== "undefined" ? recentFiles : null
+                activeTool: window.activeTool
                 toolHint: window.activeToolHint
-                selectionActive: window.activeTool === "select"
-                movePreviewReady: editor.objectMovePreviewReady
-                movePreviewBaseUrl: editor.objectMoveBaseUrl
-                movePreviewObjectUrl: editor.objectMoveObjectUrl
-                movePreviewBounds: editor.objectMoveBounds
-                shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
-                polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
-                brushActive: window.activeTool === "brush"
-                brushDiameter: brushPanel.diameter
-                brushColor: brushPanel.color
-                brushOpacity: brushPanel.inkOpacity
-                brushSoftness: brushPanel.softness
-                onBrushStrokeCommitted: function(points) {
-                    editor.addBrushStroke(points, brushPanel.diameter,
-                                          brushPanel.effectiveColor,
-                                          brushPanel.softness / 100)
-                }
-                onBrushCancelled: window.activeTool = "adjust"
-                shapeKind: shapePanel.shapeKind
-                shapeFillColor: shapePanel.fillColor
-                shapeStrokeColor: shapePanel.strokeColor
-                shapeStrokeWidth: shapePanel.strokeWidth
-                shapeCornerRadius: shapePanel.cornerRadius
-                shapeFilled: shapePanel.filled
-                onShapeCommitted: function(kind, area) {
-                    editor.addShape(kind, area,
-                                    shapePanel.filled ? shapePanel.fillColor : "transparent",
-                                    shapePanel.strokeColor, shapePanel.strokeWidth,
-                                    shapePanel.cornerRadius)
-                }
-                onShapeCancelled: window.activeTool = "adjust"
-                onPolygonCommitted: function(points) {
-                    editor.addPolygon(points,
-                                      shapePanel.filled ? shapePanel.fillColor : "transparent",
-                                      shapePanel.strokeColor, shapePanel.strokeWidth)
-                }
-                objectAt: function(x, y) { return editor.objectAt(x, y) }
-                objectBounds: function(id) { return editor.objectBounds(id) }
-                onMoveObjectsRequested: function(ids, dx, dy) {
-                    const moved = editor.moveObjects(ids, dx, dy)
-                    if (!moved) {
-                        window._awaitingMovePreview = false
-                        editor.clearObjectMovePreview()
-                        canvas.clearMovePreview()
-                    }
-                }
-                onMoveStarted: function(ids) {
-                    window._awaitingMovePreview = true
-                    editor.beginObjectMovePreview(ids)
-                }
-                onMovePreview: function(ids, dx, dy) {
-                    // The object crop offset is bound inside EditorCanvas to
-                    // SelectionOverlay.movePreviewOffset; no controller work
-                    // happens per pointer event.
-                }
-                onMoveFinished: function(ids, dx, dy) {
-                    // The commit is already in flight via moveObjectsRequested;
-                    // keep the crop until busyChanged reports completion.
-                }
-                onMoveCancelled: function() {
-                    window._awaitingMovePreview = false
-                    editor.clearObjectMovePreview()
-                    canvas.clearMovePreview()
-                }
-                onRemoveObjectsRequested: function(ids) { editor.removeObjects(ids) }
-                onObjectDoubleClicked: function(id) {
-                    const info = editor.textInfo(id)
-                    if (!info || info.id === undefined) return
+                spacePanActive: window.spacePanActive
+                onToolChangeRequested: function(tool) { window.activeTool = tool }
+                onStatusRequested: function(message) { window.showStatus(message) }
+                onTextObjectActivated: function(info) {
                     window.activeTool = "text"
-                    canvas.setSelectionIds([id])
+                    canvas.setSelectionIds([info.id])
                     window.applyTextInfo(info)
                 }
-                onTextPointSelected: function(imageX, imageY) { window.createTextAt(imageX, imageY) }
-                onTextCancelled: window.activeTool = "adjust"
-                colorSampler: function(x, y) { return editor.colorAt(x, y) }
-                onColorPicked: function(value) { window.showStatus(qsTr("Picked %1").arg(value.toString())) }
-                onEyedropperCancelled: window.activeTool = "adjust"
-                cropAspectRatio: cropPanel.aspectRatio
-                onCropApplyRequested: function(area) { window.applyCrop(area) }
-                onCropCancelled: window.activeTool = "adjust"
-                mosaicBrushMode: mosaicPanel.brushMode
-                mosaicBrushDiameter: mosaicPanel.brushDiameter
-                inputEnabled: !editor.busy
-                onMosaicRectangleCommitted: function(area) {
-                    if (mosaicPanel.effect === "blur") editor.blurRectangle(area, mosaicPanel.blurRadius)
-                    else editor.mosaicRectangle(area, mosaicPanel.blockSize)
-                }
-                onMosaicStrokeCommitted: function(points) {
-                    if (mosaicPanel.effect === "blur") editor.blurStroke(points, mosaicPanel.blurRadius)
-                    else editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize)
-                }
-                recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
-                onRecentRequested: function(url) { window.requestOpen(url) }
-                onOpenRequested: if (!editor.busy) dialogs.openOpenDialog()
+                onTextPointChosen: function(imageX, imageY) { window.createTextAt(imageX, imageY) }
+                onCropApplyChosen: function(area) { window.applyCrop(area) }
+                onMovePreviewStarted: window._awaitingMovePreview = true
+                onMovePreviewSettled: window._awaitingMovePreview = false
+                onRecentOpenRequested: function(url) { window.requestOpen(url) }
+                onOpenDialogRequested: if (!editor.busy) dialogs.openOpenDialog()
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             Inspector {
