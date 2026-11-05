@@ -142,6 +142,8 @@ public:
     Q_INVOKABLE void addShape(const QString &kind, const QRectF &rect,
                               const QColor &fillColor, const QColor &strokeColor,
                               double strokeWidth, double cornerRadius);
+    Q_INVOKABLE void addPolygon(const QVariantList &points, const QColor &fillColor,
+                                const QColor &strokeColor, double strokeWidth);
 
 signals:
     void documentChanged();

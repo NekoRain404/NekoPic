@@ -50,6 +50,7 @@ Rectangle {
     property color strokeColor: root.blackColor
 
     readonly property bool supportsFill: shapeKind === "rectangle" || shapeKind === "ellipse"
+                                         || shapeKind === "polygon"
     readonly property bool supportsCorner: shapeKind === "rectangle"
 
     readonly property real minStrokeWidth: 0
@@ -69,7 +70,8 @@ Rectangle {
             { kind: "rectangle", label: qsTr("Rectangle") },
             { kind: "ellipse", label: qsTr("Ellipse") },
             { kind: "line", label: qsTr("Line") },
-            { kind: "arrow", label: qsTr("Arrow") }
+            { kind: "arrow", label: qsTr("Arrow") },
+            { kind: "polygon", label: qsTr("Polygon") }
         ]
     }
 

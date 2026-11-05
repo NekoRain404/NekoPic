@@ -54,6 +54,35 @@ void DocumentController::addBrushStroke(const QVariantList &points, double diame
     });
 }
 
+void DocumentController::addPolygon(const QVariantList &points, const QColor &fillColor,
+                                    const QColor &strokeColor, double strokeWidth)
+{
+    if (busy_ || !hasImage() || points.size() < 3 || points.size() > 512)
+        return;
+    if (!std::isfinite(strokeWidth) || strokeWidth < 0.0 || strokeWidth > 200.0)
+        return;
+    QVector<QPointF> path;
+    path.reserve(points.size());
+    for (const auto &value : points) {
+        if (!value.canConvert<QPointF>()) return;
+        const auto point = value.toPointF();
+        if (!validPoint(point)) return;
+        path.append(point);
+    }
+    const QColor fill = fillColor.isValid() ? fillColor : QColor(Qt::transparent);
+    const QColor stroke = strokeColor.isValid() ? strokeColor : QColor(Qt::black);
+    startObjectEdit([path = std::move(path), fill, stroke, strokeWidth](
+                        NekoPic::Document::ObjectLayer &layer) {
+        auto object = std::make_unique<NekoPic::Document::ShapeObject>(
+            NekoPic::Document::ShapeKind::Polygon);
+        object->setPoints(path);
+        object->setFillColor(fill);
+        object->setStrokeColor(stroke);
+        object->setStrokeWidth(strokeWidth);
+        return layer.add(std::move(object)) != NekoPic::Document::InvalidObjectId;
+    });
+}
+
 void DocumentController::addShape(const QString &kind, const QRectF &rect,
                                   const QColor &fillColor, const QColor &strokeColor,
                                   double strokeWidth, double cornerRadius)

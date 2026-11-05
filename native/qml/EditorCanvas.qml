@@ -36,6 +36,7 @@ Item {
     readonly property bool comparing: compareActive || compareButton.pressed
     property bool showCheckerboard: true
     property bool shapeActive: false
+    property bool polygonActive: false
     property bool brushActive: false
     property real brushDiameter: 24
     property color brushColor: "#000000"
@@ -60,6 +61,7 @@ Item {
     signal removeObjectRequested(var id)
     signal objectDoubleClicked(var id)
     signal shapeCommitted(string kind, rect area)
+    signal polygonCommitted(var points)
     signal shapeCancelled()
     signal brushStrokeCommitted(var points)
     signal brushCancelled()
@@ -267,6 +269,22 @@ Item {
                                          view.width, view.height)
                     onStrokeCommitted: function(points) { root.brushStrokeCommitted(points) }
                     onCancelled: root.brushCancelled()
+                }
+                PolygonOverlay {
+                    objectName: "polygonOverlay"
+                    anchors.fill: parent
+                    active: root.polygonActive && root.hasImage
+                    inputEnabled: root.inputEnabled
+                    imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                    viewScale: root.zoom
+                    visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                         view.width, view.height)
+                    fillColor: root.shapeFillColor
+                    strokeColor: root.shapeStrokeColor
+                    strokeWidth: root.shapeStrokeWidth
+                    filled: root.shapeFilled
+                    onPolygonCommitted: function(points) { root.polygonCommitted(points) }
+                    onCancelled: root.shapeCancelled()
                 }
                 ShapeOverlay {
                     objectName: "shapeOverlay"

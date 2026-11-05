@@ -58,6 +58,26 @@ private slots:
         QCOMPARE(controller.objectIds().size(), 1);
     }
 
+    void polygonRendersAndUndoes()
+    {
+        QTemporaryDir dir;
+        QVERIFY(canvas().save(dir.filePath(QStringLiteral("source.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("source.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        const QVariantList points{QPointF(40, 30), QPointF(140, 40), QPointF(120, 120),
+                                  QPointF(50, 110)};
+        controller.addPolygon(points, QColor(40, 120, 220, 180), QColor(20, 20, 20), 3.0);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QVERIFY2(controller.errorMessage().isEmpty(), qPrintable(controller.errorMessage()));
+        QCOMPARE(controller.objectIds().size(), 1);
+        const auto id = controller.objectIds().first().toULongLong();
+        QVERIFY(controller.objectBounds(id).width() > 0);
+        controller.undo();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QVERIFY(!controller.hasObjects());
+    }
+
     void invalidDrawCommandsAreNoOps()
     {
         QTemporaryDir dir;
@@ -72,6 +92,8 @@ private slots:
         controller.addShape(QStringLiteral("triangle"), QRectF(0, 0, 10, 10), Qt::red, Qt::black, 2, 0);
         QVERIFY(!controller.busy());
         controller.addShape(QStringLiteral("rectangle"), QRectF(0, 0, 0, 10), Qt::red, Qt::black, 2, 0);
+        QVERIFY(!controller.busy());
+        controller.addPolygon(QVariantList{QPointF(1, 1), QPointF(2, 2)}, Qt::red, Qt::black, 2);
         QVERIFY(!controller.busy());
         QVERIFY(!controller.hasObjects());
     }

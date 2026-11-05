@@ -538,7 +538,8 @@ ApplicationWindow {
                 eyedropperActive: window.activeTool === "eye"
                 textActive: window.activeTool === "text"
                 selectionActive: window.activeTool === "select"
-                shapeActive: window.activeTool === "shapes"
+                shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
+                polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
                 brushActive: window.activeTool === "brush"
                 brushDiameter: brushPanel.diameter
                 brushColor: brushPanel.color
@@ -559,6 +560,11 @@ ApplicationWindow {
                                     shapePanel.cornerRadius)
                 }
                 onShapeCancelled: window.activeTool = "adjust"
+                onPolygonCommitted: function(points) {
+                    editor.addPolygon(points,
+                                      shapePanel.filled ? shapePanel.fillColor : "transparent",
+                                      shapePanel.strokeColor, shapePanel.strokeWidth)
+                }
                 objectAt: function(x, y) { return editor.objectAt(x, y) }
                 objectBounds: function(id) { return editor.objectBounds(id) }
                 onMoveObjectRequested: function(id, dx, dy) { editor.moveObject(id, dx, dy) }
