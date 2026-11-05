@@ -90,6 +90,19 @@ TestCase {
         canvas.hasImage = true
     }
 
+    function test_compareSwitchesToBaseImage() {
+        const picture = findChild(canvas, "canvasPicture")
+        canvas.baseImageUrl = "file:///tmp/base-compare.png"
+        canvas.imageUrl = "file:///tmp/current-compare.png"
+        canvas.gpuPreviewAvailable = false
+        canvas.compareActive = true
+        verify(picture.source.toString().indexOf("base-compare.png") >= 0)
+        canvas.compareActive = false
+        verify(picture.source.toString().indexOf("current-compare.png") >= 0)
+        canvas.baseImageUrl = ""
+        canvas.imageUrl = ""
+    }
+
     function test_gpuPreviewUsesBaseImageAndPendingValues() {
         const picture = findChild(canvas, "canvasPicture")
         const effect = findChild(canvas, "adjustmentPreview")
