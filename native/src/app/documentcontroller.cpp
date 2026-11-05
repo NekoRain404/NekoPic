@@ -60,7 +60,8 @@ bool DocumentController::adjustmentInteractive() const
 bool DocumentController::adjustmentPreviewGpuEligible() const
 {
     return adjustmentInteractive()
-        && NekoPic::Adjustments::isGpuPreviewKey(adjustmentKey_);
+        && NekoPic::Adjustments::isGpuPreviewKey(adjustmentKey_)
+        && NekoPic::Adjustments::isGpuPreviewSupported(pendingParameters_);
 }
 QVariantMap DocumentController::adjustmentValues() const
 {

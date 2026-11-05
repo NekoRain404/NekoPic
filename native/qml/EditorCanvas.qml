@@ -16,6 +16,13 @@ Item {
     property real previewBrightness: 0
     property real previewContrast: 0
     property real previewSaturation: 0
+    property real previewHighlights: 0
+    property real previewShadows: 0
+    property real previewWhites: 0
+    property real previewBlacks: 0
+    property real previewTemperature: 0
+    property real previewTint: 0
+    property real previewVibrance: 0
     readonly property bool gpuPreviewing: adjustmentPreviewActive && gpuPreviewAvailable && hasImage && !comparing
     property bool hasImage: false
     property int imageWidth: 0
@@ -281,6 +288,13 @@ Item {
                     brightness: root.previewBrightness
                     contrast: root.previewContrast
                     saturation: root.previewSaturation
+                    highlights: root.previewHighlights
+                    shadows: root.previewShadows
+                    whites: root.previewWhites
+                    blacks: root.previewBlacks
+                    temperature: root.previewTemperature
+                    tint: root.previewTint
+                    vibrance: root.previewVibrance
                 }
                 BrushOverlay {
                     id: brushOverlay

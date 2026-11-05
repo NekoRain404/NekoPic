@@ -129,9 +129,23 @@ TestCase {
         canvas.gpuPreviewAvailable = true
         canvas.adjustmentPreviewActive = true
         canvas.previewExposure = 1.5
+        canvas.previewHighlights = 0.4
+        canvas.previewShadows = -0.3
+        canvas.previewWhites = 0.2
+        canvas.previewBlacks = -0.1
+        canvas.previewTemperature = 0.6
+        canvas.previewTint = -0.5
+        canvas.previewVibrance = 0.7
         compare(effect.sourceItem, picture)
         compare(effect.active, true)
         fuzzyCompare(effect.exposure, 1.5, 0.001)
+        fuzzyCompare(effect.highlights, 0.4, 0.001)
+        fuzzyCompare(effect.shadows, -0.3, 0.001)
+        fuzzyCompare(effect.whites, 0.2, 0.001)
+        fuzzyCompare(effect.blacks, -0.1, 0.001)
+        fuzzyCompare(effect.temperature, 0.6, 0.001)
+        fuzzyCompare(effect.tint, -0.5, 0.001)
+        fuzzyCompare(effect.vibrance, 0.7, 0.001)
         verify(picture.source.toString().indexOf("base-preview.png") >= 0)
         canvas.adjustmentPreviewActive = false
         verify(picture.source.toString().indexOf("current-preview.png") >= 0)
@@ -139,6 +153,13 @@ TestCase {
         canvas.baseImageUrl = ""
         canvas.imageUrl = ""
         canvas.previewExposure = 0
+        canvas.previewHighlights = 0
+        canvas.previewShadows = 0
+        canvas.previewWhites = 0
+        canvas.previewBlacks = 0
+        canvas.previewTemperature = 0
+        canvas.previewTint = 0
+        canvas.previewVibrance = 0
     }
 
     function test_zoomKeepsPointerOnImage() {
