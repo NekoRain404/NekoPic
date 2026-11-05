@@ -65,6 +65,9 @@ QT_QPA_PLATFORM=offscreen QSG_RHI_BACKEND=opengl QT_QUICK_BACKEND=rhi \
 ```sh
 ./scripts/screenshot.sh assets/demo.jpg artifacts/dark.png dark
 ./scripts/screenshot.sh assets/demo.jpg artifacts/light.png light
+# 直接打开某个工具或设置页（开发钩子）
+QT_QPA_PLATFORM=offscreen ./native/build/nekopic assets/demo.jpg --tool filters --screenshot artifacts/filters.png
+QT_QPA_PLATFORM=offscreen ./native/build/nekopic assets/demo.jpg --settings --screenshot artifacts/settings.png
 ```
 
 ## 代码风格
