@@ -54,6 +54,27 @@ TestCase {
             canvas.fitImage()
         }
     }
+    function test_gpuPreviewUsesBaseImageAndPendingValues() {
+        const picture = findChild(canvas, "canvasPicture")
+        const effect = findChild(canvas, "adjustmentPreview")
+        verify(picture !== null && effect !== null)
+        canvas.baseImageUrl = "file:///tmp/base-preview.png"
+        canvas.imageUrl = "file:///tmp/current-preview.png"
+        canvas.gpuPreviewAvailable = true
+        canvas.adjustmentPreviewActive = true
+        canvas.previewExposure = 1.5
+        compare(effect.sourceItem, picture)
+        compare(effect.active, true)
+        fuzzyCompare(effect.exposure, 1.5, 0.001)
+        verify(picture.source.toString().indexOf("base-preview.png") >= 0)
+        canvas.adjustmentPreviewActive = false
+        verify(picture.source.toString().indexOf("current-preview.png") >= 0)
+        canvas.gpuPreviewAvailable = false
+        canvas.baseImageUrl = ""
+        canvas.imageUrl = ""
+        canvas.previewExposure = 0
+    }
+
     function test_zoomKeepsPointerOnImage() {
         canvas.actualSize()
         const view = findChild(canvas, "canvasView")
