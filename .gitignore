@@ -17,3 +17,6 @@ CMakeCache.txt
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Local visual artifacts
+/artifacts/
