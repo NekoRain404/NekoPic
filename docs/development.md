@@ -70,6 +70,15 @@ QT_QPA_PLATFORM=offscreen ./native/build/nekopic assets/demo.jpg --tool filters 
 QT_QPA_PLATFORM=offscreen ./native/build/nekopic assets/demo.jpg --settings --screenshot artifacts/settings.png
 ```
 
+## 打包
+
+安装规则、CPack、元数据校验与发布清单见 [打包与发布](packaging.md)。一键
+Release 打包：
+
+```sh
+./scripts/package.sh
+```
+
 ## 代码风格
 
 - C++：`.clang-format`（LLVM 基础，4 空格，100 列）。

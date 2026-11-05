@@ -8,6 +8,7 @@
 - [模块地图](docs/architecture/module-map.md)：目录职责、命名与并行所有权。
 - [路线图](docs/roadmap.md)：阶段目标与工作流。
 - [开发流程](docs/development.md)：分支、提交、校验与版本管理。
+- [打包与发布](docs/packaging.md)：Linux 安装规则、CPack/DEB、Flatpak 实验清单与发布检查。
 - [架构决策](docs/adr/)：分层、Rust 边界、GPU 预览、设计系统。
 - [性能基准与预算](docs/performance.md)：`scripts/bench.sh` 可复现；包含实测数据与已知瓶颈。
 
