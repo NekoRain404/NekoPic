@@ -22,6 +22,7 @@
 // and give it a generous timeout.
 
 #include "core/adjustments.h"
+#include "core/filterpresets.h"
 #include "core/mosaic.h"
 #include "document/history.h"
 #include "io/imageio.h"
@@ -652,6 +653,74 @@ QVector<AdjustmentCase> adjustmentCases()
         p.filterIntensity = 0.7;
         cases.append({QStringLiteral("combined filter + intensity"), p, false});
     }
+    {
+        Parameters p;
+        p.highlights = 0.5;
+        p.shadows = -0.5;
+        cases.append({QStringLiteral("highlights + shadows"), p, false});
+    }
+    {
+        Parameters p;
+        p.whites = 0.4;
+        p.blacks = -0.4;
+        cases.append({QStringLiteral("whites + blacks"), p, false});
+    }
+    {
+        Parameters p;
+        p.temperature = 0.4;
+        p.tint = -0.2;
+        cases.append({QStringLiteral("temperature + tint"), p, false});
+    }
+    {
+        Parameters p;
+        p.vibrance = 0.5;
+        cases.append({QStringLiteral("vibrance +0.5"), p, false});
+    }
+    {
+        Parameters p;
+        p.hsl[0].hue = 0.3;
+        p.hsl[0].saturation = 0.3;
+        cases.append({QStringLiteral("HSL red shift"), p, false});
+    }
+    {
+        Parameters p;
+        p.curves[0].points = {0.0, 0.17, 0.5, 0.83, 1.0};
+        cases.append({QStringLiteral("RGB S-curve"), p, false});
+    }
+    {
+        Parameters p;
+        p.grade[0] = {220.0, 0.5, -0.2};
+        p.gradeBlending = 0.5;
+        cases.append({QStringLiteral("grade shadows"), p, false});
+    }
+    {
+        Parameters p;
+        p.texture = 0.3;
+        p.clarity = 0.5;
+        p.sharpen = 0.5;
+        cases.append({QStringLiteral("texture + clarity + sharpen"), p, false});
+    }
+    {
+        Parameters p;
+        p.vignette = -0.5;
+        p.feather = 0.5;
+        p.grain = 0.2;
+        p.fade = 0.2;
+        cases.append({QStringLiteral("vignette + grain + fade"), p, false});
+    }
+    {
+        Parameters p;
+        p.highlights = 0.3;
+        p.shadows = -0.3;
+        p.temperature = 0.2;
+        p.vibrance = 0.3;
+        p.hsl[4].saturation = 0.2;
+        p.curves[0].points = {0.0, 0.2, 0.5, 0.8, 1.0};
+        p.grade[1] = {35.0, 0.2, 0.0};
+        p.clarity = 0.2;
+        p.vignette = -0.2;
+        cases.append({QStringLiteral("extended combined"), p, false});
+    }
     return cases;
 }
 
@@ -827,7 +896,7 @@ int main(int argc, char** argv)
         const qint64 estimate = qint64(size.width) * qint64(size.height) * 4 + 16 * miB;
         if (estimate > hardMemoryCap) {
             filterPreviews.append(skippedRow(
-                QStringLiteral("filter-previews"), QStringLiteral("batch (downscale + 6 presets)"),
+                QStringLiteral("filter-previews"), QStringLiteral("batch (downscale + 13 presets)"),
                 QStringLiteral("RGBA8888"), size, estimateReason(estimate)));
             continue;
         }
@@ -835,36 +904,39 @@ int main(int argc, char** argv)
             makeSyntheticImage(size.width, size.height, QImage::Format_RGBA8888, 0x51ed270bu);
         if (source.isNull()) {
             filterPreviews.append(skippedRow(QStringLiteral("filter-previews"),
-                                             QStringLiteral("batch (downscale + 6 presets)"),
+                                             QStringLiteral("batch (downscale + 13 presets)"),
                                              QStringLiteral("RGBA8888"), size,
                                              QStringLiteral("synthetic image allocation failed")));
             continue;
         }
         const auto smallSize = source.size().scaled(QSize(192, 144), Qt::KeepAspectRatio);
+        const auto presetIds = NekoPic::Filters::presetIds();
         NekoPic::Adjustments::Parameters parameters;
         parameters.exposure = 2.0;
         parameters.contrast = 0.2;
-        const auto operation = [&source, &parameters] {
+        const auto operation = [&source, &parameters, presetIds] {
             const auto small =
                 (source.width() > 192 || source.height() > 144)
                     ? source.scaled(192, 144, Qt::KeepAspectRatio, Qt::SmoothTransformation)
                     : source;
-            for (const auto* preset : {"none", "vivid", "warm", "cool", "mono", "vintage"}) {
+            for (const auto &preset : presetIds) {
                 auto tileParameters = parameters;
-                tileParameters.filterPreset = QString::fromLatin1(preset);
+                tileParameters.filterPreset = preset;
                 consume(NekoPic::Adjustments::apply(small, tileParameters)
                             .convertToFormat(QImage::Format_RGBA8888));
             }
         };
         const auto stats = measure(options.runs, operation);
-        const qint64 resultBytes = qint64(smallSize.width()) * smallSize.height() * 4 * 6;
-        const QString note = QStringLiteral("batch = smooth downscale to %1x%2 + six presets; "
-                                            "per-thumbnail median %3 ms")
+        const qint64 resultBytes = qint64(smallSize.width()) * smallSize.height() * 4
+            * presetIds.size();
+        const QString note = QStringLiteral("batch = smooth downscale to %1x%2 + %3 presets; "
+                                            "per-thumbnail median %4 ms")
                                  .arg(smallSize.width())
                                  .arg(smallSize.height())
-                                 .arg(formatMs(stats.median / 6.0));
+                                 .arg(presetIds.size())
+                                 .arg(formatMs(stats.median / double(presetIds.size())));
         filterPreviews.append(timedRow(
-            QStringLiteral("filter-previews"), QStringLiteral("batch (downscale + 6 presets)"),
+            QStringLiteral("filter-previews"), QStringLiteral("batch (downscale + 13 presets)"),
             QStringLiteral("RGBA8888"), size, source.sizeInBytes(), resultBytes, stats, note));
     }
 
@@ -1137,7 +1209,7 @@ int main(int argc, char** argv)
 
     printTimedTable(out, QStringLiteral("1. Adjustments (NekoPic::Adjustments::apply)"),
                     adjustments);
-    printTimedTable(out, QStringLiteral("2. Filter preview batch (192x144, six presets)"),
+    printTimedTable(out, QStringLiteral("2. Filter preview batch (192x144, 13 presets)"),
                     filterPreviews);
     printTimedTable(out, QStringLiteral("3. Mosaic (12 MP, moderate area)"), mosaic);
     printTimedTable(out, QStringLiteral("4a. Interaction latency proxies"), interaction);

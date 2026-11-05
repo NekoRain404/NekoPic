@@ -330,3 +330,8 @@ Focused `Adjustments::apply`, Release, shared host, median of 5:
 | 12 MP | combined vintage | 1931.6 | 82.6 | 23.4x |
 
 Remaining bottlenecks: `QImage::convertToFormat(RGBA64)` is now a significant serial share of RGBA8888 tone-only cases; mono/vivid still need cross-channel math; tables are rebuilt per call (negligible at large sizes). Integrated `bench_pipeline --quick` cases run concurrently and therefore show different (higher) medians than the focused table.
+
+
+## 9. 2026-11-05 扩展审计
+
+高级调色与 13 款滤镜的新测量、对象编辑/内存瓶颈与优先级见 [`performance-audit.md`](performance-audit.md)。
