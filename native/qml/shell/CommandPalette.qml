@@ -173,9 +173,11 @@ Item {
                 Layout.fillWidth: true
                 Layout.preferredHeight: Math.min(contentHeight, 320)
                 clip: true
-                interactive: false
+                interactive: true
                 model: root.filtered
                 boundsBehavior: Flickable.StopAtBounds
+                currentIndex: root.currentIndex
+                onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
                 delegate: Rectangle {
                     id: row
