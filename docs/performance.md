@@ -372,3 +372,37 @@ Mapping note: `exposure` UI units map to shader stops via `ui / 25`
 CPU/GPU parity tolerances are documented in ADR-0003: 2/255 (2/65535 at 16
 bits) for the double-precision CPU mirror, and 4/255 for GPU pixel readback
 because of 32-bit float ordering and 8-bit texture storage.
+## 11. 2026-11-05 P1: parallel filter previews and RGBA8 mosaic direct path
+
+- `FilterPreviews::generateBatch` fans the 13 presets out over 4-6 `std::thread`
+  workers (calling thread participates, bounded by preset count, no nested
+  `QtConcurrent` pool use). For integer sources without extended controls the
+  tone/saturation result is computed once and only the preset runs per tile;
+  floating-point sources and extended parameters keep a full `apply` per preset.
+- Tiles remain RGBA8888 and byte-identical to the historical serial path,
+  including Qt's rvalue `convertToFormat()` overload that the old chained
+  `apply(...).convertToFormat(...)` expression selected for float sources.
+- `Mosaic::applyMask` now uses a direct scanline path for `Format_RGBA8888`,
+  `RGBA8888_Premultiplied`, `RGBX8888`, `ARGB32`, `ARGB32_Premultiplied` and
+  `RGB32`, reproducing the generic path's alpha-weighted 16-bit averaging and
+  div_257 rounding. RGBA64/float paths are unchanged.
+- Tests: `filterpreviews_test` compares workers 1/4/6, extended parameters,
+  float sources and repeated batches against a verbatim serial reference;
+  `mosaic_test` compares the direct path with a verbatim generic reference for
+  all six formats, partial blocks, strokes, transparent pixels and
+  premultiplied alpha. Full `ctest` suite: 28/28 pass.
+
+Focused timings (Release, shared host, median):
+
+| Case | Before ms | After ms | Speedup |
+| --- | ---: | ---: | ---: |
+| 13 previews, 2 MP source | 34.1 | 8.8 | 3.9x |
+| 13 previews, 8 MP source | 43.0 | 13.4 | 3.2x |
+| 12 MP RGBA8888 mosaic rect (blocks 8/32/128) | 133.4 / 134.4 / 145.7 | 22.5 / 21.8 / 22.4 | ~6x |
+| 12 MP RGBA8888 mosaic stroke (blocks 8/32/128) | 62.4 / 60.4 / 79.7 | 26.8 / 20.6 / 21.2 | ~3x |
+| 12 MP RGBA64 mosaic rect / stroke (block 32) | 39.5 / 32.9 | 35.5 / 30.5 | unchanged path |
+
+Limitations: float and extended-parameter preview batches still run a full
+`apply` per preset (the shared base is only provably exact on the integer fast
+path); the mosaic fast path covers only the listed 8-bit layouts, and other
+formats keep the generic 16-bit loop.

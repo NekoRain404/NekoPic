@@ -40,6 +40,119 @@ void writePixel(QImage &image, int x, int y, QRgba64 pixel)
         image.setPixelColor(x, y, QColor::fromRgba64(pixel));
 }
 
+// Direct access for the common 8-bit formats. The conversions below reproduce
+// QImage::pixelColor()/setPixelColor() exactly: 8-bit components expand by 257,
+// premultiplied storage is unpremultiplied before averaging and premultiplied
+// again on write, and 16-bit results are reduced with Qt's div_257 rounding.
+enum class Rgba8Layout { Rgba, Rgbx, Bgra, Bgrx };
+
+template <Rgba8Layout Layout, bool Premultiplied, bool HasAlpha>
+struct Rgba8Codec {
+    static QRgba64 read(const uchar *line, int x)
+    {
+        quint16 red;
+        quint16 green;
+        quint16 blue;
+        quint16 alpha;
+        if constexpr (Layout == Rgba8Layout::Rgba || Layout == Rgba8Layout::Rgbx) {
+            const uchar *pixel = line + x * 4;
+            red = quint16(pixel[0] * 257);
+            green = quint16(pixel[1] * 257);
+            blue = quint16(pixel[2] * 257);
+            alpha = HasAlpha ? quint16(pixel[3] * 257) : quint16(65535);
+        } else {
+            const QRgb pixel = reinterpret_cast<const QRgb *>(line)[x];
+            red = quint16(qRed(pixel) * 257);
+            green = quint16(qGreen(pixel) * 257);
+            blue = quint16(qBlue(pixel) * 257);
+            alpha = HasAlpha ? quint16(qAlpha(pixel) * 257) : quint16(65535);
+        }
+        const QRgba64 color = QRgba64::fromRgba64(red, green, blue, alpha);
+        return Premultiplied ? qUnpremultiply(color) : color;
+    }
+
+    static void write(uchar *line, int x, QRgba64 color)
+    {
+        if constexpr (Premultiplied)
+            color = qPremultiply(color);
+        if constexpr (Layout == Rgba8Layout::Rgba || Layout == Rgba8Layout::Rgbx) {
+            uchar *pixel = line + x * 4;
+            pixel[0] = color.red8();
+            pixel[1] = color.green8();
+            pixel[2] = color.blue8();
+            pixel[3] = HasAlpha ? color.alpha8() : uchar(255);
+        } else {
+            reinterpret_cast<QRgb *>(line)[x] = qRgba(
+                color.red8(), color.green8(), color.blue8(),
+                HasAlpha ? color.alpha8() : 255);
+        }
+    }
+};
+
+template <typename Codec>
+void applyMaskRgba8(QImage &result, const QImage &source, const QRect &roi, int blockSize,
+                    const QImage &mask)
+{
+    const auto selected = [&](int x, int y) {
+        return mask.isNull()
+            || reinterpret_cast<const QRgb *>(mask.constScanLine(y - roi.top()))[x - roi.left()] != 0;
+    };
+    const auto startX = roi.left() / blockSize * blockSize;
+    const auto startY = roi.top() / blockSize * blockSize;
+    for (int blockY = startY; blockY <= roi.bottom(); blockY += blockSize) {
+        const auto endY = std::min(blockY + blockSize, source.height());
+        for (int blockX = startX; blockX <= roi.right(); blockX += blockSize) {
+            const auto endX = std::min(blockX + blockSize, source.width());
+            const auto writeLeft = std::max(blockX, roi.left());
+            const auto writeTop = std::max(blockY, roi.top());
+            const auto writeRight = std::min(endX, roi.right() + 1);
+            const auto writeBottom = std::min(endY, roi.bottom() + 1);
+            auto hasSelection = mask.isNull();
+            for (int y = writeTop; !hasSelection && y < writeBottom; ++y)
+                for (int x = writeLeft; x < writeRight; ++x)
+                    if (selected(x, y)) {
+                        hasSelection = true;
+                        break;
+                    }
+            if (!hasSelection)
+                continue;
+
+            quint64 red = 0;
+            quint64 green = 0;
+            quint64 blue = 0;
+            quint64 alpha = 0;
+            for (int y = blockY; y < endY; ++y) {
+                const auto *line = source.constScanLine(y);
+                for (int x = blockX; x < endX; ++x) {
+                    const auto pixel = Codec::read(line, x);
+                    const auto weight = quint64(pixel.alpha());
+                    red += quint64(pixel.red()) * weight;
+                    green += quint64(pixel.green()) * weight;
+                    blue += quint64(pixel.blue()) * weight;
+                    alpha += weight;
+                }
+            }
+            if (alpha == 0)
+                continue;
+            const auto averageRed = static_cast<quint16>((red + alpha / 2) / alpha);
+            const auto averageGreen = static_cast<quint16>((green + alpha / 2) / alpha);
+            const auto averageBlue = static_cast<quint16>((blue + alpha / 2) / alpha);
+            for (int y = writeTop; y < writeBottom; ++y) {
+                const auto *sourceLine = source.constScanLine(y);
+                auto *resultLine = result.scanLine(y);
+                for (int x = writeLeft; x < writeRight; ++x) {
+                    if (!selected(x, y))
+                        continue;
+                    const auto originalAlpha = Codec::read(sourceLine, x).alpha();
+                    if (originalAlpha != 0)
+                        Codec::write(resultLine, x, QRgba64::fromRgba64(
+                            averageRed, averageGreen, averageBlue, originalAlpha));
+                }
+            }
+        }
+    }
+}
+
 struct FloatingPixel {
     double red;
     double green;
@@ -104,6 +217,37 @@ QImage applyMask(const QImage &source, const QRect &roi, int blockSize, const QI
         ? source.convertToFormat(QImage::Format_RGBA64) : source.copy();
     if (result.isNull())
         return source;
+
+    // Common 8-bit formats stay on a raw scanline path; every other format
+    // keeps the generic readPixel/writePixel implementation below.
+    switch (source.format()) {
+    case QImage::Format_RGBA8888:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Rgba, false, true>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    case QImage::Format_RGBA8888_Premultiplied:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Rgba, true, true>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    case QImage::Format_RGBX8888:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Rgbx, false, false>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    case QImage::Format_ARGB32:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Bgra, false, true>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    case QImage::Format_ARGB32_Premultiplied:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Bgra, true, true>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    case QImage::Format_RGB32:
+        applyMaskRgba8<Rgba8Codec<Rgba8Layout::Bgrx, false, false>>(
+            result, source, roi, blockSize, mask);
+        return result;
+    default:
+        break;
+    }
 
     const auto selected = [&](int x, int y) {
         return mask.isNull()
