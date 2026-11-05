@@ -44,6 +44,11 @@ TestCase {
         property rect blurArea
         property int blurRadius: 0
         property var blurPoints: []
+        property int moveCalls: 0
+        property int removeCalls: 0
+        property real moveDx: 0
+        property real moveDy: 0
+        property int lastObjectId: 0
         property int cropCalls: 0
         property string textCall: ""
         property rect cropArea
@@ -54,6 +59,10 @@ TestCase {
         function saveImage() {}
         function saveAs(url, format) {}
         function clearError() {}
+        function objectAt(x, y) { return 7 }
+        function objectBounds(id) { return Qt.rect(100, 50, 80, 40) }
+        function moveObject(id, dx, dy) { ++moveCalls; lastObjectId = id; moveDx = dx; moveDy = dy }
+        function removeObject(id) { ++removeCalls; lastObjectId = id; return true }
         function addText(text, x, y, fontSize, color, alignment) {
             textCall = text + ":" + x + ":" + y + ":" + fontSize + ":" + alignment
         }
@@ -166,6 +175,33 @@ TestCase {
         editor.hasImage = false
         window.destroy()
     }
+    function test_selectionToolRoutesMoveAndRemove() {
+        const component = Qt.createComponent("../Main.qml")
+        const window = component.createObject(null)
+        verify(window !== null, component.errorString())
+        editor.hasImage = true
+        editor.imageWidth = 1000; editor.imageHeight = 500
+        editor.moveCalls = 0; editor.removeCalls = 0
+        const tool = visualChild(window.contentItem, "tool-select")
+        verify(tool !== null)
+        tool.clicked()
+        compare(window.activeTool, "select")
+        const canvas = findChild(window, "editorCanvas")
+        verify(canvas.selectionActive)
+        const overlay = findChild(canvas, "selectionOverlay")
+        verify(overlay !== null)
+        compare(overlay.selectAt(110, 60), 7)
+        compare(overlay.selectedId, 7)
+        canvas.moveObjectRequested(7, 5, 6)
+        compare(editor.moveCalls, 1)
+        compare(editor.moveDx, 5)
+        compare(editor.moveDy, 6)
+        canvas.removeObjectRequested(7)
+        compare(editor.removeCalls, 1)
+        editor.hasImage = false
+        window.destroy()
+    }
+
     function test_mosaicPanelRoutesBlurEffect() {
         const component = Qt.createComponent("../Main.qml")
         const window = component.createObject(null)

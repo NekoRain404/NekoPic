@@ -31,6 +31,9 @@ Item {
     property bool cropActive: false
     property bool eyedropperActive: false
     property bool textActive: false
+    property bool selectionActive: false
+    property var objectAt: null
+    property var objectBounds: null
     property var colorSampler: null
     property real cropAspectRatio: 0
     readonly property rect cropSelection: cropOverlay.selection
@@ -40,6 +43,8 @@ Item {
     signal eyedropperCancelled()
     signal textPointSelected(real imageX, real imageY)
     signal textCancelled()
+    signal moveObjectRequested(var id, real dx, real dy)
+    signal removeObjectRequested(var id)
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
     signal recentRequested(url url)
@@ -221,6 +226,20 @@ Item {
                     brightness: root.previewBrightness
                     contrast: root.previewContrast
                     saturation: root.previewSaturation
+                }
+                SelectionOverlay {
+                    objectName: "selectionOverlay"
+                    anchors.fill: parent
+                    active: root.selectionActive && root.hasImage
+                    inputEnabled: root.inputEnabled
+                    imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                    viewScale: root.zoom
+                    visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                         view.width, view.height)
+                    objectAt: root.objectAt
+                    objectBounds: root.objectBounds
+                    onMoveRequested: function(id, dx, dy) { root.moveObjectRequested(id, dx, dy) }
+                    onRemoveRequested: function(id) { root.removeObjectRequested(id) }
                 }
                 ScrollBar.horizontal: ScrollBar { }
                 ScrollBar.vertical: ScrollBar { }

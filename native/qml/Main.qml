@@ -102,6 +102,7 @@ ApplicationWindow {
     Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: resizeDialog.open() }
     Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: canvasSizeDialog.open() }
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
+    Action { id: selectAction; text: qsTr("Select"); shortcut: "V"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "select" }
     Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
     Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "eye" }
     Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "crop" }
@@ -326,7 +327,7 @@ ApplicationWindow {
             MenuItem { action: saveAsAction }
         }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } MenuItem { action: textAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
+        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: selectAction } MenuItem { action: cropAction } MenuItem { action: textAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
         Menu {
             title: qsTr("View")
             MenuItem { action: zoomInAction } MenuItem { action: zoomOutAction } MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
@@ -433,7 +434,7 @@ ApplicationWindow {
                                 text: modelData.label
                                 iconName: modelData.icon
                                 accessibleName: modelData.label
-                                readonly property bool available: modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "eye" || modelData.icon === "crop"
+                                readonly property bool available: modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "eye" || modelData.icon === "crop"
                                 enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
                                 checked: available && window.activeTool === modelData.icon
                                 onClicked: window.activeTool = modelData.icon
@@ -467,6 +468,11 @@ ApplicationWindow {
                 cropActive: window.activeTool === "crop"
                 eyedropperActive: window.activeTool === "eye"
                 textActive: window.activeTool === "text"
+                selectionActive: window.activeTool === "select"
+                objectAt: function(x, y) { return editor.objectAt(x, y) }
+                objectBounds: function(id) { return editor.objectBounds(id) }
+                onMoveObjectRequested: function(id, dx, dy) { editor.moveObject(id, dx, dy) }
+                onRemoveObjectRequested: function(id) { editor.removeObject(id) }
                 onTextPointSelected: function(imageX, imageY) { window.openTextDialog(imageX, imageY) }
                 onTextCancelled: window.activeTool = "adjust"
                 colorSampler: function(x, y) { return editor.colorAt(x, y) }
@@ -579,6 +585,8 @@ ApplicationWindow {
               run: function() { editor.flipVertical() } },
             { title: cropAction.text, detail: qsTr("Tools"), shortcut: "C", enabled: cropAction.enabled,
               run: function() { window.activeTool = "crop" } },
+            { title: selectAction.text, detail: qsTr("Tools"), shortcut: "V", enabled: selectAction.enabled,
+              run: function() { window.activeTool = "select" } },
             { title: textAction.text, detail: qsTr("Tools"), shortcut: "T", enabled: textAction.enabled,
               run: function() { window.activeTool = "text" } },
             { title: eyedropperAction.text, detail: qsTr("Tools"), shortcut: "I", enabled: eyedropperAction.enabled,
