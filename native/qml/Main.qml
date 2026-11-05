@@ -1185,7 +1185,7 @@ ApplicationWindow {
                         onIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
                         onIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
                     }
-                    ScrollBar.vertical: NekoScrollBar { }
+                    ScrollBar.vertical: NekoScrollBar { policy: ScrollBar.AlwaysOff }
                 }
             }
             MosaicPanel {

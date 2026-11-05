@@ -180,7 +180,7 @@ Rectangle {
 
             ScrollBar.vertical: NekoScrollBar {
                 objectName: "inspector-scrollbar"
-                policy: ScrollBar.AsNeeded
+                policy: ScrollBar.AlwaysOff
                 accessibleName: qsTr("Inspector content scroll")
             }
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff

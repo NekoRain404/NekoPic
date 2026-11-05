@@ -279,7 +279,7 @@ Item {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: NekoScrollBar {
-            policy: ScrollBar.AsNeeded
+            policy: ScrollBar.AlwaysOff
             accessibleName: qsTr("Text settings scroll")
         }
 

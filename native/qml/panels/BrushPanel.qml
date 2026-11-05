@@ -153,7 +153,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: NekoScrollBar {
             objectName: "brush-scrollbar"
-            policy: ScrollBar.AsNeeded
+            policy: ScrollBar.AlwaysOff
             accessibleName: qsTr("Brush settings scroll")
         }
 

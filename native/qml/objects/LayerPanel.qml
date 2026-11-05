@@ -359,7 +359,7 @@ Rectangle {
             spacing: 1
             boundsBehavior: Flickable.StopAtBounds
             model: root.summaries
-            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AlwaysOff }
 
             delegate: Rectangle {
                 id: row

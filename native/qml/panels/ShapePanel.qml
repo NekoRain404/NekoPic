@@ -97,7 +97,7 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: NekoScrollBar {
             objectName: "shape-scrollbar"
-            policy: ScrollBar.AsNeeded
+            policy: ScrollBar.AlwaysOff
             accessibleName: qsTr("Shape settings scroll")
         }
 
