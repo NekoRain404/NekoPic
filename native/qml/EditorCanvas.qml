@@ -35,6 +35,13 @@ Item {
     readonly property var selectionIds: selectionOverlay.selectedIds
     property bool compareActive: false
     property bool panActive: false
+    // Temporary Space-held pan override supplied by the window.
+    property bool spacePanActive: false
+    // Busy disables pointer interaction and shows the busy cursor.
+    property bool busy: false
+    // Localized per-tool hint shown in the canvas bottom bar.
+    property string toolHint: ""
+    readonly property bool effectivePanActive: (panActive || spacePanActive) && !busy
     readonly property bool comparing: compareActive || compareButton.pressed
     property bool showCheckerboard: true
     property bool shapeActive: false
@@ -65,6 +72,16 @@ Item {
     signal removeObjectsRequested(var ids)
     function setSelectionIds(ids) { selectionOverlay.setSelectionIds(ids) }
     function clearSelection() { selectionOverlay.clearSelection() }
+    /*! Drops any in-progress gesture/preview without emitting commits. */
+    function cancelPendingGesture() {
+        if (cropOverlay) cropOverlay.resetSelection()
+        if (mosaicOverlay) mosaicOverlay.cancelGesture()
+        if (textPlacementOverlay) textPlacementOverlay.resetCursor()
+        if (eyedropperOverlay) eyedropperOverlay.reset()
+        if (brushOverlay) brushOverlay.reset()
+        if (polygonOverlay) polygonOverlay.reset()
+        if (shapeOverlay) shapeOverlay.reset()
+    }
     signal objectDoubleClicked(var id)
     signal shapeCommitted(string kind, rect area)
     signal polygonCommitted(var points)
@@ -211,6 +228,7 @@ Item {
                         onCancelled: root.cropCancelled()
                     }
                     MosaicOverlay {
+                        id: mosaicOverlay
                         objectName: "mosaicOverlay"
                         anchors.fill: parent
                         active: root.mosaicActive && root.hasImage
@@ -225,6 +243,7 @@ Item {
                         onStrokeCommitted: function(points) { root.mosaicStrokeCommitted(points) }
                     }
                     TextPlacementOverlay {
+                        id: textPlacementOverlay
                         objectName: "textPlacementOverlay"
                         anchors.fill: parent
                         active: root.textActive && root.hasImage
@@ -237,6 +256,7 @@ Item {
                         onCancelled: root.textCancelled()
                     }
                     EyedropperOverlay {
+                        id: eyedropperOverlay
                         objectName: "eyedropperOverlay"
                         anchors.fill: parent
                         active: root.eyedropperActive && root.hasImage
@@ -263,6 +283,7 @@ Item {
                     saturation: root.previewSaturation
                 }
                 BrushOverlay {
+                    id: brushOverlay
                     objectName: "brushOverlay"
                     anchors.fill: parent
                     active: root.brushActive && root.hasImage
@@ -277,6 +298,7 @@ Item {
                     onCancelled: root.brushCancelled()
                 }
                 PolygonOverlay {
+                    id: polygonOverlay
                     objectName: "polygonOverlay"
                     anchors.fill: parent
                     active: root.polygonActive && root.hasImage
@@ -293,6 +315,7 @@ Item {
                     onCancelled: root.shapeCancelled()
                 }
                 ShapeOverlay {
+                    id: shapeOverlay
                     objectName: "shapeOverlay"
                     anchors.fill: parent
                     active: root.shapeActive && root.hasImage
@@ -311,6 +334,7 @@ Item {
                     onCancelled: root.shapeCancelled()
                 }
                 SelectionOverlay {
+                    id: selectionOverlay
                     objectName: "selectionOverlay"
                     anchors.fill: parent
                     active: root.selectionActive && root.hasImage
@@ -331,20 +355,28 @@ Item {
                 ScrollBar.vertical: ScrollBar { }
             }
             MouseArea {
+                objectName: "panMouseArea"
                 anchors.fill: parent
-                acceptedButtons: Qt.MiddleButton | (root.panActive ? Qt.LeftButton : Qt.NoButton)
+                acceptedButtons: Qt.MiddleButton
+                                 | (root.effectivePanActive ? Qt.LeftButton : Qt.NoButton)
                 enabled: root.hasImage
-                cursorShape: pressed ? Qt.ClosedHandCursor
-                           : root.panActive ? Qt.OpenHandCursor : Qt.ArrowCursor
+                cursorShape: root.busy ? Qt.BusyCursor
+                           : pressed ? Qt.ClosedHandCursor
+                           : root.effectivePanActive ? Qt.OpenHandCursor : Qt.ArrowCursor
                 property real lastX: 0
                 property real lastY: 0
                 onWheel: function(event) {
+                    if (root.busy) return
                     const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : event.pixelDelta.y
                     if (delta !== 0) root.zoomAt(Math.pow(1.2, delta / 120), event.x, event.y)
                     event.accepted = true
                 }
-                onPressed: function(mouse) { lastX = mouse.x; lastY = mouse.y }
+                onPressed: function(mouse) {
+                    if (root.busy) return
+                    lastX = mouse.x; lastY = mouse.y
+                }
                 onPositionChanged: function(mouse) {
+                    if (root.busy) return
                     if (pressed) {
                         root.panBy(mouse.x - lastX, mouse.y - lastY)
                         lastX = mouse.x; lastY = mouse.y
@@ -367,6 +399,7 @@ Item {
                     Layout.alignment: Qt.AlignHCenter; Layout.topMargin: 8
                     text: qsTr("Open image"); variant: "primary"
                     objectName: "openImageButton"
+                    enabled: !root.busy
                     onClicked: root.openRequested()
                 }
                 ColumnLayout {
@@ -381,6 +414,7 @@ Item {
                             Layout.alignment: Qt.AlignHCenter
                             text: root.recentEntries[index].name
                             variant: "ghost"
+                            enabled: !root.busy
                             onClicked: root.recentRequested(root.recentEntries[index].url)
                         }
                     }
@@ -394,7 +428,15 @@ Item {
             RowLayout {
                 anchors.fill: parent; anchors.leftMargin: 16; anchors.rightMargin: 12; spacing: 6
                 Rectangle { width: 5; height: 5; radius: 3; color: "#99b4a3" }
-                Label { text: root.hasImage ? qsTr("Image ready") : qsTr("Canvas ready"); color: root.theme ? root.theme.muted : "#aaa"; font.pixelSize: 10 }
+                Label {
+                    objectName: "canvasHintLabel"
+                    text: !root.hasImage ? qsTr("Canvas ready")
+                          : root.toolHint.length > 0 ? root.toolHint
+                          : qsTr("Image ready")
+                    color: root.theme ? root.theme.muted : "#aaa"; font.pixelSize: 10
+                    elide: Text.ElideRight
+                    Layout.fillWidth: false
+                }
                 Item { Layout.fillWidth: true }
                 NekoIconButton { iconName: "minus"; buttonSize: 26; iconSize: 16; accessibleName: qsTr("Zoom out"); enabled: root.hasImage; onClicked: root.changeZoom(1 / 1.2) }
                 Label { text: Math.round(root.zoom * 100) + "%"; color: root.theme ? root.theme.text : "white"; Layout.preferredWidth: 45; horizontalAlignment: Text.AlignHCenter }
