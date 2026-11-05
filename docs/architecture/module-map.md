@@ -14,15 +14,19 @@ NekoPic/
 │   ├── shaders/               GLSL 源文件，经 qsb 编译进资源
 │   ├── rust/                  可选 Rust crate（默认不参与构建）
 │   ├── src/
-│   │   ├── core/              纯图像算法：adjustments、mosaic、未来的 color
+│   │   ├── core/              纯图像算法：adjustments/colorpipeline、mosaic、blur、histogram、autoenhance、filterpresets
 │   │   ├── io/                imageio、formatregistry、可选 rustcodecs
 │   │   ├── document/          文档模型、命令、历史（从控制器逐步提取）
 │   │   ├── render/            预览后端、能力探测、CPU/GPU 一致性
 │   │   ├── platform/          剪贴板、最近文件、系统集成
-│   │   └── app/               QML 桥接、控制器、入口、语言与主题
+│   │   └── app/               QML 桥接、控制器、入口、设置、语言与主题
 │   ├── qml/
 │   │   ├── UI/                设计令牌单例与通用控件
 │   │   ├── effects/           GPU 预览 QML 包装
+│   │   ├── components/        HistogramView 等通用可视化
+│   │   ├── inspector/         五页签调色子组件（slider/HSL/曲线/分级）
+│   │   ├── panels/            画笔、形状、打码等属性面板
+│   │   ├── filters/           滤镜网格、分类、搜索与收藏
 │   │   ├── canvas/            画布与视口
 │   │   ├── panels/            属性面板
 │   │   ├── overlays/          裁剪、马赛克等手势层
