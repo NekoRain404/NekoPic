@@ -56,9 +56,9 @@
   </keywords>
 
   <!--
-    TODO(owner): add real screenshots once a stable HTTPS location exists, for
-    example a release asset or the project website. AppStream does not accept
-    repository-relative paths. Uncomment and replace the URLs when available:
+    TODO(owner): upload the files in packaging/screenshots/ to a stable HTTPS
+    location (release assets or the project website) and replace these URLs.
+    AppStream does not accept repository-relative paths.
 
     <screenshots>
       <screenshot type="default">
