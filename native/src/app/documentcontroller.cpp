@@ -15,6 +15,7 @@ DocumentController::DocumentController(QObject *parent) : QObject(parent) {}
 DocumentController::~DocumentController() = default;
 QString DocumentController::fileName() const { return path_.isEmpty() ? tr("Untitled") : QFileInfo(path_).fileName(); }
 QUrl DocumentController::imageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/current?revision=%1").arg(revision_)) : QUrl(); }
+QUrl DocumentController::baseImageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/base?revision=%1").arg(revision_)) : QUrl(); }
 bool DocumentController::busy() const { return busy_; }
 bool DocumentController::adjusting() const { return adjusting_; }
 bool DocumentController::adjustmentInteractive() const
@@ -26,6 +27,13 @@ QVariantMap DocumentController::adjustmentValues() const
 {
     return {{"exposure", parameters_.exposure * 50.0}, {"brightness", parameters_.brightness * 100.0},
             {"contrast", parameters_.contrast * 100.0}, {"saturation", parameters_.saturation * 100.0}};
+}
+QVariantMap DocumentController::pendingAdjustmentValues() const
+{
+    return {{"exposure", pendingParameters_.exposure * 50.0},
+            {"brightness", pendingParameters_.brightness * 100.0},
+            {"contrast", pendingParameters_.contrast * 100.0},
+            {"saturation", pendingParameters_.saturation * 100.0}};
 }
 QString DocumentController::filterPreset() const { return parameters_.filterPreset; }
 double DocumentController::filterIntensity() const { return parameters_.filterIntensity * 100.0; }
@@ -78,6 +86,7 @@ void DocumentController::beginAdjustment(const QString &key)
     setBusy(true);
     emit adjustingChanged();
     emit adjustmentInteractiveChanged();
+    emit adjustmentPreviewChanged();
 }
 
 void DocumentController::previewAdjustment(const QString &key, double value)
@@ -105,6 +114,7 @@ void DocumentController::resetAdjustments()
     setError({});
     setBusy(true);
     emit adjustingChanged();
+    emit adjustmentPreviewChanged();
     ++adjustmentSequence_;
     startAdjustmentWorker();
 }
@@ -124,6 +134,7 @@ void DocumentController::selectFilter(const QString &preset)
     setError({});
     setBusy(true);
     emit adjustingChanged();
+    emit adjustmentPreviewChanged();
     ++adjustmentSequence_;
     startAdjustmentWorker();
 }
@@ -152,6 +163,7 @@ void DocumentController::queueFilterIntensity(double value, bool finish)
         ? std::clamp(value, 0.0, 100.0) / 100.0 : 0.0;
     adjustmentFinishing_ = finish;
     ++adjustmentSequence_;
+    emit adjustmentPreviewChanged();
     if (finish) emit filterIntensityInteractiveChanged();
     if (!adjustmentWorkerRunning_) startAdjustmentWorker();
 }
@@ -166,6 +178,7 @@ void DocumentController::queueAdjustment(const QString &key, double value, bool 
     else if (key == "saturation") pendingParameters_.saturation = adjustmentValue_ / 100.0;
     adjustmentFinishing_ = finish;
     ++adjustmentSequence_;
+    emit adjustmentPreviewChanged();
     if (finish) emit adjustmentInteractiveChanged();
     if (!adjustmentWorkerRunning_) startAdjustmentWorker();
 }
@@ -213,6 +226,7 @@ void DocumentController::endAdjustment(const QImage &result, bool failed)
     adjustmentKey_.clear();
     if (wasInteractive) emit adjustmentInteractiveChanged();
     if (wasFilterInteractive) emit filterIntensityInteractiveChanged();
+    emit adjustmentPreviewChanged();
     const bool changed = parameters_.exposure != pendingParameters_.exposure
         || parameters_.brightness != pendingParameters_.brightness
         || parameters_.contrast != pendingParameters_.contrast

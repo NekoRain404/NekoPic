@@ -12,9 +12,10 @@ class DocumentImageProvider final : public QQuickImageProvider {
 public:
     explicit DocumentImageProvider(const DocumentController &controller)
         : QQuickImageProvider(QQuickImageProvider::Image), controller_(controller) {}
-    QImage requestImage(const QString &, QSize *size, const QSize &) override
+    QImage requestImage(const QString &id, QSize *size, const QSize &) override
     {
-        auto image = controller_.image();
+        auto image = id.startsWith(QLatin1String("base")) ? controller_.baseImage()
+                                                          : controller_.image();
         if (size) *size = image.size();
         return image;
     }

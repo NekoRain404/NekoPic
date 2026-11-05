@@ -15,10 +15,12 @@ class DocumentController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString fileName READ fileName NOTIFY documentChanged)
     Q_PROPERTY(QUrl imageUrl READ imageUrl NOTIFY documentChanged)
+    Q_PROPERTY(QUrl baseImageUrl READ baseImageUrl NOTIFY documentChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(bool adjusting READ adjusting NOTIFY adjustingChanged)
     Q_PROPERTY(bool adjustmentInteractive READ adjustmentInteractive NOTIFY adjustmentInteractiveChanged)
     Q_PROPERTY(QVariantMap adjustmentValues READ adjustmentValues NOTIFY documentChanged)
+    Q_PROPERTY(QVariantMap pendingAdjustmentValues READ pendingAdjustmentValues NOTIFY adjustmentPreviewChanged)
     Q_PROPERTY(QString filterPreset READ filterPreset NOTIFY documentChanged)
     Q_PROPERTY(double filterIntensity READ filterIntensity NOTIFY documentChanged)
     Q_PROPERTY(bool filterIntensityInteractive READ filterIntensityInteractive NOTIFY filterIntensityInteractiveChanged)
@@ -36,10 +38,12 @@ public:
     ~DocumentController() override;
     QString fileName() const;
     QUrl imageUrl() const;
+    QUrl baseImageUrl() const;
     bool busy() const;
     bool adjusting() const;
     bool adjustmentInteractive() const;
     QVariantMap adjustmentValues() const;
+    QVariantMap pendingAdjustmentValues() const;
     QString filterPreset() const;
     double filterIntensity() const;
     bool filterIntensityInteractive() const;
@@ -83,6 +87,7 @@ signals:
     void busyChanged();
     void adjustingChanged();
     void adjustmentInteractiveChanged();
+    void adjustmentPreviewChanged();
     void filterIntensityInteractiveChanged();
     void errorChanged();
 
