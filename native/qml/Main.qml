@@ -20,6 +20,7 @@ ApplicationWindow {
     property bool closingRequested: false
     property url pendingImage
     property url pendingExportUrl
+    property url lastFolder: ""
     property string activeTool: "adjust"
     property string transientStatus: ""
     property bool reduceMotion: false
@@ -40,7 +41,7 @@ ApplicationWindow {
             if (!editor.busy) { closingRequested = true; discardDialog.open() }
         }
     }
-    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion; property alias followSystemTheme: window.followSystemTheme }
+    Settings { category: "ui"; property alias darkTheme: window.darkTheme; property alias reduceMotion: window.reduceMotion; property alias followSystemTheme: window.followSystemTheme; property alias lastFolder: window.lastFolder }
     Binding { target: Theme; property: "dark"; value: window.followSystemTheme ? window.systemDark : window.darkTheme }
     Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
     color: theme.background
@@ -99,8 +100,11 @@ ApplicationWindow {
     Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
     FileDialog {
         id: openDialog; title: qsTr("Open image"); fileMode: FileDialog.OpenFile
+        currentFolder: window.lastFolder.toString().length > 0 ? window.lastFolder
+                : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
         nameFilters: [qsTr("Images") + " (" + editor.readableImagePatterns.join(" ") + ")", qsTr("All files (*)")]
         onAccepted: {
+            window.lastFolder = currentFolder
             if (editor.dirty) {
                 window.pendingImage = selectedFile
                 window.closingRequested = false
@@ -112,6 +116,8 @@ ApplicationWindow {
     }
     FileDialog {
         id: saveDialog; title: qsTr("Save image as"); fileMode: FileDialog.SaveFile
+        currentFolder: window.lastFolder.toString().length > 0 ? window.lastFolder
+                : StandardPaths.writableLocation(StandardPaths.PicturesLocation)
         readonly property var formats: (typeof editor !== "undefined" && editor.writableFormats)
                                        ? editor.writableFormats : [{ id: "png", label: "PNG image",
                                                                      suffix: "png", patterns: ["*.png"] }]
@@ -123,6 +129,7 @@ ApplicationWindow {
         })
         defaultSuffix: formats[selectedFormat].suffix
         onAccepted: {
+            window.lastFolder = currentFolder
             const format = formats[selectedFormat]
             window.pendingExportUrl = selectedFile
             exportDialog.formatId = format.id
