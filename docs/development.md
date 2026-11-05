@@ -53,6 +53,20 @@ build: add optional Rust module gate
 
 脚本依次执行配置、构建、C++ 测试、QML 测试和空白检查。CI 环境应使用独立构建目录，`NEKOPIC_WITH_RUST` 默认关闭，另跑一次 `ON` 验证可选模块。
 
+GPU/着色器路径另跑一次 RHI：
+
+```sh
+QT_QPA_PLATFORM=offscreen QSG_RHI_BACKEND=opengl QT_QUICK_BACKEND=rhi \
+  /usr/lib/qt6/bin/qmltestrunner -input native/qml/tests -silent
+```
+
+视觉回归使用离屏抓图（不依赖合成器醒着）：
+
+```sh
+./scripts/screenshot.sh assets/demo.jpg artifacts/dark.png dark
+./scripts/screenshot.sh assets/demo.jpg artifacts/light.png light
+```
+
 ## 代码风格
 
 - C++：`.clang-format`（LLVM 基础，4 空格，100 列）。
