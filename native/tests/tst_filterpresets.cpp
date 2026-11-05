@@ -1,5 +1,6 @@
 #include "core/filterpresets.h"
 
+#include <QSet>
 #include <QtTest>
 
 using namespace NekoPic::Filters;
@@ -27,7 +28,9 @@ private slots:
     void categoriesHaveNoDuplicates()
     {
         const auto categories = presetCategories();
-        QCOMPARE(categories.toSet().size(), categories.size());
+        QSet<QString> unique;
+        for (const auto &category : categories) unique.insert(category);
+        QCOMPARE(unique.size(), categories.size());
         QVERIFY(categories.contains(QStringLiteral("all")));
     }
 };
