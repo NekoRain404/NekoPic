@@ -25,6 +25,9 @@ NekoDialog {
     property int initialQuality: 90
     property color initialBackground: "#ffffff"
     property bool busy: false
+    property url previewUrl
+    property int previewWidth: 0
+    property int previewHeight: 0
 
     /*! Current, normalised quality (0–100). */
     property int quality: initialQuality
@@ -103,6 +106,36 @@ NekoDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacingMd
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 96
+            radius: Theme.radiusSm
+            color: Theme.background
+            border.width: Theme.borderWidth
+            border.color: Theme.border
+            clip: true
+
+            Image {
+                anchors.fill: parent
+                anchors.margins: Theme.spacingSm
+                source: root.previewUrl
+                fillMode: Image.PreserveAspectFit
+                cache: false
+                asynchronous: true
+            }
+            Text {
+                visible: root.previewWidth > 0 && root.previewHeight > 0
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: Theme.spacingSm
+                text: root.previewWidth + " × " + root.previewHeight + " px"
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontCaption
+                style: Text.Outline
+                styleColor: Theme.scrim
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true

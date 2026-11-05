@@ -181,6 +181,9 @@ ApplicationWindow {
             exportDialog.supportsQuality = window.formatSupportsQuality(format.id)
             exportDialog.initialQuality = editor.exportQuality >= 0 ? editor.exportQuality : 90
             exportDialog.initialBackground = editor.jpegBackground
+            exportDialog.previewUrl = editor.imageUrl
+            exportDialog.previewWidth = editor.imageWidth
+            exportDialog.previewHeight = editor.imageHeight
             exportDialog.open()
         }
         onRejected: if (window.saveBeforePending) window.saveBeforePending = false
