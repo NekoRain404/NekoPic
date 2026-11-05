@@ -138,6 +138,37 @@ ApplicationWindow {
         }
         Label { text: qsTr("Your unsaved changes will be lost."); color: theme.text; wrapMode: Text.WordWrap; width: 340 }
     }
+    NekoDialog {
+        id: aboutDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        title: qsTr("About NekoPic")
+        acceptText: qsTr("Close")
+        showCloseButton: true
+        onAccepted: close()
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingSm
+            Label {
+                text: "NekoPic " + Qt.application.version
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontTitle
+                font.weight: Theme.fontWeightDemiBold
+            }
+            Label {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: qsTr("A local-first desktop photo editor. Your photos stay on this device.")
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontBody
+            }
+            Label {
+                text: "Qt " + Qt.application.qtVersion + " · Linux"
+                color: Theme.textTertiary
+                font.pixelSize: Theme.fontCaption
+            }
+        }
+    }
     Connections {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }

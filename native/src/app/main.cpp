@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
+    QCoreApplication::setApplicationVersion(QStringLiteral(NEKOPIC_VERSION));
     DocumentController editor;
     FilterPreviews filterPreviews(editor);
     NekoPic::Render::RenderCapabilities renderCapabilities;

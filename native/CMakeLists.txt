@@ -60,6 +60,7 @@ target_link_libraries(nekopic_app PUBLIC nekopic_io nekopic_document nekopic_ren
 
 qt_add_executable(nekopic src/app/main.cpp)
 target_link_libraries(nekopic PRIVATE nekopic_app Qt6::Quick Qt6::Qml Qt6::QuickControls2)
+target_compile_definitions(nekopic PRIVATE NEKOPIC_VERSION="${PROJECT_VERSION}")
 
 file(GLOB_RECURSE NEKOPIC_QML CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/*.qml")
 list(FILTER NEKOPIC_QML EXCLUDE REGEX "^qml/tests/")
