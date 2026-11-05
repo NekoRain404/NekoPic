@@ -77,8 +77,10 @@ target_compile_definitions(nekopic PRIVATE NEKOPIC_VERSION="${PROJECT_VERSION}")
 
 file(GLOB_RECURSE NEKOPIC_QML CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/*.qml")
 list(FILTER NEKOPIC_QML EXCLUDE REGEX "^qml/tests/")
+file(GLOB_RECURSE NEKOPIC_QMLJS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/*.js")
+list(FILTER NEKOPIC_QMLJS EXCLUDE REGEX "^qml/tests/")
 file(GLOB_RECURSE NEKOPIC_QMLDIR CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/**/qmldir")
-qt_add_resources(nekopic qml_resources PREFIX "/" FILES ${NEKOPIC_QML} ${NEKOPIC_QMLDIR})
+qt_add_resources(nekopic qml_resources PREFIX "/" FILES ${NEKOPIC_QML} ${NEKOPIC_QMLJS} ${NEKOPIC_QMLDIR})
 
 # --- shaders (compiled to .qsb for ShaderEffect) -------------------------
 file(GLOB_RECURSE NEKOPIC_SHADERS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "shaders/*.frag")

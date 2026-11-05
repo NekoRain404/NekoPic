@@ -4,6 +4,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../UI"
 import "../dialogs"
+import "FontCatalog.js" as FontCatalog
 
 /*!
     TextPanel — the H5 text workspace, ported to the right-side panel.
@@ -89,37 +90,59 @@ Item {
     readonly property color blueColor: "#61a3c7"
     readonly property color purpleColor: "#9275b9"
 
-    /*! H5 palette, CJK-first. The empty value means "system default". */
-    readonly property var fontChoices: [
-        { label: qsTr("System default"), value: "" },
-        { label: "Noto Sans CJK SC", value: "Noto Sans CJK SC" },
-        { label: "Noto Serif CJK SC", value: "Noto Serif CJK SC" },
-        { label: "Source Han Sans SC", value: "Source Han Sans SC" },
-        { label: "Source Han Serif SC", value: "Source Han Serif SC" },
-        { label: "DejaVu Sans", value: "DejaVu Sans" },
-        { label: "sans-serif", value: "sans-serif" }
-    ]
+    /*! CJK-first ordering and the curated fallback live in FontCatalog.js. */
+    readonly property var preferredFontFamilies: FontCatalog.preferredFamilies
+    readonly property var curatedFontFamilies: FontCatalog.curatedFamilies
+
+    readonly property bool hasSystemFontCatalog: {
+        try {
+            return typeof Qt.fontFamilies === "function"
+        } catch (error) {
+            return false
+        }
+    }
+
+    /*! Live system family list; empty when enumeration is unavailable. */
+    readonly property var systemFontFamilies: {
+        if (!hasSystemFontCatalog)
+            return []
+        try {
+            const families = Qt.fontFamilies()
+            return families ? families : []
+        } catch (error) {
+            return []
+        }
+    }
+
+    readonly property bool usesSystemFonts: systemFontFamilies.length > 0
+    readonly property int fontCount: Math.max(0, fontChoices.length - 1)
+
+    /*! The empty value always means "system default". */
+    readonly property var fontChoices: FontCatalog.build(
+        usesSystemFonts ? systemFontFamilies : curatedFontFamilies,
+        qsTr("System default"))
 
     /*! Adds an externally supplied family so edit mode can show it. */
     readonly property var fontModel: {
-        const items = []
-        const values = []
-        for (let i = 0; i < fontChoices.length; ++i) {
-            items.push(fontChoices[i])
-            values.push(fontChoices[i].value)
+        const items = fontChoices.slice()
+        if (fontFamily.length > 0) {
+            let found = false
+            for (let i = 0; i < items.length; ++i) {
+                if (items[i].value === fontFamily) {
+                    found = true
+                    break
+                }
+            }
+            if (!found)
+                items.push({ label: fontFamily, value: fontFamily })
         }
-        if (fontFamily.length > 0 && values.indexOf(fontFamily) < 0)
-            items.push({ label: fontFamily, value: fontFamily })
         return items
     }
 
-    readonly property int fontIndex: {
-        for (let i = 0; i < fontModel.length; ++i) {
-            if (fontModel[i].value === fontFamily)
-                return i
-        }
-        return 0
-    }
+    readonly property string fontNote: usesSystemFonts
+        ? qsTr("%1 font families available on this system. Common CJK families are listed first.")
+              .arg(fontCount)
+        : qsTr("System font catalog unavailable. Showing the curated family list.")
 
     readonly property var swatches: [
         { key: "ivory", label: qsTr("Ivory"), value: whiteColor },
@@ -196,11 +219,6 @@ Item {
             hexField.text = hexFor(root.color)
     }
 
-    function _syncFont() {
-        if (typeof fontBox !== "undefined" && fontBox !== null)
-            fontBox.currentIndex = root.fontIndex
-    }
-
     function _syncText() {
         if (typeof editor === "undefined" || editor === null)
             return
@@ -220,7 +238,6 @@ Item {
         outline = true
         color = peachColor
         _syncText()
-        _syncFont()
         _syncHex()
     }
 
@@ -229,7 +246,6 @@ Item {
             return
         _syncText()
     }
-    onFontFamilyChanged: Qt.callLater(_syncFont)
     onFontSizeChanged: {
         const clamped = Math.max(minFontSize, Math.min(maxFontSize, Math.round(fontSize)))
         if (fontSize !== clamped) {
@@ -254,7 +270,6 @@ Item {
     Component.onCompleted: {
         _ready = true
         _syncText()
-        _syncFont()
         _syncHex()
         if (sizeSlider)
             sizeSlider.value = fontSize
@@ -364,59 +379,27 @@ Item {
                     font.pixelSize: Theme.fontSmall
                 }
 
-                ComboBox {
-                    id: fontBox
+                FontPicker {
+                    id: fontPicker
                     objectName: "text-panel-font"
                     Layout.fillWidth: true
                     Layout.preferredHeight: Theme.controlHeight
                     model: root.fontModel
-                    textRole: "label"
-                    valueRole: "value"
+                    currentValue: root.fontFamily
                     enabled: root.controlsEnabled
-                    font.pixelSize: Theme.fontSmall
+                    accessibleName: qsTr("Font family")
+                    accessibleDescription: qsTr("Typeface used to render the text")
 
-                    Accessible.role: Accessible.ComboBox
-                    Accessible.name: qsTr("Font family")
-                    Accessible.description: qsTr("Typeface used to render the text")
-
-                    onActivated: function(index) {
-                        const chosen = root.fontModel[index]
-                        const value = chosen ? chosen.value : ""
+                    onFamilyChosen: function(value) {
                         root.fontFamily = value
                         root.styleEdited("font", value)
-                    }
-
-                    background: Rectangle {
-                        radius: Theme.radiusSm
-                        color: Theme.background
-                        border.width: fontBox.activeFocus ? Theme.focusRingWidth : Theme.borderWidth
-                        border.color: fontBox.activeFocus ? Theme.accent : root.theme.border
-                    }
-
-                    contentItem: Text {
-                        leftPadding: Theme.spacingSm
-                        rightPadding: Theme.spacingSm
-                        text: fontBox.displayText
-                        color: fontBox.enabled ? root.theme.text : Theme.textTertiary
-                        font.pixelSize: Theme.fontSmall
-                        verticalAlignment: Text.AlignVCenter
-                        elide: Text.ElideRight
-                    }
-
-                    indicator: NekoIcon {
-                        x: fontBox.width - width - Theme.spacingSm
-                        y: (fontBox.height - height) / 2
-                        width: Theme.iconSizeSm
-                        height: Theme.iconSizeSm
-                        name: "chevronDown"
-                        color: fontBox.enabled ? root.theme.muted : Theme.textTertiary
                     }
                 }
 
                 Text {
                     objectName: "text-panel-font-note"
                     Layout.fillWidth: true
-                    text: qsTr("Fonts are listed CJK-first. Missing glyphs fall back to Noto Sans CJK and the system sans-serif.")
+                    text: root.fontNote
                     color: Theme.textTertiary
                     font.pixelSize: Theme.fontCaption
                     lineHeight: Theme.lineHeightNormal
