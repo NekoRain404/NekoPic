@@ -93,6 +93,8 @@ ApplicationWindow {
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
     Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "eye" }
     Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "crop" }
+    Action { id: zoomInAction; text: qsTr("Zoom in"); shortcut: "Ctrl+="; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1.2) }
+    Action { id: zoomOutAction; text: qsTr("Zoom out"); shortcut: "Ctrl+-"; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1 / 1.2) }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
     Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
     FileDialog {
@@ -296,7 +298,7 @@ ApplicationWindow {
         Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
         Menu {
             title: qsTr("View")
-            MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
+            MenuItem { action: zoomInAction } MenuItem { action: zoomOutAction } MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
             MenuItem { action: commandPaletteAction } MenuSeparator {}
             MenuItem { text: qsTr("Follow system theme"); checkable: true; checked: window.followSystemTheme; onTriggered: window.followSystemTheme = checked }
             MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; enabled: !window.followSystemTheme; onTriggered: window.darkTheme = checked }
@@ -545,6 +547,10 @@ ApplicationWindow {
               run: function() { canvasSizeDialog.open() } },
             { title: shortcutsAction.text, detail: qsTr("Help"), shortcut: "F1",
               run: function() { shortcutsDialog.open() } },
+            { title: zoomInAction.text, detail: qsTr("View"), shortcut: "Ctrl+=", enabled: zoomInAction.enabled,
+              run: function() { canvas.changeZoom(1.2) } },
+            { title: zoomOutAction.text, detail: qsTr("View"), shortcut: "Ctrl+-", enabled: zoomOutAction.enabled,
+              run: function() { canvas.changeZoom(1 / 1.2) } },
             { title: fitAction.text, detail: qsTr("View"), shortcut: "Ctrl+0", enabled: fitAction.enabled,
               run: function() { canvas.fitImage() } },
             { title: actualAction.text, detail: qsTr("View"), shortcut: "Ctrl+1", enabled: actualAction.enabled,
