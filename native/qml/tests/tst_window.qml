@@ -685,6 +685,18 @@ TestCase {
             const m2 = keyEvent(Qt.Key_M, false)
             window.handleCanvasKeyPress(m2)
             verify(!canvas.compareActive)
+
+            // Moving focus into a field while the key is still held must not
+            // leave a stuck compare/pan override behind.
+            const keyScope = findChild(window, "keyScope")
+            keyScope.forceActiveFocus()
+            tryVerify(function() { return !window.textInputFocused }, 1500)
+            const held = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyPress(held)
+            verify(canvas.compareActive)
+            field.forceActiveFocus()
+            tryVerify(function() { return window.textInputFocused && !canvas.compareActive }, 1500)
+            verify(!window.compareHeld)
         } finally {
             resetEditor()
             window.destroy()
@@ -747,6 +759,45 @@ TestCase {
             inspector.autoEnhanceRequested()
             compare(editor.autoEnhanceCalls, 1)
             compare(window.transientStatus, qsTr("Auto enhance"))
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function isDescendantOf(item, ancestor) {
+        while (item !== null && item !== undefined) {
+            if (item === ancestor) return true
+            item = item.parent
+        }
+        return false
+    }
+    function test_keyboardScopeStaysInFocusChain() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const keyScope = findChild(window, "keyScope")
+            verify(keyScope !== null)
+            verify(!keyScope.activeFocusOnTab, "container must not join the Tab order")
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            // With no tool focused, the window's active focus is the scope itself.
+            tryVerify(function() { return window.activeFocusItem === keyScope }, 1500)
+
+            // Tool overlays take focus, but remain descendants of the scope, so
+            // unhandled Space/M/Escape events still bubble to it.
+            const tools = ["select", "brush", "text", "shapes", "mosaic", "eye", "crop"]
+            for (let i = 0; i < tools.length; ++i) {
+                window.activeTool = tools[i]
+                tryVerify(function() {
+                    return window.activeFocusItem !== null
+                        && isDescendantOf(window.activeFocusItem, keyScope)
+                }, 1500)
+            }
+            window.activeTool = "adjust"
+            tryVerify(function() { return window.activeFocusItem === keyScope }, 1500)
         } finally {
             resetEditor()
             window.destroy()

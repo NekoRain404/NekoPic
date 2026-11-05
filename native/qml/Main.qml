@@ -110,6 +110,21 @@ ApplicationWindow {
         compareHeld = false
         if (canvas) canvas.compareActive = false
     }
+    function keyboardScopeContains(item) {
+        while (item !== null && item !== undefined) {
+            if (item === shellLayout) return true
+            item = item.parent
+        }
+        return false
+    }
+    // Tools without a focusable overlay (mosaic) and closed dialogs can leave
+    // focus on the window root. Without this, Space/M/Escape would never reach
+    // the keyboard scope, so fall back to it once the current transition ends.
+    function restoreKeyboardFocus() {
+        if (!shellLayout) return
+        if (!keyboardScopeContains(activeFocusItem))
+            shellLayout.forceActiveFocus(Qt.OtherFocusReason)
+    }
     function exitActiveTool() {
         if (activeTool === "adjust") return false
         if (canvas) {
@@ -265,9 +280,15 @@ ApplicationWindow {
         if (activeTool === "adjust" || activeTool === "filters")
             inspector.currentTab = activeTool === "filters" ? 1 : 0
         if (canvas) canvas.cancelPendingGesture()
+        if (activeTool === "text") refreshTextPanel()
         showStatus(toolLabel(activeTool))
+        Qt.callLater(window.restoreKeyboardFocus)
     }
-    onBlockingModalChanged: if (blockingModal) resetInteractionOverrides()
+    onBlockingModalChanged: {
+        if (blockingModal) resetInteractionOverrides()
+        else Qt.callLater(window.restoreKeyboardFocus)
+    }
+    onTextInputFocusedChanged: if (textInputFocused) resetInteractionOverrides()
     onActiveChanged: if (!active) resetInteractionOverrides()
     onClosing: function(close) {
         const shouldConfirm = typeof settings === "undefined" || settings.confirmOnClose
@@ -634,6 +655,7 @@ ApplicationWindow {
 
     ColumnLayout {
         id: shellLayout
+        objectName: "keyScope"
         anchors.fill: parent; spacing: 0
         focus: true
         activeFocusOnTab: false
