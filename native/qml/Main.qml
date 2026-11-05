@@ -140,7 +140,10 @@ ApplicationWindow {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
         function onImageSaved() {
-            if (!window.saveBeforePending) return
+            if (!window.saveBeforePending) {
+                window.showStatus(qsTr("Image saved"))
+                return
+            }
             window.saveBeforePending = false
             if (window.closingRequested) {
                 window.discardConfirmed = true
