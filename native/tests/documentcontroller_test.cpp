@@ -1,18 +1,57 @@
 #include "app/documentcontroller.h"
 #include "core/adjustments.h"
 #include "core/filterpresets.h"
+#include "document/objectlayer.h"
+#include "document/shapeobject.h"
 
 #include <QImage>
 #include <QImageReader>
 #include <QColorSpace>
+#include <QLinearGradient>
+#include <QPainter>
 #include <QRectF>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QThreadPool>
 #include <QtTest>
 #include <limits>
+#include <memory>
 
 namespace {
+QImage gradientImage(int width, int height)
+{
+    QImage image(width, height, QImage::Format_RGB32);
+    QPainter painter(&image);
+    QLinearGradient gradient(0, 0, width, height);
+    gradient.setColorAt(0.0, QColor(30, 60, 90));
+    gradient.setColorAt(0.5, QColor(140, 110, 80));
+    gradient.setColorAt(1.0, QColor(220, 200, 170));
+    painter.fillRect(image.rect(), gradient);
+    return image;
+}
+
+// Independent full-resolution reference: adjustments followed by the same
+// rectangle the controller created through addShape().
+QImage composeWithRectangle(const QImage &base,
+                            const NekoPic::Adjustments::Parameters &parameters,
+                            const QRectF &rect,
+                            const QPointF &translation = QPointF())
+{
+    QImage expected = NekoPic::Adjustments::apply(base, parameters);
+    NekoPic::Document::ObjectLayer layer;
+    auto shape = std::make_unique<NekoPic::Document::ShapeObject>(
+        NekoPic::Document::ShapeKind::Rectangle);
+    shape->setRect(rect.normalized());
+    shape->setCornerRadius(0.0);
+    shape->setFillColor(QColor(Qt::red));
+    shape->setStrokeColor(QColor(Qt::black));
+    shape->setStrokeWidth(2.0);
+    shape->setTranslation(translation);
+    layer.add(std::move(shape));
+    layer.renderOnto(expected);
+    return expected;
+}
+
 QImage mosaicPattern()
 {
     QImage image(24, 16, QImage::Format_RGBA64);
@@ -56,7 +95,178 @@ private slots:
     void mosaicEditsAreUndoable();
     void mosaicPreservesParametersThroughTransforms();
     void invalidMosaicInputsDoNotEdit();
+    void interactiveProxyPreviewCommitsFullResolution();
+    void objectEditAfterAdjustmentMatchesFullCompose();
+    void undoRedoKeepsAdjustedBaseCacheConsistent();
 };
+
+void DocumentControllerTest::interactiveProxyPreviewCommitsFullResolution()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    // Just above the 2.5 MP proxy threshold, so interactive previews take the
+    // downscaled path while the commit must stay full resolution.
+    const QImage source = gradientImage(1600, 1600);
+    QVERIFY(source.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 10000);
+    const QImage original = controller.image();
+
+    const QRectF rect(100, 120, 220, 180);
+    controller.addShape(QStringLiteral("rectangle"), rect, Qt::red, Qt::black, 2.0, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 10000);
+    const QImage before = controller.image();
+
+    controller.beginAdjustment(QStringLiteral("clarity"));
+    controller.previewAdjustment(QStringLiteral("clarity"), 40.0);
+    QTRY_VERIFY_WITH_TIMEOUT(controller.image() != before, 10000);
+    // The proxy canvas is scaled back up: image_ stays at full source size and
+    // no history is written for transient previews.
+    QCOMPARE(controller.image().size(), source.size());
+    QVERIFY(controller.busy());
+
+    const QImage firstPreview = controller.image();
+    controller.previewAdjustment(QStringLiteral("clarity"), 55.0);
+    QTRY_VERIFY_WITH_TIMEOUT(controller.image() != firstPreview, 10000);
+    QCOMPARE(controller.image().size(), source.size());
+
+    controller.finishAdjustment(QStringLiteral("clarity"), 40.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 10000);
+
+    // Finishing must recompute at full resolution and be bit-identical to a
+    // direct Adjustments::apply() plus object compositing.
+    NekoPic::Adjustments::Parameters parameters;
+    parameters.clarity = 0.4;
+    const QImage expected = composeWithRectangle(controller.baseImage(), parameters, rect);
+    QCOMPARE(controller.image(), expected);
+    QCOMPARE(controller.image().size(), source.size());
+    QVERIFY(controller.canUndo());
+    // Exactly one history entry for the commit; the previews added none.
+    controller.undo();
+    QCOMPARE(controller.image(), before);
+    controller.undo();
+    QCOMPARE(controller.image(), original);
+    QVERIFY(!controller.canUndo());
+}
+
+void DocumentControllerTest::objectEditAfterAdjustmentMatchesFullCompose()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QImage source = gradientImage(96, 64);
+    QVERIFY(source.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+    const QRectF rect(12, 10, 30, 22);
+    controller.addShape(QStringLiteral("rectangle"), rect, Qt::red, Qt::black, 2.0, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto ids = controller.objectIds();
+    QCOMPARE(ids.size(), 1);
+    const quint64 shape = ids.first().toULongLong();
+
+    controller.beginAdjustment(QStringLiteral("brightness"));
+    controller.finishAdjustment(QStringLiteral("brightness"), 40.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+    const QImage base = controller.baseImage();
+    NekoPic::Adjustments::Parameters parameters;
+    parameters.brightness = 0.4;
+    // Sanity: the committed adjustment matches a full compose.
+    QCOMPARE(controller.image(), composeWithRectangle(base, parameters, rect));
+
+    // First edit after the adjustment fills the adapted-base cache.
+    controller.moveObject(shape, 4.0, 6.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.image(),
+             composeWithRectangle(base, parameters, rect, QPointF(4.0, 6.0)));
+
+    // Subsequent edit reuses the cache; pixels must still match a full compose.
+    controller.moveObject(shape, -2.0, 3.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.image(),
+             composeWithRectangle(base, parameters, rect, QPointF(2.0, 9.0)));
+
+    // Hiding the only object exposes the cached adjusted base exactly.
+    QVERIFY(controller.setObjectVisible(shape, false));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.image(), NekoPic::Adjustments::apply(base, parameters));
+
+    // A parameter change invalidates the cache; the next object edit must use
+    // the new adjustment values.
+    controller.beginAdjustment(QStringLiteral("contrast"));
+    controller.finishAdjustment(QStringLiteral("contrast"), 25.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    parameters.contrast = 0.25;
+    QVERIFY(controller.setObjectVisible(shape, true));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.image(),
+             composeWithRectangle(base, parameters, rect, QPointF(2.0, 9.0)));
+}
+
+void DocumentControllerTest::undoRedoKeepsAdjustedBaseCacheConsistent()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QImage source = gradientImage(96, 64);
+    QVERIFY(source.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+    const QRectF rect(12, 10, 30, 22);
+    controller.addShape(QStringLiteral("rectangle"), rect, Qt::red, Qt::black, 2.0, 0.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const quint64 shape = controller.objectIds().first().toULongLong();
+    const QImage unadjusted = controller.image();
+
+    controller.beginAdjustment(QStringLiteral("brightness"));
+    controller.finishAdjustment(QStringLiteral("brightness"), 40.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const QImage adjusted = controller.image();
+
+    controller.moveObject(shape, 3.0, 2.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const QImage movedOnce = controller.image();
+
+    controller.moveObject(shape, 1.0, 1.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const QImage movedTwice = controller.image();
+
+    // Walk the cached object edits backwards and forwards.
+    controller.undo();
+    QCOMPARE(controller.image(), movedOnce);
+    controller.undo();
+    QCOMPARE(controller.image(), adjusted);
+    controller.redo();
+    QCOMPARE(controller.image(), movedOnce);
+    controller.redo();
+    QCOMPARE(controller.image(), movedTwice);
+    controller.undo();
+    QCOMPARE(controller.image(), movedOnce);
+    controller.undo();
+    QCOMPARE(controller.image(), adjusted);
+
+    // Undo the adjustment itself: the restored base/parameters must not reuse
+    // the adjusted pixels.
+    controller.undo();
+    QCOMPARE(controller.image(), unadjusted);
+    QCOMPARE(controller.adjustmentValues().value(QStringLiteral("brightness")).toDouble(), 0.0);
+
+    controller.moveObject(shape, 0.0, 5.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const NekoPic::Adjustments::Parameters defaults;
+    const QImage expected =
+        composeWithRectangle(controller.baseImage(), defaults, rect, QPointF(0.0, 5.0));
+    QCOMPARE(controller.image(), expected);
+
+    controller.undo();
+    QCOMPARE(controller.image(), unadjusted);
+    controller.redo();
+    QCOMPARE(controller.image(), expected);
+}
 
 void DocumentControllerTest::mosaicEditsAreUndoable_data()
 {

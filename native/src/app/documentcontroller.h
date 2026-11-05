@@ -196,6 +196,14 @@ private:
         std::shared_ptr<NekoPic::Document::ObjectLayer> objects;
     };
 
+    // Result of an object edit rendered over a cached adjusted base. The
+    // worker returns the adjusted base as well so a cache miss can populate
+    // the cache without a second full-resolution adjustment pass.
+    struct ObjectEditResult {
+        QImage image;
+        QImage adjustedBase;
+    };
+
     void startTransform(Transform transform);
     void setBusy(bool busy);
     void setError(const QString &error);
@@ -205,6 +213,18 @@ private:
     static QImage composeImage(const QImage &base,
                                const NekoPic::Adjustments::Parameters &parameters,
                                const NekoPic::Document::ObjectLayer *objects);
+
+    // Exact field-by-field comparison used for the adjusted-base cache key.
+    // Deliberately avoids serialisation: object edits run on a hot path.
+    static bool parametersEqual(const NekoPic::Adjustments::Parameters &a,
+                                const NekoPic::Adjustments::Parameters &b);
+
+    // Downscaled source for interactive adjustment previews. Built lazily on
+    // the GUI thread and reused until the base image or the active adjustment
+    // source changes.
+    QImage previewProxySource(const QImage &source);
+    bool hasValidAdjustedBaseCache() const;
+    void invalidateAdjustedBaseCache();
 
     void applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters,
                    std::shared_ptr<NekoPic::Document::ObjectLayer> objects = {});
@@ -233,6 +253,16 @@ private:
     bool adjustmentFinishing_ = false;
     QString adjustmentKey_;
     QImage adjustmentSource_;
+    // Display-resolution proxy source, keyed by the base image identity and
+    // the adjustmentSource_ of the drag that asked for it.
+    QImage previewProxySource_;
+    qint64 previewProxySourceKey_ = 0;
+    qint64 previewProxyAdjustmentKey_ = 0;
+    // Adjustments::apply(baseImage_, parameters_), before object compositing.
+    QImage adjustedBaseCache_;
+    NekoPic::Adjustments::Parameters adjustedBaseCacheParameters_;
+    qint64 adjustedBaseCacheSourceKey_ = 0;
+    bool adjustedBaseCacheValid_ = false;
     double adjustmentValue_ = 0.0;
     quint64 adjustmentSequence_ = 0;
     quint64 revision_ = 0;

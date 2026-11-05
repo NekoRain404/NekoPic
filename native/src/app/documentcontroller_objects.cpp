@@ -34,24 +34,40 @@ void DocumentController::startObjectEdit(
 
     const auto base = baseImage_;
     const auto parameters = parameters_;
+    // Object edits never change the base or the adjustment parameters, so the
+    // adjusted pixels can be reused. A miss is filled by the worker and stored
+    // for the next edit; a hit only repaints the object layer.
+    const QImage cachedAdjustedBase =
+        hasValidAdjustedBaseCache() ? adjustedBaseCache_ : QImage();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QImage>(this);
+    auto *watcher = new QFutureWatcher<ObjectEditResult>(this);
     connect(watcher, &QFutureWatcherBase::finished, this,
             [this, watcher, layer, base, parameters] {
-        QImage rendered;
+        ObjectEditResult result;
         bool failed = false;
-        try { rendered = watcher->result(); } catch (...) { failed = true; }
+        try { result = watcher->result(); } catch (...) { failed = true; }
         watcher->deleteLater();
-        if (failed || rendered.isNull()) {
+        if (failed || result.image.isNull() || result.adjustedBase.isNull()) {
             setError(tr("Could not render the object layer."));
         } else {
-            applyEdit(std::move(rendered), base, parameters, layer);
+            adjustedBaseCache_ = std::move(result.adjustedBase);
+            adjustedBaseCacheParameters_ = parameters;
+            adjustedBaseCacheSourceKey_ = base.cacheKey();
+            adjustedBaseCacheValid_ = true;
+            applyEdit(std::move(result.image), base, parameters, layer);
         }
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([base, parameters, layer] {
-        return DocumentController::composeImage(base, parameters, layer.get());
+    watcher->setFuture(QtConcurrent::run(
+        [base, parameters, layer, cachedAdjustedBase] {
+        QImage adjustedBase = cachedAdjustedBase;
+        if (adjustedBase.isNull())
+            adjustedBase = NekoPic::Adjustments::apply(base, parameters);
+        if (adjustedBase.isNull()) return ObjectEditResult{};
+        QImage rendered = adjustedBase;
+        if (!layer->isEmpty()) layer->renderOnto(rendered);
+        return ObjectEditResult{std::move(rendered), std::move(adjustedBase)};
     }));
 }
 
