@@ -99,6 +99,7 @@ TestCase {
         overlay.viewScale = 0.25
         overlay.visibleRect = Qt.rect(0, 0, overlay.width, overlay.height)
         overlay.movePreviewReady = false
+        overlay.snapEnabled = false
         overlay.clearMovePreview()
         overlay.clearSelection()
         overlay.active = true
@@ -272,6 +273,22 @@ TestCase {
         compare(overlay.previewDelta, Qt.point(0, 0))
         // Selection survives the move.
         compare(overlay.selectedId, 7)
+    }
+
+    function test_dragSnapsToImageCentreAndShowsGuide() {
+        overlay.snapEnabled = true
+        overlay.selectAt(200, 100)
+        compare(overlay.selectedId, 7)
+        mousePress(overlay, 50, 25)
+        // Object centre (200,100) → image centre (500,250) is delta (300,150)
+        // in document pixels, i.e. 75×37.5 display pixels at 25% zoom.
+        mouseMove(overlay, 125, 62.5)
+        compare(overlay.previewDelta, Qt.point(300, 150))
+        compare(overlay._snapGuideX, 500)
+        compare(overlay._snapGuideY, 250)
+        mouseRelease(overlay, 125, 62.5)
+        compare(moves.count, 1)
+        overlay.snapEnabled = false
     }
 
     function test_livePreviewMovesBoxAndKeepsSettleOffset() {

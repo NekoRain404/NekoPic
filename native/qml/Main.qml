@@ -732,7 +732,11 @@ ApplicationWindow {
             const id = editor.objectAt(anchor.x, anchor.y)
             if (id !== 0) {
                 canvas.setSelectionIds([id])
-                window.refreshTextPanel()
+                // A placed text object is almost always moved or restyled
+                // next. Land in Select with the new object already selected so
+                // it can be dragged immediately; T returns to adding text.
+                window.activeTool = "select"
+                window.showStatus(qsTr("Text placed — drag to move"))
             }
         }
         function onImageOpened(url) {

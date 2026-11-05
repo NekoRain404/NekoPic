@@ -210,6 +210,10 @@ Item {
     // Kept after release until the controller's committed bounds arrive, so
     // the crop and selection box do not snap back for a frame.
     property point _settledDelta: Qt.point(0, 0)
+    // Magnetic guides: document-space coordinates, -1 when inactive.
+    property real _snapGuideX: -1
+    property real _snapGuideY: -1
+    property bool snapEnabled: true
 
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Object selection")
@@ -506,6 +510,8 @@ Item {
             return false
         }
         _settledDelta = Qt.point(0, 0)
+        _snapGuideX = -1
+        _snapGuideY = -1
         _dragStartBounds = b
         _dragDelta = Qt.point(0, 0)
         _dragging = true
@@ -520,18 +526,67 @@ Item {
         _dragging = false
         _dragDelta = Qt.point(0, 0)
         _dragStartBounds = _emptyRect()
+        _snapGuideX = -1
+        _snapGuideY = -1
         preview.requestPaint()
     }
 
     function _updateDrag(imageX, imageY) {
-        const d = _clampedDeltaFor(_dragStartBounds,
-                                   imageX - _pressImage.x,
-                                   imageY - _pressImage.y)
+        const raw = Qt.point(imageX - _pressImage.x, imageY - _pressImage.y)
+        const d = _snapDelta(_dragStartBounds, raw.x, raw.y)
         if (d.x === _dragDelta.x && d.y === _dragDelta.y)
             return
         _dragDelta = d
         root.movePreview(_selectedIds.slice(), d.x, d.y)
         preview.requestPaint()
+    }
+
+    /*!
+        Magnetic guides for the image centre and edges. The threshold is
+        expressed in display pixels so the feel stays constant at any zoom;
+        the returned delta is still in document pixels. Alt is not required:
+        a small pull is deliberate, like a ruler detent.
+    */
+    function _snapDelta(bounds, dx, dy) {
+        _snapGuideX = -1
+        _snapGuideY = -1
+        if (!snapEnabled || !(bounds.width > 0) || !(bounds.height > 0))
+            return _clampedDeltaFor(bounds, dx, dy)
+
+        const thresholdX = 7 / Math.max(scaleX, 0.0001)
+        const thresholdY = 7 / Math.max(scaleY, 0.0001)
+        const centerX = bounds.x + bounds.width / 2
+        const centerY = bounds.y + bounds.height / 2
+        const candidatesX = [
+            { target: imageWidth / 2, current: centerX + dx, guide: imageWidth / 2 },
+            { target: 0, current: bounds.x + dx, guide: 0 },
+            { target: imageWidth, current: bounds.x + bounds.width + dx, guide: imageWidth }
+        ]
+        const candidatesY = [
+            { target: imageHeight / 2, current: centerY + dy, guide: imageHeight / 2 },
+            { target: 0, current: bounds.y + dy, guide: 0 },
+            { target: imageHeight, current: bounds.y + bounds.height + dy, guide: imageHeight }
+        ]
+
+        let bestX = thresholdX
+        for (let i = 0; i < candidatesX.length; ++i) {
+            const distance = Math.abs(candidatesX[i].current - candidatesX[i].target)
+            if (distance < bestX) {
+                bestX = distance
+                dx += candidatesX[i].target - candidatesX[i].current
+                _snapGuideX = candidatesX[i].guide
+            }
+        }
+        let bestY = thresholdY
+        for (let i = 0; i < candidatesY.length; ++i) {
+            const distance = Math.abs(candidatesY[i].current - candidatesY[i].target)
+            if (distance < bestY) {
+                bestY = distance
+                dy += candidatesY[i].target - candidatesY[i].current
+                _snapGuideY = candidatesY[i].guide
+            }
+        }
+        return _clampedDeltaFor(bounds, dx, dy)
     }
 
     function _emitMove(ids, dx, dy) {
@@ -828,6 +883,40 @@ Item {
                     if (typeof c.setLineDash === "function")
                         c.setLineDash([])
                 }
+            }
+
+            // Magnetic guides: image centre or edge, only while a drag snaps.
+            if (root._snapGuideX >= 0) {
+                const gx = root._snapGuideX * root.scaleX
+                c.beginPath()
+                c.moveTo(gx, root.visibleRect.y)
+                c.lineTo(gx, root.visibleRect.y + root.visibleRect.height)
+                c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.45)
+                c.lineWidth = 3
+                c.stroke()
+                c.strokeStyle = Theme.accent
+                c.lineWidth = 1
+                if (typeof c.setLineDash === "function")
+                    c.setLineDash([3, 4])
+                c.stroke()
+                if (typeof c.setLineDash === "function")
+                    c.setLineDash([])
+            }
+            if (root._snapGuideY >= 0) {
+                const gy = root._snapGuideY * root.scaleY
+                c.beginPath()
+                c.moveTo(root.visibleRect.x, gy)
+                c.lineTo(root.visibleRect.x + root.visibleRect.width, gy)
+                c.strokeStyle = Theme.alpha(Theme.contrastInk, 0.45)
+                c.lineWidth = 3
+                c.stroke()
+                c.strokeStyle = Theme.accent
+                c.lineWidth = 1
+                if (typeof c.setLineDash === "function")
+                    c.setLineDash([3, 4])
+                c.stroke()
+                if (typeof c.setLineDash === "function")
+                    c.setLineDash([])
             }
 
             // Corner handles are visual only; resizing is a later command.

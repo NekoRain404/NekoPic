@@ -616,6 +616,33 @@ TestCase {
         }
     }
 
+    function test_placedTextLandsInSelectWithSelection() {
+        editor.hasImage = true
+        editor.imageWidth = 800
+        editor.imageHeight = 600
+        const component = Qt.createComponent("../Main.qml")
+        compare(component.status, Component.Ready, component.errorString())
+        const window = component.createObject(null)
+        try {
+            window.activeTool = "text"
+            wait(0)
+            window.createTextAt(120, 80)
+            // The controller finishes adding the object and busy drops.
+            editor.busy = true
+            editor.busy = false
+            tryVerify(function() { return window.activeTool === "select" }, 1000)
+            const canvas = findChild(window, "editorCanvas")
+            verify(canvas !== null)
+            compare(canvas.selectionIds.length, 1)
+            compare(canvas.selectionIds[0], 7)
+        } finally {
+            window.destroy()
+            editor.hasImage = false
+            editor.imageWidth = 0
+            editor.imageHeight = 0
+        }
+    }
+
     function test_mosaicToolRoutesParametersAndLocksWhileBusy() {
         const component = Qt.createComponent("../Main.qml")
         const window = component.createObject(null)
