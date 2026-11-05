@@ -336,7 +336,7 @@ TestCase {
     function test_shortcutsAreGroupedAndAccurate() {
         const dialog = make(shortcutsComponent)
         verify(dialog !== null)
-        compare(dialog.groups.length, 4)
+        compare(dialog.groups.length, 5)
         verify(dialog.entries.length > 0)
 
         for (let i = 0; i < dialog.groups.length; ++i)

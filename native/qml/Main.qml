@@ -5,6 +5,7 @@ import QtQuick.Dialogs
 import QtCore
 import "UI"
 import "shell"
+import "dialogs"
 
 ApplicationWindow {
     id: window
@@ -18,10 +19,14 @@ ApplicationWindow {
     property bool saveBeforePending: false
     property bool closingRequested: false
     property url pendingImage
+    property url pendingExportUrl
     property string activeTool: "adjust"
     property string transientStatus: ""
     property bool reduceMotion: false
     function showStatus(message) { transientStatus = message; statusTimer.restart() }
+    function formatSupportsQuality(id) {
+        return ["jpeg", "webp", "avif", "heic", "heif", "jxl", "tiff", "png"].indexOf(id) >= 0
+    }
     function applyCrop(area) {
         if (!editor.hasImage || editor.busy) return
         editor.cropImage(area)
@@ -83,6 +88,9 @@ ApplicationWindow {
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }
     Action { id: flipVerticalAction; text: qsTr("Flip vertically"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipVertical() }
+    Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: resizeDialog.open() }
+    Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: canvasSizeDialog.open() }
+    Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
     Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "eye" }
     Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "crop" }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
@@ -112,7 +120,17 @@ ApplicationWindow {
             return qsTr(format.label) + " (" + format.patterns.join(" ") + ")"
         })
         defaultSuffix: formats[selectedFormat].suffix
-        onAccepted: editor.saveAs(selectedFile, formats[selectedFormat].id)
+        onAccepted: {
+            const format = formats[selectedFormat]
+            window.pendingExportUrl = selectedFile
+            exportDialog.formatId = format.id
+            exportDialog.formatLabel = format.label
+            exportDialog.fileName = selectedFile.toString().split("/").pop()
+            exportDialog.supportsQuality = window.formatSupportsQuality(format.id)
+            exportDialog.initialQuality = editor.exportQuality >= 0 ? editor.exportQuality : 90
+            exportDialog.initialBackground = editor.jpegBackground
+            exportDialog.open()
+        }
         onRejected: if (window.saveBeforePending) window.saveBeforePending = false
     }
     Dialog {
@@ -169,6 +187,43 @@ ApplicationWindow {
                 font.pixelSize: Theme.fontCaption
             }
         }
+    }
+    ExportDialog {
+        id: exportDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        busy: editor.busy
+        onExportRequested: function(format, quality, background) {
+            editor.exportQuality = quality
+            editor.jpegBackground = background
+            editor.saveAs(window.pendingExportUrl, format)
+        }
+        onRejected: if (window.saveBeforePending) window.saveBeforePending = false
+    }
+    ResizeImageDialog {
+        id: resizeDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        imageWidth: editor.imageWidth
+        imageHeight: editor.imageHeight
+        busy: editor.busy
+        onResizeRequested: function(width, height) { editor.resizeImage(width, height) }
+    }
+    CanvasSizeDialog {
+        id: canvasSizeDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        imageWidth: editor.imageWidth
+        imageHeight: editor.imageHeight
+        busy: editor.busy
+        onCanvasResizeRequested: function(width, height, anchor, background) {
+            editor.resizeCanvas(width, height, anchor, background)
+        }
+    }
+    ShortcutsDialog {
+        id: shortcutsDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
     }
     Connections {
         target: editor
@@ -238,7 +293,7 @@ ApplicationWindow {
             MenuItem { action: saveAsAction }
         }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } MenuItem { action: eyedropperAction } }
+        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
         Menu {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
@@ -484,6 +539,12 @@ ApplicationWindow {
               run: function() { window.activeTool = "crop" } },
             { title: eyedropperAction.text, detail: qsTr("Tools"), shortcut: "I", enabled: eyedropperAction.enabled,
               run: function() { window.activeTool = "eye" } },
+            { title: resizeImageAction.text, detail: qsTr("Image"), enabled: resizeImageAction.enabled,
+              run: function() { resizeDialog.open() } },
+            { title: canvasSizeAction.text, detail: qsTr("Image"), enabled: canvasSizeAction.enabled,
+              run: function() { canvasSizeDialog.open() } },
+            { title: shortcutsAction.text, detail: qsTr("Help"), shortcut: "F1",
+              run: function() { shortcutsDialog.open() } },
             { title: fitAction.text, detail: qsTr("View"), shortcut: "Ctrl+0", enabled: fitAction.enabled,
               run: function() { canvas.fitImage() } },
             { title: actualAction.text, detail: qsTr("View"), shortcut: "Ctrl+1", enabled: actualAction.enabled,

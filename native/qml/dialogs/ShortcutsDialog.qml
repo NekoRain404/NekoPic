@@ -34,15 +34,23 @@ NekoDialog {
             title: qsTr("View"),
             entries: [
                 { action: qsTr("Fit to window"), shortcut: "Ctrl+0" },
-                { action: qsTr("Actual size (100%)"), shortcut: "Ctrl+1" }
+                { action: qsTr("Actual size (100%)"), shortcut: "Ctrl+1" },
+                { action: qsTr("Command palette…"), shortcut: "Ctrl+K" }
             ]
         },
         {
             title: qsTr("Tools"),
             entries: [
                 { action: qsTr("Crop"), shortcut: "C" },
+                { action: qsTr("Eyedropper"), shortcut: "I" },
                 { action: qsTr("Apply crop"), shortcut: "Enter" },
-                { action: qsTr("Cancel crop"), shortcut: "Esc" }
+                { action: qsTr("Cancel crop or eyedropper"), shortcut: "Esc" }
+            ]
+        },
+        {
+            title: qsTr("Help"),
+            entries: [
+                { action: qsTr("Keyboard shortcuts"), shortcut: "F1" }
             ]
         }
     ]
