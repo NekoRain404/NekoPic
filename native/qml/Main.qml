@@ -238,6 +238,7 @@ ApplicationWindow {
     }
     TextDialog {
         id: textDialog
+        objectName: "textDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
         imageWidth: editor.imageWidth

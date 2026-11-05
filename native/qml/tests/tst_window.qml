@@ -40,13 +40,18 @@ TestCase {
         property real mosaicDiameter: 0
         property int mosaicBlockSize: 0
         property int cropCalls: 0
+        property string textCall: ""
         property rect cropArea
         property var readableImagePatterns: ["*.png", "*.PNG"]
         signal errorChanged()
+        signal imageSaved()
         function openImage(url) {}
         function saveImage() {}
         function saveAs(url, format) {}
         function clearError() {}
+        function addText(text, x, y, fontSize, color, alignment) {
+            textCall = text + ":" + x + ":" + y + ":" + fontSize + ":" + alignment
+        }
         function beginAdjustment(key) { adjustmentCall = "begin:" + key }
         function previewAdjustment(key, value) { adjustmentCall = "preview:" + key + ":" + value }
         function finishAdjustment(key, value) { adjustmentCall = "finish:" + key + ":" + value }
@@ -150,6 +155,35 @@ TestCase {
         editor.hasImage = false
         window.destroy()
     }
+    function test_textToolCreatesTextThroughDialog() {
+        editor.hasImage = true
+        editor.imageWidth = 800
+        editor.imageHeight = 600
+        editor.textCall = ""
+        const component = Qt.createComponent("../Main.qml")
+        compare(component.status, Component.Ready, component.errorString())
+        const window = component.createObject(null)
+        try {
+            window.openTextDialog(120, 80)
+            wait(0)
+            const dialog = findChild(window, "textDialog")
+            verify(dialog !== null)
+            const input = findChild(dialog, "text-dialog-text")
+            verify(input !== null)
+            input.text = "Hello"
+            wait(0)
+            mouseClick(findChild(dialog, "text-dialog-accept"))
+            wait(0)
+            verify(editor.textCall.indexOf("Hello:120:80") === 0)
+            compare(window.activeTool, "adjust")
+        } finally {
+            window.destroy()
+            editor.hasImage = false
+            editor.imageWidth = 0
+            editor.imageHeight = 0
+        }
+    }
+
     function test_mosaicToolRoutesParametersAndLocksWhileBusy() {
         const component = Qt.createComponent("../Main.qml")
         const window = component.createObject(null)
