@@ -130,6 +130,36 @@ if(NEKOPIC_WITH_RUST AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/NekoPicRust.c
     include(NekoPicRust)
 endif()
 
+# --- install rules (Linux desktop) ----------------------------------------
+# All dependencies are system Qt libraries or static libraries in this build,
+# so no host-specific install RPATH is needed. Qt may add relocatable $ORIGIN
+# entries; never add build-machine paths here.
+if(UNIX AND NOT APPLE)
+    include(GNUInstallDirs)
+    set(CMAKE_INSTALL_DOCDIR "${CMAKE_INSTALL_DATADIR}/doc/nekopic")
+
+    install(TARGETS nekopic
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/nekopic.desktop"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/nekopic.metainfo.xml"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/nekopic.svg"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps")
+
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../README.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../docs/packaging.md"
+        DESTINATION "${CMAKE_INSTALL_DOCDIR}")
+    # The project has no LICENSE yet; install it automatically once the owner
+    # adds one so binary packages cannot silently omit the chosen license.
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE")
+        install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
+            DESTINATION "${CMAKE_INSTALL_DOCDIR}")
+    endif()
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
     find_package(Qt6 6.5 REQUIRED COMPONENTS Test)
@@ -167,3 +197,6 @@ if(BUILD_TESTING)
         set_tests_properties(qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     endif()
 endif()
+
+# Must stay last: CPack snapshots install rules and target metadata.
+include(NekoPicPackaging)

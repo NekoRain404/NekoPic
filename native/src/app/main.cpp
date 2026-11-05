@@ -46,6 +46,9 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationVersion(QStringLiteral(NEKOPIC_VERSION));
+    // Keep the Wayland app_id / X11 WM_CLASS tied to the installed desktop
+    // entry so the launcher icon, StartupWMClass and task grouping match.
+    QGuiApplication::setDesktopFileName(QStringLiteral("nekopic"));
 
     const auto earlyArguments = app.arguments();
     if (earlyArguments.contains(QStringLiteral("--version"))) {
