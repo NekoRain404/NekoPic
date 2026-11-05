@@ -57,7 +57,10 @@ void DocumentObject::setTranslation(const QPointF &translation)
 
 void DocumentObject::applyTransform(const QTransform &transform)
 {
-    transform_ = transform * transform_;
+    // Qt maps points as p' = p * M. The object's current mapping takes local
+    // coordinates into document space, so the external document-space
+    // transform must be applied after it: p * (current * external).
+    transform_ = transform_ * transform;
 }
 
 QRectF DocumentObject::bounds() const
@@ -101,6 +104,15 @@ bool DocumentObject::hitTest(const QPointF &point, qreal tolerance) const
 std::unique_ptr<DocumentObject> DocumentObject::clone() const
 {
     return cloneImpl();
+}
+
+std::unique_ptr<DocumentObject> DocumentObject::clonePreservingId() const
+{
+    auto copy = cloneImpl();
+    // cloneImpl() allocates a fresh id; history snapshots must keep the
+    // original so selections survive undo/redo.
+    copy->id_ = id_;
+    return copy;
 }
 
 } // namespace NekoPic::Document

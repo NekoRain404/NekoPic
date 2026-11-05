@@ -57,27 +57,36 @@ void DocumentController::startMosaic(std::function<QImage(const QImage &)> opera
     if (qint64(base.width()) * base.height() > 64 * 1024 * 1024
         || base.sizeInBytes() > qsizetype(1024) * 1024 * 1024) return;
     const auto parameters = parameters_;
+    const auto objects = objects_.clone();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, parameters] {
+    auto *watcher = new QFutureWatcher<EditResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         try {
             auto result = watcher->result();
-            if (result.first.isNull() || result.second.isNull())
+            if (result.image.isNull() || result.base.isNull())
                 setError(tr("Could not apply mosaic to the image."));
-            else if (result.second.cacheKey() != baseImage_.cacheKey())
-                applyEdit(std::move(result.first), std::move(result.second), parameters);
+            else if (result.base.cacheKey() != baseImage_.cacheKey())
+                commitEdit(std::move(result));
         } catch (...) {
             setError(tr("Could not apply mosaic to the image."));
         }
         watcher->deleteLater();
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([base, parameters, operation = std::move(operation)] {
+    watcher->setFuture(QtConcurrent::run([base, parameters, objects, operation = std::move(operation)] {
         auto newBase = operation(base);
-        if (newBase.isNull()) return QPair<QImage, QImage>{};
-        if (newBase == base) return qMakePair(base, base);
-        auto rendered = NekoPic::Adjustments::apply(newBase, parameters);
-        return qMakePair(std::move(rendered), std::move(newBase));
+        if (newBase.isNull()) return EditResult{};
+        if (newBase == base) {
+            // Mosaic writes only the base; the live object layer is unchanged.
+            EditResult unchanged;
+            unchanged.image = base;
+            unchanged.base = base;
+            unchanged.parameters = parameters;
+            return unchanged;
+        }
+        // Mosaic is a pixel operation; objects remain above the new pixels.
+        auto rendered = DocumentController::composeImage(newBase, parameters, objects.get());
+        return EditResult{std::move(rendered), std::move(newBase), parameters, nullptr};
     }));
 }

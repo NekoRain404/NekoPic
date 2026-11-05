@@ -18,28 +18,33 @@ void DocumentController::cropImage(const QRectF &area)
     const auto rectangle = clipped.toAlignedRect().intersected(baseImage_.rect());
     if (rectangle.isEmpty() || rectangle == baseImage_.rect()) return;
 
-    const auto source = image_;
     const auto base = baseImage_;
     const auto parameters = parameters_;
+    const auto objects = objects_.clone();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, parameters] {
+    auto *watcher = new QFutureWatcher<EditResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         try {
             auto result = watcher->result();
-            if (result.first.isNull() || result.second.isNull())
+            if (result.image.isNull() || result.base.isNull())
                 setError(tr("Could not crop the image."));
             else
-                applyEdit(std::move(result.first), std::move(result.second), parameters);
+                commitEdit(std::move(result));
         } catch (...) {
             setError(tr("Could not crop the image."));
         }
         watcher->deleteLater();
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([source, base, rectangle] {
-        auto cropped = source.copy(rectangle);
-        auto croppedBase = source.cacheKey() == base.cacheKey() ? cropped : base.copy(rectangle);
-        return qMakePair(std::move(cropped), std::move(croppedBase));
+    watcher->setFuture(QtConcurrent::run([base, parameters, objects, rectangle] {
+        auto croppedBase = base.copy(rectangle);
+        if (croppedBase.isNull()) return EditResult{};
+        // Objects outside the kept rectangle are dropped; survivors move by the
+        // same offset as the pixels. Partial overlaps stay whole and are
+        // clipped visually by the smaller target image.
+        objects->crop(rectangle, -rectangle.topLeft());
+        auto rendered = DocumentController::composeImage(croppedBase, parameters, objects.get());
+        return EditResult{std::move(rendered), std::move(croppedBase), parameters, objects};
     }));
 }

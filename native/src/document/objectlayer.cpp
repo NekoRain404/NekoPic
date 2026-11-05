@@ -197,4 +197,25 @@ void ObjectLayer::crop(const QRect &kept)
     crop(kept, -kept.topLeft());
 }
 
+std::shared_ptr<ObjectLayer> ObjectLayer::clone() const
+{
+    auto copy = std::make_shared<ObjectLayer>();
+    copy->objects_.reserve(objects_.size());
+    for (const auto &object : objects_)
+        copy->objects_.push_back(object->clonePreservingId());
+    return copy;
+}
+
+void ObjectLayer::restoreFrom(const ObjectLayer &other)
+{
+    if (this == &other)
+        return;
+
+    std::vector<std::unique_ptr<DocumentObject>> restored;
+    restored.reserve(other.objects_.size());
+    for (const auto &object : other.objects_)
+        restored.push_back(object->clonePreservingId());
+    objects_ = std::move(restored);
+}
+
 } // namespace NekoPic::Document

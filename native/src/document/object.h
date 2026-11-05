@@ -55,9 +55,10 @@ public:
     QPointF translation() const;
     void setTranslation(const QPointF &translation);
 
-    // Pre-multiplies the external document-space transform: the new mapping
-    // is transform * current, so the object is rotated/flipped/translated
-    // exactly like the pixels it sits on.
+    // Applies a transform expressed in document coordinates after the
+    // object's current mapping (p * current * transform in Qt's row-vector
+    // convention). This rotates/flips/translates the object exactly like the
+    // pixels it sits on.
     void applyTransform(const QTransform &transform);
 
     // Axis-aligned bounding box in document coordinates, after transform.
@@ -73,6 +74,11 @@ public:
 
     // Deep copy with a fresh ObjectId; the copy is independent of this object.
     std::unique_ptr<DocumentObject> clone() const;
+
+    // Deep copy that keeps the source ObjectId. Document history snapshots use
+    // this so undo/redo restores the exact object set, including the ids that a
+    // selection or tool may still refer to. The copy is independent otherwise.
+    std::unique_ptr<DocumentObject> clonePreservingId() const;
 
 protected:
     explicit DocumentObject(ObjectKind kind);

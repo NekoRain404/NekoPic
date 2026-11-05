@@ -43,6 +43,7 @@ bool DocumentController::filterIntensityInteractive() const
 }
 QString DocumentController::errorMessage() const { return error_; }
 bool DocumentController::hasImage() const { return !image_.isNull(); }
+bool DocumentController::hasObjects() const { return !objects_.isEmpty(); }
 int DocumentController::imageWidth() const { return image_.width(); }
 int DocumentController::imageHeight() const { return image_.height(); }
 bool DocumentController::dirty() const { return hasImage() && currentState_ != savedState_; }
@@ -247,6 +248,7 @@ void DocumentController::startAdjustmentWorker()
 {
     const auto source = baseImage_;
     const auto parameters = pendingParameters_;
+    const auto objects = objects_.clone();
     const auto sequence = adjustmentSequence_;
     adjustmentWorkerRunning_ = true;
     auto *watcher = new QFutureWatcher<QImage>(this);
@@ -270,8 +272,8 @@ void DocumentController::startAdjustmentWorker()
             emit documentChanged();
         }
     });
-    watcher->setFuture(QtConcurrent::run([source, parameters] {
-        return NekoPic::Adjustments::apply(source, parameters);
+    watcher->setFuture(QtConcurrent::run([source, parameters, objects] {
+        return DocumentController::composeImage(source, parameters, objects.get());
     }));
 }
 
@@ -327,6 +329,7 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
             image_ = result.image;
             baseImage_ = result.image;
             parameters_ = {};
+            objects_.clear();
             path_ = path;
             history_.clear();
             currentState_ = savedState_ = ++nextState_;
@@ -401,17 +404,29 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
 }
 
 
-void DocumentController::applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters)
+void DocumentController::applyEdit(QImage image, QImage base,
+                                   NekoPic::Adjustments::Parameters parameters,
+                                   std::shared_ptr<NekoPic::Document::ObjectLayer> objects)
 {
     if (image.isNull() || base.isNull()) { setError(tr("Could not transform the image.")); return; }
-    history_.record({image_, baseImage_, parameters_, currentState_});
+    // Snapshot the state being replaced. The clone is never mutated afterwards,
+    // so undo can restore the exact ids and geometry.
+    history_.record({image_, baseImage_, parameters_, objects_.clone(), currentState_});
     image_ = std::move(image);
     baseImage_ = std::move(base);
     parameters_ = parameters;
+    if (objects)
+        objects_ = std::move(*objects);
     currentState_ = ++nextState_;
     ++revision_;
     setError({});
     emit documentChanged();
+}
+
+void DocumentController::commitEdit(EditResult result)
+{
+    applyEdit(std::move(result.image), std::move(result.base), result.parameters,
+              std::move(result.objects));
 }
 
 void DocumentController::rotateClockwise()
@@ -437,60 +452,66 @@ void DocumentController::flipVertical()
 void DocumentController::startTransform(Transform transform)
 {
     if (busy_ || !hasImage()) return;
-    const auto source = image_;
     const auto base = baseImage_;
+    const auto parameters = parameters_;
+    const auto objects = objects_.clone();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
+    auto *watcher = new QFutureWatcher<EditResult>(this);
     connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         try {
             auto result = watcher->result();
-            if (result.first.isNull() || result.second.isNull())
+            if (result.image.isNull() || result.base.isNull())
                 setError(tr("Could not transform the image."));
             else
-                applyEdit(std::move(result.first), std::move(result.second), parameters_);
+                commitEdit(std::move(result));
         } catch (...) {
             setError(tr("Could not transform the image."));
         }
         watcher->deleteLater();
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([source, base, transform] {
-        const auto applyTransform = [transform](const QImage &source) -> QImage {
+    watcher->setFuture(QtConcurrent::run([base, parameters, objects, transform] {
+        QTransform raw;
         switch (transform) {
         case Transform::RotateClockwise:
-            return source.transformed(QTransform().rotate(90));
+            raw.rotate(90);
+            break;
         case Transform::RotateCounterClockwise:
-            return source.transformed(QTransform().rotate(-90));
+            raw.rotate(-90);
+            break;
         case Transform::FlipHorizontal:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
-            return source.flipped(Qt::Horizontal);
-#else
-            return source.mirrored(true, false);
-#endif
+            raw.scale(-1.0, 1.0);
+            break;
         case Transform::FlipVertical:
-#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
-            return source.flipped(Qt::Vertical);
-#else
-            return source.mirrored(false, true);
-#endif
+            raw.scale(1.0, -1.0);
+            break;
         }
-        return {};
-        };
-        auto transformed = applyTransform(source);
-        auto transformedBase = source.cacheKey() == base.cacheKey() ? transformed : applyTransform(base);
-        return qMakePair(std::move(transformed), std::move(transformedBase));
+        // QImage::transformed() shifts the mapped image back to the origin so
+        // the result is not clipped. Reproduce that translation for the objects;
+        // a raw negative scale or rotation alone would leave them off-canvas.
+        const QRectF mapped = raw.mapRect(QRectF(0, 0, base.width(), base.height()));
+        const QTransform effective = raw * QTransform::fromTranslate(-mapped.x(), -mapped.y());
+        auto transformedBase = base.transformed(raw);
+        if (transformedBase.isNull()) return EditResult{};
+        objects->applyTransform(effective);
+        auto rendered = DocumentController::composeImage(transformedBase, parameters, objects.get());
+        return EditResult{std::move(rendered), std::move(transformedBase), parameters, objects};
     }));
 }
 
 void DocumentController::undo()
 {
     if (busy_) return;
-    auto previous = history_.undo({image_, baseImage_, parameters_, currentState_});
+    auto previous = history_.undo({image_, baseImage_, parameters_, objects_.clone(), currentState_});
     if (!previous) return;
     image_ = std::move(previous->image);
     baseImage_ = std::move(previous->base);
     parameters_ = previous->parameters;
+    if (previous->objects)
+        objects_.restoreFrom(*previous->objects);
+    else
+        objects_.clear();
     currentState_ = previous->state;
     ++revision_;
     emit documentChanged();
@@ -499,11 +520,15 @@ void DocumentController::undo()
 void DocumentController::redo()
 {
     if (busy_) return;
-    auto next = history_.redo({image_, baseImage_, parameters_, currentState_});
+    auto next = history_.redo({image_, baseImage_, parameters_, objects_.clone(), currentState_});
     if (!next) return;
     image_ = std::move(next->image);
     baseImage_ = std::move(next->base);
     parameters_ = next->parameters;
+    if (next->objects)
+        objects_.restoreFrom(*next->objects);
+    else
+        objects_.clear();
     currentState_ = next->state;
     ++revision_;
     emit documentChanged();
