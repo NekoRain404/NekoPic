@@ -182,6 +182,7 @@ ApplicationWindow {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
             MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; onTriggered: window.darkTheme = checked }
+            MenuItem { text: qsTr("Reduce motion"); checkable: true; checked: window.reduceMotion; onTriggered: window.reduceMotion = checked }
             Menu {
                 title: qsTr("Language")
                 Repeater {
