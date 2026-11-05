@@ -103,6 +103,7 @@ ApplicationWindow {
     Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: resizeDialog.open() }
     Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: canvasSizeDialog.open() }
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: shortcutsDialog.open() }
+    Action { id: brushAction; text: qsTr("Brush"); shortcut: "B"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "brush" }
     Action { id: shapeAction; text: qsTr("Shapes"); shortcut: "U"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "shapes" }
     Action { id: selectAction; text: qsTr("Select"); shortcut: "V"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "select" }
     Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
@@ -333,7 +334,7 @@ ApplicationWindow {
             MenuItem { action: saveAsAction }
         }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } MenuSeparator {} MenuItem { action: copyAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: selectAction } MenuItem { action: shapeAction } MenuItem { action: cropAction } MenuItem { action: textAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
+        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: selectAction } MenuItem { action: brushAction } MenuItem { action: shapeAction } MenuItem { action: cropAction } MenuItem { action: textAction } MenuItem { action: eyedropperAction } MenuSeparator {} MenuItem { action: resizeImageAction } MenuItem { action: canvasSizeAction } }
         Menu {
             title: qsTr("View")
             MenuItem { action: zoomInAction } MenuItem { action: zoomOutAction } MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
@@ -440,7 +441,7 @@ ApplicationWindow {
                                 text: modelData.label
                                 iconName: modelData.icon
                                 accessibleName: modelData.label
-                                readonly property bool available: modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "shapes" || modelData.icon === "eye" || modelData.icon === "crop"
+                                readonly property bool available: modelData.icon === "select" || modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "brush" || modelData.icon === "mosaic" || modelData.icon === "text" || modelData.icon === "shapes" || modelData.icon === "eye" || modelData.icon === "crop"
                                 enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
                                 checked: available && window.activeTool === modelData.icon
                                 onClicked: window.activeTool = modelData.icon
@@ -476,6 +477,13 @@ ApplicationWindow {
                 textActive: window.activeTool === "text"
                 selectionActive: window.activeTool === "select"
                 shapeActive: window.activeTool === "shapes"
+                brushActive: window.activeTool === "brush"
+                brushDiameter: brushPanel.diameter
+                brushColor: brushPanel.color
+                onBrushStrokeCommitted: function(points) {
+                    editor.addBrushStroke(points, brushPanel.diameter, brushPanel.color)
+                }
+                onBrushCancelled: window.activeTool = "adjust"
                 shapeKind: shapePanel.shapeKind
                 shapeFillColor: shapePanel.fillColor
                 shapeStrokeColor: shapePanel.strokeColor
@@ -551,6 +559,14 @@ ApplicationWindow {
                 Layout.preferredWidth: window.width < 1100 ? 260 : 292
                 theme: theme
             }
+            BrushPanel {
+                id: brushPanel; objectName: "brushPanel"
+                visible: window.activeTool === "brush"
+                enabled: editor.hasImage && !editor.busy
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                theme: theme
+            }
             ShapePanel {
                 id: shapePanel; objectName: "shapePanel"
                 visible: window.activeTool === "shapes"
@@ -615,6 +631,8 @@ ApplicationWindow {
               run: function() { window.activeTool = "crop" } },
             { title: selectAction.text, detail: qsTr("Tools"), shortcut: "V", enabled: selectAction.enabled,
               run: function() { window.activeTool = "select" } },
+            { title: brushAction.text, detail: qsTr("Tools"), shortcut: "B", enabled: brushAction.enabled,
+              run: function() { window.activeTool = "brush" } },
             { title: shapeAction.text, detail: qsTr("Tools"), shortcut: "U", enabled: shapeAction.enabled,
               run: function() { window.activeTool = "shapes" } },
             { title: textAction.text, detail: qsTr("Tools"), shortcut: "T", enabled: textAction.enabled,

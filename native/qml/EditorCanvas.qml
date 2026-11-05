@@ -34,6 +34,9 @@ Item {
     property bool selectionActive: false
     property bool compareActive: false
     property bool shapeActive: false
+    property bool brushActive: false
+    property real brushDiameter: 24
+    property color brushColor: "#000000"
     property string shapeKind: "rectangle"
     property color shapeFillColor: "#ffffff"
     property color shapeStrokeColor: "#000000"
@@ -55,6 +58,8 @@ Item {
     signal removeObjectRequested(var id)
     signal shapeCommitted(string kind, rect area)
     signal shapeCancelled()
+    signal brushStrokeCommitted(var points)
+    signal brushCancelled()
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
     signal recentRequested(url url)
@@ -247,6 +252,20 @@ Item {
                     brightness: root.previewBrightness
                     contrast: root.previewContrast
                     saturation: root.previewSaturation
+                }
+                BrushOverlay {
+                    objectName: "brushOverlay"
+                    anchors.fill: parent
+                    active: root.brushActive && root.hasImage
+                    inputEnabled: root.inputEnabled
+                    imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                    viewScale: root.zoom
+                    diameter: root.brushDiameter
+                    color: root.brushColor
+                    visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                         view.width, view.height)
+                    onStrokeCommitted: function(points) { root.brushStrokeCommitted(points) }
+                    onCancelled: root.brushCancelled()
                 }
                 ShapeOverlay {
                     objectName: "shapeOverlay"
