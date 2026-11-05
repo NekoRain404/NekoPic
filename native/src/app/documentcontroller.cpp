@@ -14,6 +14,37 @@
 #include <algorithm>
 #include <cmath>
 
+namespace {
+
+// Interactive CPU previews above this size are rendered on a display-sized
+// proxy and scaled back, so drag latency stays bounded on large images.
+constexpr qint64 PreviewProxyThresholdPixels = 2500000;
+constexpr int PreviewProxyMaxWidth = 1600;
+constexpr int PreviewProxyMaxHeight = 1000;
+
+bool hslEqual(const NekoPic::Adjustments::HslChannelAdjustment &a,
+              const NekoPic::Adjustments::HslChannelAdjustment &b)
+{
+    return a.hue == b.hue && a.saturation == b.saturation && a.luminance == b.luminance;
+}
+
+bool curveEqual(const NekoPic::Adjustments::ToneCurve &a,
+                const NekoPic::Adjustments::ToneCurve &b)
+{
+    for (int point = 0; point < NekoPic::Adjustments::CurvePointCount; ++point) {
+        if (a.points[point] != b.points[point]) return false;
+    }
+    return true;
+}
+
+bool gradeEqual(const NekoPic::Adjustments::GradeZoneAdjustment &a,
+                const NekoPic::Adjustments::GradeZoneAdjustment &b)
+{
+    return a.hue == b.hue && a.saturation == b.saturation && a.luminance == b.luminance;
+}
+
+} // namespace
+
 DocumentController::DocumentController(QObject *parent) : QObject(parent) {}
 DocumentController::~DocumentController() = default;
 QString DocumentController::fileName() const { return path_.isEmpty() ? tr("Untitled") : QFileInfo(path_).fileName(); }
@@ -115,6 +146,78 @@ QVariantList DocumentController::writableFormats() const
 QImage DocumentController::image() const { return image_; }
 QImage DocumentController::baseImage() const { return baseImage_; }
 NekoPic::Adjustments::Parameters DocumentController::adjustmentParameters() const { return parameters_; }
+
+bool DocumentController::parametersEqual(const NekoPic::Adjustments::Parameters &a,
+                                          const NekoPic::Adjustments::Parameters &b)
+{
+    // Basic and extended scalar controls.
+    if (a.exposure != b.exposure || a.brightness != b.brightness
+        || a.contrast != b.contrast || a.saturation != b.saturation
+        || a.highlights != b.highlights || a.shadows != b.shadows
+        || a.whites != b.whites || a.blacks != b.blacks
+        || a.temperature != b.temperature || a.tint != b.tint
+        || a.vibrance != b.vibrance || a.fade != b.fade)
+        return false;
+
+    // HSL channels.
+    for (int channel = 0; channel < NekoPic::Adjustments::HslChannelCount; ++channel) {
+        if (!hslEqual(a.hsl[channel], b.hsl[channel])) return false;
+    }
+
+    // Tone curves.
+    for (int channel = 0; channel < NekoPic::Adjustments::CurveChannelCount; ++channel) {
+        if (!curveEqual(a.curves[channel], b.curves[channel])) return false;
+    }
+
+    // Colour grading.
+    for (int zone = 0; zone < NekoPic::Adjustments::GradeZoneCount; ++zone) {
+        if (!gradeEqual(a.grade[zone], b.grade[zone])) return false;
+    }
+    if (a.gradeBlending != b.gradeBlending || a.gradeBalance != b.gradeBalance)
+        return false;
+
+    // Detail and effects.
+    if (a.texture != b.texture || a.clarity != b.clarity || a.dehaze != b.dehaze
+        || a.sharpen != b.sharpen || a.noise != b.noise || a.colorNoise != b.colorNoise
+        || a.vignette != b.vignette || a.feather != b.feather || a.grain != b.grain)
+        return false;
+
+    // Filter preset.
+    return a.filterPreset == b.filterPreset && a.filterIntensity == b.filterIntensity;
+}
+
+QImage DocumentController::previewProxySource(const QImage &source)
+{
+    const qint64 sourceKey = source.cacheKey();
+    const qint64 dragKey = adjustmentSource_.cacheKey();
+    if (!previewProxySource_.isNull() && previewProxySourceKey_ == sourceKey
+        && previewProxyAdjustmentKey_ == dragKey)
+        return previewProxySource_;
+
+    const QSize target = source.size().scaled(
+        QSize(PreviewProxyMaxWidth, PreviewProxyMaxHeight), Qt::KeepAspectRatio);
+    previewProxySource_ = target.isEmpty()
+        ? QImage()
+        : source.scaled(target, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    previewProxySourceKey_ = sourceKey;
+    previewProxyAdjustmentKey_ = dragKey;
+    return previewProxySource_;
+}
+
+bool DocumentController::hasValidAdjustedBaseCache() const
+{
+    return adjustedBaseCacheValid_ && !adjustedBaseCache_.isNull()
+        && adjustedBaseCacheSourceKey_ == baseImage_.cacheKey()
+        && parametersEqual(adjustedBaseCacheParameters_, parameters_);
+}
+
+void DocumentController::invalidateAdjustedBaseCache()
+{
+    adjustedBaseCache_ = {};
+    adjustedBaseCacheParameters_ = {};
+    adjustedBaseCacheSourceKey_ = 0;
+    adjustedBaseCacheValid_ = false;
+}
 
 void DocumentController::setBusy(bool busy)
 {
@@ -296,6 +399,18 @@ void DocumentController::startAdjustmentWorker()
     const auto parameters = pendingParameters_;
     const auto objects = objects_.clone();
     const auto sequence = adjustmentSequence_;
+
+    // Interactive previews render adjustments on a display-resolution proxy
+    // and scale the result back to the full canvas, leaving image_ full size so
+    // object coordinates stay exact. The finishing pass and the four basic keys
+    // mirrored by the QML GPU preview remain full resolution.
+    QImage proxySource;
+    if (adjusting_ && !adjustmentFinishing_
+        && !NekoPic::Adjustments::isGpuPreviewKey(adjustmentKey_)
+        && qint64(source.width()) * qint64(source.height()) >= PreviewProxyThresholdPixels) {
+        proxySource = previewProxySource(source);
+    }
+
     adjustmentWorkerRunning_ = true;
     auto *watcher = new QFutureWatcher<QImage>(this);
     connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, sequence] {
@@ -318,8 +433,16 @@ void DocumentController::startAdjustmentWorker()
             emit documentChanged();
         }
     });
-    watcher->setFuture(QtConcurrent::run([source, parameters, objects] {
-        return DocumentController::composeImage(source, parameters, objects.get());
+    watcher->setFuture(QtConcurrent::run([source, proxySource, parameters, objects] {
+        if (proxySource.isNull())
+            return DocumentController::composeImage(source, parameters, objects.get());
+        QImage rendered = NekoPic::Adjustments::apply(proxySource, parameters);
+        if (rendered.isNull()) return QImage();
+        rendered = rendered.scaled(source.size(), Qt::IgnoreAspectRatio,
+                                   Qt::SmoothTransformation);
+        if (!rendered.isNull() && objects && !objects->isEmpty())
+            objects->renderOnto(rendered);
+        return rendered;
     }));
 }
 
@@ -376,6 +499,7 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
             objects_.clear();
             path_ = path;
             history_.clear();
+            invalidateAdjustedBaseCache();
             currentState_ = savedState_ = ++nextState_;
             ++revision_;
             emit documentChanged();
@@ -453,12 +577,21 @@ void DocumentController::applyEdit(QImage image, QImage base,
                                    std::shared_ptr<NekoPic::Document::ObjectLayer> objects)
 {
     if (image.isNull() || base.isNull()) { setError(tr("Could not transform the image.")); return; }
+    // Keep the adjusted-base cache only when this edit leaves the base pixels
+    // and every parameter untouched (the object-edit path). Any transform,
+    // crop, resize, pixel edit or adjustment commit invalidates it.
+    const qint64 newBaseKey = base.cacheKey();
+    const bool keepAdjustedCache = hasValidAdjustedBaseCache()
+        && newBaseKey == baseImage_.cacheKey()
+        && parametersEqual(parameters, parameters_);
+
     // Snapshot the state being replaced. The clone is never mutated afterwards,
     // so undo can restore the exact ids and geometry.
     history_.record({image_, baseImage_, parameters_, objects_.clone(), currentState_});
     image_ = std::move(image);
     baseImage_ = std::move(base);
     parameters_ = parameters;
+    if (!keepAdjustedCache) invalidateAdjustedBaseCache();
     if (objects)
         objects_ = std::move(*objects);
     currentState_ = ++nextState_;
@@ -557,6 +690,7 @@ void DocumentController::undo()
     else
         objects_.clear();
     currentState_ = previous->state;
+    invalidateAdjustedBaseCache();
     ++revision_;
     emit documentChanged();
 }
@@ -574,6 +708,7 @@ void DocumentController::redo()
     else
         objects_.clear();
     currentState_ = next->state;
+    invalidateAdjustedBaseCache();
     ++revision_;
     emit documentChanged();
 }
