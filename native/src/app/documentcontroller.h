@@ -33,6 +33,7 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
+    Q_PROPERTY(QVariantList writableFormats READ writableFormats CONSTANT)
 
 public:
     explicit DocumentController(QObject *parent = nullptr);
@@ -56,6 +57,7 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     QStringList readableImagePatterns() const;
+    QVariantList writableFormats() const;
     QImage image() const;
     QImage baseImage() const;
     NekoPic::Adjustments::Parameters adjustmentParameters() const;

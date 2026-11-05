@@ -31,6 +31,18 @@ private slots:
         QVERIFY(registry.formatIdForUrl(QUrl::fromLocalFile(QStringLiteral("/tmp/a.neko"))).isEmpty());
     }
 
+    void exposesWritableFormatsAndSuffixes()
+    {
+        const auto &registry = FormatRegistry::instance();
+        QVERIFY(registry.capability(QStringLiteral("png")));
+        QVERIFY(registry.capability(QStringLiteral("jpeg")));
+        QCOMPARE(registry.preferredSuffix(QStringLiteral("jpeg")), QStringLiteral("jpg"));
+        QCOMPARE(registry.preferredSuffix(QStringLiteral("png")), QStringLiteral("png"));
+        QCOMPARE(registry.displayName(QStringLiteral("png")), QStringLiteral("PNG image"));
+        QCOMPARE(registry.writeFormatIdForUrl(QUrl::fromLocalFile(QStringLiteral("/tmp/a.JPEG"))),
+                 QStringLiteral("jpeg"));
+    }
+
     void formatsHaveConsistentIds()
     {
         for (const auto &format : FormatRegistry::instance().formats()) {

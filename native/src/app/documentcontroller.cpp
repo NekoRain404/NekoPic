@@ -51,6 +51,27 @@ QStringList DocumentController::readableImagePatterns() const
 {
     return NekoPic::Io::FormatRegistry::instance().readablePatterns();
 }
+
+QVariantList DocumentController::writableFormats() const
+{
+    const auto &registry = NekoPic::Io::FormatRegistry::instance();
+    QVariantList result;
+    for (const auto &format : registry.formats()) {
+        if (format.writeExtensions.isEmpty()) continue;
+        QStringList patterns;
+        for (const auto &extension : format.writeExtensions) {
+            patterns.append(QStringLiteral("*.") + extension);
+            patterns.append(QStringLiteral("*.") + extension.toUpper());
+        }
+        result.append(QVariantMap{
+            {QStringLiteral("id"), format.id},
+            {QStringLiteral("label"), registry.displayName(format.id)},
+            {QStringLiteral("suffix"), registry.preferredSuffix(format.id)},
+            {QStringLiteral("patterns"), patterns},
+        });
+    }
+    return result;
+}
 QImage DocumentController::image() const { return image_; }
 QImage DocumentController::baseImage() const { return baseImage_; }
 NekoPic::Adjustments::Parameters DocumentController::adjustmentParameters() const { return parameters_; }
@@ -292,16 +313,23 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
     if (busy_) return;
     if (!hasImage()) { setError(tr("There is no image to save.")); return; }
     if (!url.isLocalFile()) { setError(tr("Please choose a local destination.")); return; }
-    if (format != "png" && format != "jpeg") { setError(tr("Please select PNG or JPEG format.")); return; }
+    const auto &registry = NekoPic::Io::FormatRegistry::instance();
+    auto normalized = format.trimmed().toLower();
+    if (normalized == QLatin1String("jpg")) normalized = QStringLiteral("jpeg");
+    const auto capability = registry.capability(normalized);
+    if (!capability || capability->writeExtensions.isEmpty()) {
+        setError(tr("The selected format is not available for export."));
+        return;
+    }
     auto path = url.toLocalFile();
     const auto suffix = QFileInfo(path).suffix().toLower();
     if (suffix.isEmpty()) {
-        path += format == "png" ? QStringLiteral(".png") : QStringLiteral(".jpg");
+        path += QLatin1Char('.') + registry.preferredSuffix(normalized);
         if (QFileInfo::exists(path)) {
             setError(tr("The destination already exists. Enter its full filename to confirm replacement."));
             return;
         }
-    } else if ((format == "png" && suffix != "png") || (format == "jpeg" && suffix != "jpg" && suffix != "jpeg")) {
+    } else if (!capability->writeExtensions.contains(suffix)) {
         setError(tr("The filename extension does not match the selected format."));
         return;
     }

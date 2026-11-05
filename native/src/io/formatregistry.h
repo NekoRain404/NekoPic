@@ -5,6 +5,8 @@
 #include <QStringList>
 #include <QUrl>
 
+#include <optional>
+
 namespace NekoPic::Io {
 
 // Capabilities actually provided by the codecs compiled into this build.
@@ -32,6 +34,11 @@ public:
     bool canReadExtension(const QString &extension) const;
     bool canWriteExtension(const QString &extension) const;
     QString formatIdForUrl(const QUrl &url) const;
+    QString writeFormatIdForUrl(const QUrl &url) const;
+
+    std::optional<FormatCapability> capability(const QString &id) const;
+    QString preferredSuffix(const QString &id) const;
+    QString displayName(const QString &id) const;
 
 private:
     FormatRegistry();

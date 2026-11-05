@@ -51,8 +51,8 @@ SaveResult save(const QString &path, const QImage &image, const SaveOptions &opt
         format = QFileInfo(path).suffix().toLatin1().toLower();
     if (format == "jpg")
         format = "jpeg";
-    if (format != "png" && format != "jpeg")
-        return {false, QStringLiteral("Only PNG and JPEG output are supported")};
+    if (!QImageWriter::supportedImageFormats().contains(format))
+        return {false, QStringLiteral("Unsupported output format")};
     if (options.quality < -1 || options.quality > 100)
         return {false, QStringLiteral("Quality must be between 0 and 100, or -1")};
 

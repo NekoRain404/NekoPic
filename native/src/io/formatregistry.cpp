@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QImageReader>
 #include <QImageWriter>
+#include <QHash>
 #include <QMap>
 #include <algorithm>
 
@@ -28,6 +29,13 @@ int orderIndex(const QString &id)
 {
     const int index = preferredOrder().indexOf(id);
     return index < 0 ? preferredOrder().size() : index;
+}
+
+QString preferredSuffixFor(const QString &id)
+{
+    if (id == QLatin1String("jpeg")) return QStringLiteral("jpg");
+    if (id == QLatin1String("tiff")) return QStringLiteral("tif");
+    return id;
 }
 
 } // namespace
@@ -142,6 +150,52 @@ QString FormatRegistry::formatIdForUrl(const QUrl &url) const
         if (format.readExtensions.contains(suffix)) return format.id;
     }
     return {};
+}
+
+QString FormatRegistry::writeFormatIdForUrl(const QUrl &url) const
+{
+    const auto suffix = QFileInfo(url.toLocalFile()).suffix().toLower();
+    for (const auto &format : formats_) {
+        if (format.writeExtensions.contains(suffix)) return format.id;
+    }
+    return {};
+}
+
+std::optional<FormatCapability> FormatRegistry::capability(const QString &id) const
+{
+    const auto normalized = id.trimmed().toLower();
+    for (const auto &format : formats_) {
+        if (format.id == normalized) return format;
+    }
+    return std::nullopt;
+}
+
+QString FormatRegistry::preferredSuffix(const QString &id) const
+{
+    const auto format = capability(id);
+    if (!format || format->writeExtensions.isEmpty()) return {};
+    return preferredSuffixFor(format->id);
+}
+
+QString FormatRegistry::displayName(const QString &id) const
+{
+    static const QHash<QString, QString> names{
+        {QStringLiteral("png"), QStringLiteral("PNG image")},
+        {QStringLiteral("jpeg"), QStringLiteral("JPEG image")},
+        {QStringLiteral("webp"), QStringLiteral("WebP image")},
+        {QStringLiteral("tiff"), QStringLiteral("TIFF image")},
+        {QStringLiteral("avif"), QStringLiteral("AVIF image")},
+        {QStringLiteral("heic"), QStringLiteral("HEIC image")},
+        {QStringLiteral("heif"), QStringLiteral("HEIF image")},
+        {QStringLiteral("jxl"), QStringLiteral("JPEG XL image")},
+        {QStringLiteral("qoi"), QStringLiteral("QOI image")},
+        {QStringLiteral("bmp"), QStringLiteral("BMP image")},
+        {QStringLiteral("tga"), QStringLiteral("TGA image")},
+        {QStringLiteral("exr"), QStringLiteral("OpenEXR image")},
+        {QStringLiteral("ico"), QStringLiteral("ICO image")},
+    };
+    const auto found = names.constFind(id);
+    return found != names.cend() ? *found : id.toUpper() + QStringLiteral(" image");
 }
 
 } // namespace NekoPic::Io

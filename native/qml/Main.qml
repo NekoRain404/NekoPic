@@ -119,9 +119,17 @@ ApplicationWindow {
     }
     FileDialog {
         id: saveDialog; title: qsTr("Save image as"); fileMode: FileDialog.SaveFile
-        nameFilters: [qsTr("PNG image (*.png)"), qsTr("JPEG image (*.jpg *.jpeg)")]
-        defaultSuffix: selectedNameFilter.index === 1 ? "jpg" : "png"
-        onAccepted: editor.saveAs(selectedFile, selectedNameFilter.index === 1 ? "jpeg" : "png")
+        readonly property var formats: (typeof editor !== "undefined" && editor.writableFormats)
+                                       ? editor.writableFormats : [{ id: "png", label: "PNG image",
+                                                                     suffix: "png", patterns: ["*.png"] }]
+        readonly property int selectedFormat: selectedNameFilter.index >= 0
+                                              && selectedNameFilter.index < formats.length
+                                              ? selectedNameFilter.index : 0
+        nameFilters: formats.map(function(format) {
+            return qsTr(format.label) + " (" + format.patterns.join(" ") + ")"
+        })
+        defaultSuffix: formats[selectedFormat].suffix
+        onAccepted: editor.saveAs(selectedFile, formats[selectedFormat].id)
     }
     Dialog {
         id: errorDialog; title: qsTr("Unable to complete operation"); modal: true

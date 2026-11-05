@@ -3,6 +3,7 @@
 #include <QColorSpace>
 #include <QFile>
 #include <QImageReader>
+#include <QImageWriter>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -18,6 +19,7 @@ private slots:
     void failuresAreReported();
     void dimensionsAreLimited();
     void reportsRuntimeFormats();
+    void savesWebpWhenAvailable();
 };
 
 void ImageIoTest::pngRoundTripPreservesAlphaAndDepth()
@@ -135,6 +137,25 @@ void ImageIoTest::dimensionsAreLimited()
 void ImageIoTest::reportsRuntimeFormats()
 {
     QCOMPARE(supportedReadFormats(), QImageReader::supportedImageFormats());
+}
+
+void ImageIoTest::savesWebpWhenAvailable()
+{
+    if (!QImageWriter::supportedImageFormats().contains("webp"))
+        QSKIP("WebP writer is not available in this build");
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QImage image(8, 6, QImage::Format_RGBA8888);
+    image.fill(QColor(20, 160, 90, 128));
+    const auto path = dir.filePath(QStringLiteral("out.webp"));
+    SaveOptions options;
+    options.format = "webp";
+    const auto saved = save(path, image, options);
+    QVERIFY2(saved.success, qPrintable(saved.error));
+    QVERIFY(QFile::exists(path));
+    const auto loaded = load(path);
+    QVERIFY2(loaded.error.isEmpty(), qPrintable(loaded.error));
+    QCOMPARE(loaded.image.size(), image.size());
 }
 
 QTEST_GUILESS_MAIN(ImageIoTest)
