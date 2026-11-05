@@ -1,11 +1,20 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "effects"
 
 Item {
     id: root
     property var theme
     property url imageUrl
+    property url baseImageUrl
+    property bool gpuPreviewAvailable: false
+    property bool adjustmentPreviewActive: false
+    property real previewExposure: 0
+    property real previewBrightness: 0
+    property real previewContrast: 0
+    property real previewSaturation: 0
+    readonly property bool gpuPreviewing: adjustmentPreviewActive && gpuPreviewAvailable && hasImage
     property bool hasImage: false
     property int imageWidth: 0
     property int imageHeight: 0
@@ -135,7 +144,7 @@ Item {
                     x: (view.contentWidth - width) / 2; y: (view.contentHeight - height) / 2
                     width: root.hasImage ? root.imageWidth * root.zoom : 0
                     height: root.hasImage ? root.imageHeight * root.zoom : 0
-                    source: root.imageUrl
+                    source: root.gpuPreviewing ? root.baseImageUrl : root.imageUrl
                     cache: false; fillMode: Image.PreserveAspectFit
                     CropOverlay {
                         id: cropOverlay
@@ -164,6 +173,17 @@ Item {
                         onRectangleCommitted: function(area) { root.mosaicRectangleCommitted(area) }
                         onStrokeCommitted: function(points) { root.mosaicStrokeCommitted(points) }
                     }
+                }
+                AdjustmentPreview {
+                    objectName: "adjustmentPreview"
+                    x: picture.x; y: picture.y
+                    width: picture.width; height: picture.height
+                    sourceItem: picture
+                    active: root.gpuPreviewing
+                    exposure: root.previewExposure
+                    brightness: root.previewBrightness
+                    contrast: root.previewContrast
+                    saturation: root.previewSaturation
                 }
                 ScrollBar.horizontal: ScrollBar { }
                 ScrollBar.vertical: ScrollBar { }

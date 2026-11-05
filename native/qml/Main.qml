@@ -292,6 +292,19 @@ ApplicationWindow {
                 id: canvas; Layout.fillWidth: true; Layout.fillHeight: true; theme: theme
                 objectName: "editorCanvas"
                 hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
+                baseImageUrl: typeof editor.baseImageUrl !== "undefined" ? editor.baseImageUrl : ""
+                gpuPreviewAvailable: typeof renderCapabilities !== "undefined" && renderCapabilities.gpuPreviewAvailable
+                adjustmentPreviewActive: typeof editor.adjustmentInteractive !== "undefined"
+                                         && editor.adjustmentInteractive
+                                         && (typeof editor.filterPreset === "undefined" || editor.filterPreset === "none")
+                previewExposure: typeof editor.pendingAdjustmentValues !== "undefined"
+                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.exposure / 50 : 0
+                previewBrightness: typeof editor.pendingAdjustmentValues !== "undefined"
+                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.brightness / 100 : 0
+                previewContrast: typeof editor.pendingAdjustmentValues !== "undefined"
+                                 && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.contrast / 100 : 0
+                previewSaturation: typeof editor.pendingAdjustmentValues !== "undefined"
+                                   && editor.pendingAdjustmentValues ? editor.pendingAdjustmentValues.saturation / 100 : 0
                 fileName: editor.fileName; dirty: editor.dirty
                 mosaicActive: window.activeTool === "mosaic"
                 cropActive: window.activeTool === "crop"

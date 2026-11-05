@@ -42,7 +42,8 @@ target_link_libraries(nekopic_platform PUBLIC Qt6::Core Qt6::Gui)
 
 # --- render: preview backends and GPU capability probes ------------------
 add_library(nekopic_render STATIC
-    src/render/rendercapabilities.cpp src/render/rendercapabilities.h)
+    src/render/rendercapabilities.cpp src/render/rendercapabilities.h
+    src/render/previewmath.cpp src/render/previewmath.h)
 target_include_directories(nekopic_render PUBLIC src)
 target_link_libraries(nekopic_render PUBLIC nekopic_core Qt6::Quick)
 
@@ -70,7 +71,8 @@ file(GLOB_RECURSE NEKOPIC_SHADERS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SO
 if(NEKOPIC_SHADERS)
     find_package(Qt6 QUIET COMPONENTS ShaderTools)
     if(COMMAND qt_add_shaders)
-        qt_add_shaders(nekopic "nekopic_shaders" PREFIX "/shaders" FILES ${NEKOPIC_SHADERS})
+        qt_add_shaders(nekopic "nekopic_shaders" PREFIX "/shaders" BASE "shaders"
+            FILES ${NEKOPIC_SHADERS})
     else()
         message(FATAL_ERROR "Shader sources found but Qt ShaderTools is unavailable")
     endif()
@@ -115,7 +117,14 @@ if(BUILD_TESTING)
     nekopic_add_test(recentfiles tests/tst_recentfiles.cpp nekopic_platform)
     nekopic_add_test(exportformats tests/tst_exportformats.cpp nekopic_app)
     nekopic_add_test(clipboard tests/tst_clipboard.cpp nekopic_platform)
+    nekopic_add_test(previewmath tests/tst_previewmath.cpp nekopic_render)
     if(NEKOPIC_WITH_RUST)
         nekopic_add_test(rustcodecs tests/tst_rustcodecs.cpp nekopic_io)
+    endif()
+    if(NEKOPIC_BUILD_QML_TESTS)
+        find_program(QMLTESTRUNNER NAMES qmltestrunner
+            HINTS "${QT6_INSTALL_PREFIX}/lib/qt6/bin" /usr/lib/qt6/bin REQUIRED)
+        add_test(NAME qml COMMAND ${QMLTESTRUNNER} -input "${CMAKE_CURRENT_SOURCE_DIR}/qml/tests" -silent)
+        set_tests_properties(qml PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
     endif()
 endif()
