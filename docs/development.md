@@ -72,11 +72,12 @@ QT_QPA_PLATFORM=offscreen ./native/build/nekopic assets/demo.jpg --settings --sc
 
 ## 打包
 
-安装规则、CPack、元数据校验与发布清单见 [打包与发布](packaging.md)。一键
-Release 打包：
+安装规则、CPack（TGZ/DEB/RPM）、AppImage、图标生成、元数据校验与发布清单
+见 [打包与发布](packaging.md)。一键 Release 打包：
 
 ```sh
 ./scripts/package.sh
+./scripts/build-appimage.sh --stage-only   # 无 linuxdeploy 时校验 AppDir
 ```
 
 ## 代码风格
