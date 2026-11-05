@@ -11,13 +11,16 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Concu
 qt_standard_project_setup()
 
 add_library(nekopic_core STATIC src/core/imageio.cpp src/core/imageio.h
-    src/core/adjustments.cpp src/core/adjustments.h)
+    src/core/adjustments.cpp src/core/adjustments.h
+    src/core/mosaic.cpp src/core/mosaic.h)
 target_include_directories(nekopic_core PUBLIC src src/core)
 target_link_libraries(nekopic_core PUBLIC Qt6::Core Qt6::Gui)
 
-add_library(nekopic_app STATIC src/app/documentcontroller.cpp src/app/documentcontroller.h)
+add_library(nekopic_app STATIC src/app/documentcontroller.cpp src/app/documentcontroller.h
+    src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_geometry.cpp
+    src/app/filterpreviews.cpp src/app/filterpreviews.h)
 target_include_directories(nekopic_app PUBLIC src)
-target_link_libraries(nekopic_app PUBLIC nekopic_core Qt6::Concurrent)
+target_link_libraries(nekopic_app PUBLIC nekopic_core Qt6::Concurrent Qt6::Quick)
 
 qt_add_executable(nekopic src/app/main.cpp)
 target_sources(nekopic PRIVATE src/app/languagemanager.cpp src/app/languagemanager.h)
@@ -46,8 +49,17 @@ if(BUILD_TESTING)
     add_executable(adjustments_test tests/tst_adjustments.cpp)
     target_link_libraries(adjustments_test PRIVATE nekopic_core Qt6::Test)
     add_test(NAME adjustments COMMAND adjustments_test)
+    add_executable(mosaic_test tests/tst_mosaic.cpp)
+    target_link_libraries(mosaic_test PRIVATE nekopic_core Qt6::Test)
+    add_test(NAME mosaic COMMAND mosaic_test)
     add_executable(documentcontroller_test tests/documentcontroller_test.cpp)
     target_link_libraries(documentcontroller_test PRIVATE nekopic_app Qt6::Test)
     add_test(NAME documentcontroller COMMAND documentcontroller_test)
-    set_tests_properties(imageio documentcontroller PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+    add_executable(crop_test tests/tst_crop.cpp)
+    target_link_libraries(crop_test PRIVATE nekopic_app Qt6::Test)
+    add_test(NAME crop COMMAND crop_test)
+    add_executable(filterpreviews_test tests/tst_filterpreviews.cpp)
+    target_link_libraries(filterpreviews_test PRIVATE nekopic_app Qt6::Test)
+    add_test(NAME filterpreviews COMMAND filterpreviews_test)
+    set_tests_properties(imageio documentcontroller crop filterpreviews PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()

@@ -16,11 +16,21 @@ QString DocumentController::fileName() const { return path_.isEmpty() ? tr("Unti
 QUrl DocumentController::imageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/current?revision=%1").arg(revision_)) : QUrl(); }
 bool DocumentController::busy() const { return busy_; }
 bool DocumentController::adjusting() const { return adjusting_; }
-bool DocumentController::adjustmentInteractive() const { return adjusting_ && !adjustmentFinishing_; }
+bool DocumentController::adjustmentInteractive() const
+{
+    return adjusting_ && adjustmentKey_ != "filter" && adjustmentKey_ != "filter-intensity"
+        && !adjustmentFinishing_;
+}
 QVariantMap DocumentController::adjustmentValues() const
 {
     return {{"exposure", parameters_.exposure * 50.0}, {"brightness", parameters_.brightness * 100.0},
             {"contrast", parameters_.contrast * 100.0}, {"saturation", parameters_.saturation * 100.0}};
+}
+QString DocumentController::filterPreset() const { return parameters_.filterPreset; }
+double DocumentController::filterIntensity() const { return parameters_.filterIntensity * 100.0; }
+bool DocumentController::filterIntensityInteractive() const
+{
+    return adjusting_ && adjustmentKey_ == "filter-intensity" && !adjustmentFinishing_;
 }
 QString DocumentController::errorMessage() const { return error_; }
 bool DocumentController::hasImage() const { return !image_.isNull(); }
@@ -41,6 +51,8 @@ QStringList DocumentController::readableImagePatterns() const
     return patterns;
 }
 QImage DocumentController::image() const { return image_; }
+QImage DocumentController::baseImage() const { return baseImage_; }
+NekoPic::Adjustments::Parameters DocumentController::adjustmentParameters() const { return parameters_; }
 
 void DocumentController::setBusy(bool busy)
 {
@@ -89,7 +101,65 @@ void DocumentController::resetAdjustments()
     if (busy_ || !hasImage()) return;
     if (parameters_.exposure == 0.0 && parameters_.brightness == 0.0
         && parameters_.contrast == 0.0 && parameters_.saturation == 0.0) return;
-    applyEdit(baseImage_, baseImage_, {});
+    adjustmentSource_ = image_;
+    pendingParameters_ = {};
+    pendingParameters_.filterPreset = parameters_.filterPreset;
+    pendingParameters_.filterIntensity = parameters_.filterIntensity;
+    adjustmentKey_ = "reset";
+    adjusting_ = true;
+    adjustmentFinishing_ = true;
+    setError({});
+    setBusy(true);
+    emit adjustingChanged();
+    ++adjustmentSequence_;
+    startAdjustmentWorker();
+}
+
+void DocumentController::selectFilter(const QString &preset)
+{
+    static const QSet<QString> presets{"none", "vivid", "warm", "cool", "mono", "vintage"};
+    if (busy_ || !hasImage() || !presets.contains(preset) || preset == parameters_.filterPreset) return;
+    adjustmentSource_ = image_;
+    pendingParameters_ = parameters_;
+    pendingParameters_.filterPreset = preset;
+    if (preset != "none" && pendingParameters_.filterIntensity <= 0.0)
+        pendingParameters_.filterIntensity = 1.0;
+    adjustmentKey_ = "filter";
+    adjusting_ = true;
+    adjustmentFinishing_ = true;
+    setError({});
+    setBusy(true);
+    emit adjustingChanged();
+    ++adjustmentSequence_;
+    startAdjustmentWorker();
+}
+
+void DocumentController::beginFilterIntensity()
+{
+    if (busy_ || !hasImage() || parameters_.filterPreset == "none") return;
+    adjustmentSource_ = image_;
+    pendingParameters_ = parameters_;
+    adjustmentKey_ = "filter-intensity";
+    adjusting_ = true;
+    adjustmentFinishing_ = false;
+    setError({});
+    setBusy(true);
+    emit adjustingChanged();
+    emit filterIntensityInteractiveChanged();
+}
+
+void DocumentController::previewFilterIntensity(double value) { queueFilterIntensity(value, false); }
+void DocumentController::finishFilterIntensity(double value) { queueFilterIntensity(value, true); }
+
+void DocumentController::queueFilterIntensity(double value, bool finish)
+{
+    if (!adjusting_ || adjustmentFinishing_ || adjustmentKey_ != "filter-intensity") return;
+    pendingParameters_.filterIntensity = std::isfinite(value)
+        ? std::clamp(value, 0.0, 100.0) / 100.0 : 0.0;
+    adjustmentFinishing_ = finish;
+    ++adjustmentSequence_;
+    if (finish) emit filterIntensityInteractiveChanged();
+    if (!adjustmentWorkerRunning_) startAdjustmentWorker();
 }
 
 void DocumentController::queueAdjustment(const QString &key, double value, bool finish)
@@ -141,16 +211,20 @@ void DocumentController::startAdjustmentWorker()
 void DocumentController::endAdjustment(const QImage &result, bool failed)
 {
     const bool wasInteractive = adjustmentInteractive();
+    const bool wasFilterInteractive = filterIntensityInteractive();
     image_ = adjustmentSource_;
     adjustmentSource_ = {};
     adjusting_ = false;
     adjustmentFinishing_ = false;
     adjustmentKey_.clear();
     if (wasInteractive) emit adjustmentInteractiveChanged();
+    if (wasFilterInteractive) emit filterIntensityInteractiveChanged();
     const bool changed = parameters_.exposure != pendingParameters_.exposure
         || parameters_.brightness != pendingParameters_.brightness
         || parameters_.contrast != pendingParameters_.contrast
-        || parameters_.saturation != pendingParameters_.saturation;
+        || parameters_.saturation != pendingParameters_.saturation
+        || parameters_.filterPreset != pendingParameters_.filterPreset
+        || parameters_.filterIntensity != pendingParameters_.filterIntensity;
     if (!failed && changed) {
         applyEdit(result, baseImage_, pendingParameters_);
     } else {
@@ -309,7 +383,10 @@ void DocumentController::startTransform(Transform transform)
     connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         try {
             auto result = watcher->result();
-            applyEdit(std::move(result.first), std::move(result.second), parameters_);
+            if (result.first.isNull() || result.second.isNull())
+                setError(tr("Could not transform the image."));
+            else
+                applyEdit(std::move(result.first), std::move(result.second), parameters_);
         } catch (...) {
             setError(tr("Could not transform the image."));
         }

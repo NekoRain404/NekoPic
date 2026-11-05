@@ -13,7 +13,19 @@ Item {
     property bool dirty: false
     property real zoom: 1
     property bool fitting: true
+    property bool mosaicActive: false
+    property bool mosaicBrushMode: true
+    property real mosaicBrushDiameter: 24
+    property bool inputEnabled: true
+    property bool cropActive: false
+    property real cropAspectRatio: 0
+    readonly property rect cropSelection: cropOverlay.selection
+    signal cropApplyRequested(rect area)
+    signal cropCancelled()
+    function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
+    signal mosaicRectangleCommitted(rect area)
+    signal mosaicStrokeCommitted(var points)
 
     function fitImage() {
         fitting = true
@@ -120,11 +132,38 @@ Item {
                 Image {
                     id: picture
                     objectName: "canvasPicture"
-                    x: (parent.contentWidth - width) / 2; y: (parent.contentHeight - height) / 2
+                    x: (view.contentWidth - width) / 2; y: (view.contentHeight - height) / 2
                     width: root.hasImage ? root.imageWidth * root.zoom : 0
                     height: root.hasImage ? root.imageHeight * root.zoom : 0
                     source: root.imageUrl
                     cache: false; fillMode: Image.PreserveAspectFit
+                    CropOverlay {
+                        id: cropOverlay
+                        objectName: "cropOverlay"
+                        anchors.fill: parent
+                        active: root.cropActive && root.hasImage
+                        inputEnabled: root.inputEnabled
+                        imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                        aspectRatio: root.cropAspectRatio
+                        visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                             view.width, view.height)
+                        onApplyRequested: function(area) { root.cropApplyRequested(area) }
+                        onCancelled: root.cropCancelled()
+                    }
+                    MosaicOverlay {
+                        objectName: "mosaicOverlay"
+                        anchors.fill: parent
+                        active: root.mosaicActive && root.hasImage
+                        inputEnabled: root.inputEnabled
+                        brushMode: root.mosaicBrushMode
+                        brushDiameter: root.mosaicBrushDiameter
+                        imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                        viewScale: root.zoom
+                        visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                             view.width, view.height)
+                        onRectangleCommitted: function(area) { root.mosaicRectangleCommitted(area) }
+                        onStrokeCommitted: function(points) { root.mosaicStrokeCommitted(points) }
+                    }
                 }
                 ScrollBar.horizontal: ScrollBar { }
                 ScrollBar.vertical: ScrollBar { }

@@ -3,10 +3,26 @@
 
 #include <QImage>
 #include <QImageReader>
+#include <QColorSpace>
+#include <QRectF>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QThreadPool>
 #include <QtTest>
+#include <limits>
+
+namespace {
+QImage mosaicPattern()
+{
+    QImage image(24, 16, QImage::Format_RGBA64);
+    image.setColorSpace(QColorSpace::DisplayP3);
+    for (int y = 0; y < image.height(); ++y)
+        for (int x = 0; x < image.width(); ++x)
+            image.setPixelColor(x, y, QColor::fromRgba64(
+                1000 + x * 1500, 2000 + y * 1800, 4000 + (x + y) * 700, 40000));
+    return image;
+}
+}
 
 class DocumentControllerTest final : public QObject {
     Q_OBJECT
@@ -31,7 +47,154 @@ private slots:
     void adjustmentInteractiveEndsOnRelease();
     void adjustmentsPersistAcrossEditsAndHistory();
     void resetAdjustmentsIsOneUndoableEdit();
+    void filterPresetCommitsAndPersistsAcrossTransformHistory();
+    void filterIntensityPreviewCommitsOnce();
+    void resetAdjustmentsRetainsFilter();
+    void mosaicEditsAreUndoable_data();
+    void mosaicEditsAreUndoable();
+    void mosaicPreservesParametersThroughTransforms();
+    void invalidMosaicInputsDoNotEdit();
 };
+
+void DocumentControllerTest::mosaicEditsAreUndoable_data()
+{
+    QTest::addColumn<bool>("stroke");
+    QTest::newRow("rectangle") << false;
+    QTest::newRow("stroke") << true;
+}
+
+void DocumentControllerTest::mosaicEditsAreUndoable()
+{
+    QFETCH(bool, stroke);
+    QTemporaryDir dir;
+    QVERIFY(mosaicPattern().save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto original = controller.image();
+    if (stroke) {
+        const QVariantList points{QPointF(6, 6), QPointF(12, 6)};
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicStroke",
+            Q_ARG(QVariantList, points), Q_ARG(double, 6.0), Q_ARG(int, 4)));
+    } else {
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicRectangle",
+            Q_ARG(QRectF, QRectF(4, 4, 12, 8)), Q_ARG(int, 4)));
+    }
+    QVERIFY(controller.busy());
+    controller.mosaicRectangle(QRectF(0, 0, 24, 16), 8);
+    controller.flipHorizontal(); // Busy edits must be ignored.
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto edited = controller.image();
+    QVERIFY(edited != original);
+    QVERIFY(edited.pixelColor(6, 6) != original.pixelColor(6, 6));
+    QCOMPARE(edited.pixelColor(0, 0), original.pixelColor(0, 0));
+    QCOMPARE(edited.pixelColor(23, 15), original.pixelColor(23, 15));
+    QCOMPARE(edited.format(), QImage::Format_RGBA64);
+    QCOMPARE(edited.colorSpace(), original.colorSpace());
+    QCOMPARE(edited.pixelColor(6, 6).rgba64().alpha(), original.pixelColor(6, 6).rgba64().alpha());
+    QVERIFY(controller.dirty());
+    controller.undo();
+    QCOMPARE(controller.image(), original);
+    QVERIFY(!controller.dirty());
+    QVERIFY(!controller.canUndo());
+    controller.redo();
+    QCOMPARE(controller.image(), edited);
+}
+
+void DocumentControllerTest::mosaicPreservesParametersThroughTransforms()
+{
+    QTemporaryDir dir;
+    QVERIFY(mosaicPattern().save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.selectFilter("warm");
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.beginFilterIntensity();
+    controller.finishFilterIntensity(35);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.beginAdjustment("brightness");
+    controller.finishAdjustment("brightness", 20);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto adjustedBeforeMosaic = controller.image();
+    QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicRectangle",
+        Q_ARG(QRectF, QRectF(4, 4, 12, 8)), Q_ARG(int, 4)));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto adjustedMosaic = controller.image();
+    const auto mosaicBase = controller.baseImage();
+    const auto parameters = controller.adjustmentParameters();
+    QCOMPARE(parameters.brightness, 0.2);
+    QCOMPARE(parameters.filterPreset, QStringLiteral("warm"));
+    QCOMPARE(controller.filterIntensity(), 35.0);
+    QCOMPARE(adjustedMosaic.pixelColor(0, 0), adjustedBeforeMosaic.pixelColor(0, 0));
+    QCOMPARE(adjustedMosaic, NekoPic::Adjustments::apply(mosaicBase, parameters));
+    controller.resetAdjustments();
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.filterPreset(), QStringLiteral("warm"));
+    QVERIFY(controller.image() != adjustedMosaic);
+    controller.undo();
+    QCOMPARE(controller.image(), adjustedMosaic);
+    QCOMPARE(controller.adjustmentValues().value("brightness").toDouble(), 20.0);
+    controller.rotateClockwise();
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto rotated = controller.image();
+    QCOMPARE(rotated, adjustedMosaic.transformed(QTransform().rotate(90)));
+    controller.beginAdjustment("brightness");
+    controller.finishAdjustment("brightness", 0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QVERIFY(controller.image() != rotated);
+    QCOMPARE(controller.filterPreset(), QStringLiteral("warm"));
+    auto resetParameters = parameters;
+    resetParameters.brightness = 0;
+    QCOMPARE(controller.image(), NekoPic::Adjustments::apply(
+        mosaicBase.transformed(QTransform().rotate(90)), resetParameters));
+    controller.undo();
+    QCOMPARE(controller.image(), rotated);
+}
+
+void DocumentControllerTest::invalidMosaicInputsDoNotEdit()
+{
+    QTemporaryDir dir;
+    QVERIFY(mosaicPattern().save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.mosaicRectangle(QRectF(0, 0, 8, 8), 4);
+    controller.mosaicStroke({QPointF(4, 4)}, 6, 4);
+    QVERIFY(!controller.busy());
+    QVERIFY(!controller.hasImage());
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto original = controller.image();
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const QList<QRectF> rectangles{QRectF(), QRectF(100, 100, 4, 4),
+        QRectF(nan, 0, 3, 3), QRectF(0, 0, 1e100, 1e100)};
+    for (const auto &area : rectangles) {
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicRectangle",
+            Q_ARG(QRectF, area), Q_ARG(int, 4)));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    }
+    const QList<QVariantList> strokes{{}, {QStringLiteral("invalid")},
+        {QPointF(4, 4), QStringLiteral("invalid")}, {QPointF(1e100, 0)},
+        {QPointF(nan, 0)}, {QPointF(100, 100)}, QVariantList(4097, QPointF(4, 4))};
+    for (const auto &points : strokes) {
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicStroke",
+            Q_ARG(QVariantList, points), Q_ARG(double, 6.0), Q_ARG(int, 4)));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    }
+    for (const int block : {0, 1, -1, std::numeric_limits<int>::max()}) {
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicRectangle",
+            Q_ARG(QRectF, QRectF(0, 0, 8, 8)), Q_ARG(int, block)));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    }
+    for (const double diameter : {0.0, -1.0, nan, 1e100}) {
+        const QVariantList points{QPointF(4, 4)};
+        QVERIFY(QMetaObject::invokeMethod(&controller, "mosaicStroke",
+            Q_ARG(QVariantList, points), Q_ARG(double, diameter), Q_ARG(int, 4)));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    }
+    QCOMPARE(controller.image(), original);
+    QVERIFY(!controller.dirty());
+    QVERIFY(!controller.canUndo());
+}
 
 void DocumentControllerTest::resetAdjustmentsIsOneUndoableEdit()
 {
@@ -58,6 +221,90 @@ void DocumentControllerTest::resetAdjustmentsIsOneUndoableEdit()
     QCOMPARE(controller.property("adjustmentValues").toMap().value("contrast").toDouble(), 25.0);
     controller.redo();
     QCOMPARE(controller.image(), original);
+}
+
+void DocumentControllerTest::filterPresetCommitsAndPersistsAcrossTransformHistory()
+{
+    QTemporaryDir dir;
+    QImage original(32, 24, QImage::Format_RGBA64);
+    original.fill(QColor::fromRgba64(50000, 20000, 10000, 30000));
+    QVERIFY(original.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.selectFilter("mono");
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.property("filterPreset").toString(), QStringLiteral("mono"));
+    QVERIFY(controller.canUndo());
+    const auto filtered = controller.image();
+    controller.rotateClockwise();
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.property("filterPreset").toString(), QStringLiteral("mono"));
+    controller.undo();
+    QCOMPARE(controller.image(), filtered);
+    controller.undo();
+    QCOMPARE(controller.image(), original);
+    QCOMPARE(controller.property("filterPreset").toString(), QStringLiteral("none"));
+    controller.redo();
+    QCOMPARE(controller.property("filterPreset").toString(), QStringLiteral("mono"));
+}
+
+void DocumentControllerTest::filterIntensityPreviewCommitsOnce()
+{
+    QTemporaryDir dir;
+    QImage original(32, 24, QImage::Format_RGBA64);
+    original.fill(QColor::fromRgba64(50000, 20000, 10000, 30000));
+    QVERIFY(original.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.selectFilter("vivid");
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto full = controller.image();
+    controller.beginFilterIntensity();
+    QVERIFY(controller.filterIntensityInteractive());
+    QVERIFY(!controller.adjustmentInteractive());
+    controller.previewFilterIntensity(50.0);
+    QTRY_VERIFY_WITH_TIMEOUT(controller.image() != full, 5000);
+    QVERIFY(controller.canUndo());
+    controller.finishFilterIntensity(0.0);
+    QVERIFY(!controller.filterIntensityInteractive());
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.property("filterIntensity").toDouble(), 0.0);
+    QVERIFY(controller.canUndo());
+    controller.undo();
+    QCOMPARE(controller.property("filterIntensity").toDouble(), 100.0);
+    QCOMPARE(controller.image(), full);
+    controller.undo();
+    QVERIFY(!controller.canUndo());
+    QCOMPARE(controller.image(), original);
+}
+
+void DocumentControllerTest::resetAdjustmentsRetainsFilter()
+{
+    QTemporaryDir dir;
+    QImage original(32, 24, QImage::Format_RGBA64);
+    original.fill(QColor::fromRgba64(50000, 20000, 10000, 30000));
+    QVERIFY(original.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    controller.selectFilter("warm");
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto filtered = controller.image();
+    controller.beginAdjustment("brightness");
+    controller.finishAdjustment("brightness", 20.0);
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    const auto adjusted = controller.image();
+    QVERIFY(adjusted != filtered);
+    controller.resetAdjustments();
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.filterPreset(), QStringLiteral("warm"));
+    QCOMPARE(controller.image(), filtered);
+    QCOMPARE(controller.adjustmentValues().value("brightness").toDouble(), 0.0);
+    controller.undo();
+    QCOMPARE(controller.image(), adjusted);
+    QCOMPARE(controller.filterPreset(), QStringLiteral("warm"));
 }
 
 void DocumentControllerTest::adjustmentsPersistAcrossEditsAndHistory()

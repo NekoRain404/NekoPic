@@ -13,6 +13,14 @@ ApplicationWindow {
     property bool discardConfirmed: false
     property bool closingRequested: false
     property url pendingImage
+    property string activeTool: "adjust"
+    function applyCrop(area) {
+        if (!editor.hasImage || editor.busy) return
+        editor.cropImage(area)
+        activeTool = "adjust"
+    }
+    onActiveToolChanged: if (activeTool === "adjust" || activeTool === "filters")
+                            inspector.currentTab = activeTool === "filters" ? 1 : 0
     onClosing: function(close) {
         if (editor.busy || (editor.dirty && !discardConfirmed)) {
             close.accepted = false
@@ -93,6 +101,7 @@ ApplicationWindow {
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }
     Action { id: flipVerticalAction; text: qsTr("Flip vertically"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipVertical() }
+    Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy; onTriggered: window.activeTool = "crop" }
     Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
     Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
     FileDialog {
@@ -151,7 +160,7 @@ ApplicationWindow {
         }
         Menu { title: qsTr("File"); MenuItem { action: openAction } MenuSeparator {} MenuItem { action: saveAction } MenuItem { action: saveAsAction } }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } }
-        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { text: qsTr("Crop"); enabled: false } }
+        Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } }
         Menu {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
@@ -172,7 +181,7 @@ ApplicationWindow {
                 CommandButton { action: redoAction; text: ""; iconName: "redo"; ToolTip.visible: hovered; ToolTip.text: redoAction.text }
                 Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 19; Layout.leftMargin: 5; Layout.rightMargin: 5; color: theme.border }
                 CommandButton { action: rotateRightAction; text: qsTr("Rotate"); iconName: "rotate" }
-                CommandButton { text: qsTr("Crop"); iconName: "crop"; enabled: false }
+                CommandButton { action: cropAction; iconName: "crop" }
                 Item { Layout.fillWidth: true }
                 BusyIndicator { running: editor.busy; visible: running; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
                 CommandButton { action: saveAction; iconName: "save" }
@@ -201,10 +210,12 @@ ApplicationWindow {
                                 required property var modelData; required property int index
                                 Layout.alignment: Qt.AlignHCenter; Layout.preferredWidth: 52; Layout.preferredHeight: 52
                                 Layout.topMargin: index === 2 || index === 4 ? 10 : 0
-                                enabled: index === 2 || index === 3
-                                checkable: enabled; checked: enabled && inspector.currentTab === index - 2
-                                onClicked: inspector.currentTab = index - 2
-                                ToolTip.visible: hovered; ToolTip.text: enabled ? modelData.label : modelData.label + " · " + qsTr("Coming soon")
+                                objectName: "tool-" + modelData.icon
+                                readonly property bool available: modelData.icon === "adjust" || modelData.icon === "filters" || modelData.icon === "mosaic" || modelData.icon === "crop"
+                                enabled: available && !editor.busy && (modelData.icon !== "crop" || editor.hasImage)
+                                checkable: available; checked: available && window.activeTool === modelData.icon
+                                onClicked: window.activeTool = modelData.icon
+                                ToolTip.visible: hovered; ToolTip.text: available ? modelData.label : modelData.label + " · " + qsTr("Coming soon")
                                 background: Rectangle {
                                     radius: 6; color: toolButton.checked ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.08) : toolButton.hovered && toolButton.enabled ? theme.hover : "transparent"
                                     Rectangle { visible: toolButton.checked; x: -11; anchors.verticalCenter: parent.verticalCenter; width: 2; height: 18; radius: 1; color: theme.accent }
@@ -223,14 +234,27 @@ ApplicationWindow {
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             EditorCanvas {
                 id: canvas; Layout.fillWidth: true; Layout.fillHeight: true; theme: theme
+                objectName: "editorCanvas"
                 hasImage: editor.hasImage; imageUrl: editor.imageUrl; imageWidth: editor.imageWidth; imageHeight: editor.imageHeight
                 fileName: editor.fileName; dirty: editor.dirty
+                mosaicActive: window.activeTool === "mosaic"
+                cropActive: window.activeTool === "crop"
+                cropAspectRatio: cropPanel.aspectRatio
+                onCropApplyRequested: function(area) { window.applyCrop(area) }
+                onCropCancelled: window.activeTool = "adjust"
+                mosaicBrushMode: mosaicPanel.brushMode
+                mosaicBrushDiameter: mosaicPanel.brushDiameter
+                inputEnabled: !editor.busy
+                onMosaicRectangleCommitted: function(area) { editor.mosaicRectangle(area, mosaicPanel.blockSize) }
+                onMosaicStrokeCommitted: function(points) { editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize) }
                 onOpenRequested: openDialog.open()
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             Inspector {
                 id: inspector
                 objectName: "inspector"
+                visible: window.activeTool === "adjust" || window.activeTool === "filters"
+                onCurrentTabChanged: if (visible) window.activeTool = currentTab === 1 ? "filters" : "adjust"
                 Layout.fillHeight: true
                 Layout.preferredWidth: window.width < 1100 ? 260 : 292
                 theme: theme
@@ -240,6 +264,40 @@ ApplicationWindow {
                 onAdjustmentPreview: function(key, value) { editor.previewAdjustment(key, value) }
                 onAdjustmentFinished: function(key, value) { editor.finishAdjustment(key, value) }
                 onAdjustmentReset: editor.resetAdjustments()
+                filtersEnabled: editor.hasImage && !editor.busy
+                filterIntensityEnabled: editor.hasImage && (!editor.busy || editor.filterIntensityInteractive)
+                filterPreset: editor.filterPreset
+                previewsAvailable: filterPreviews.ready
+                previewRevision: filterPreviews.revision
+                filterIntensity: editor.filterIntensity
+                onFilterSelected: function(preset) { editor.selectFilter(preset) }
+                onFilterIntensityStarted: editor.beginFilterIntensity()
+                onFilterIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
+                onFilterIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
+            }
+            MosaicPanel {
+                id: mosaicPanel
+                objectName: "mosaicPanel"
+                visible: window.activeTool === "mosaic"
+                enabled: editor.hasImage && !editor.busy
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                theme: theme
+            }
+            CropPanel {
+                id: cropPanel; objectName: "cropPanel"
+                visible: window.activeTool === "crop"
+                enabled: editor.hasImage && !editor.busy
+                Layout.fillHeight: true
+                Layout.preferredWidth: window.width < 1100 ? 260 : 292
+                theme: theme
+                imageAspectRatio: editor.imageHeight > 0 ? editor.imageWidth / editor.imageHeight : 1
+                selectionWidth: canvas.cropSelection.width
+                selectionHeight: canvas.cropSelection.height
+                canApply: editor.hasImage && !editor.busy && selectionWidth >= 1 && selectionHeight >= 1
+                onApplyRequested: window.applyCrop(canvas.cropSelection)
+                onCancelRequested: window.activeTool = "adjust"
+                onResetRequested: canvas.resetCropSelection()
             }
         }
         Rectangle {

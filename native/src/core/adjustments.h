@@ -10,7 +10,7 @@ struct Parameters {
     double brightness = 0.0; // Clamped to [-1, 1].
     double contrast = 0.0;   // Clamped to [-1, 1].
     double saturation = 0.0; // Clamped to [-1, 1].
-    QString filterPreset;
+    QString filterPreset = "none";
     double filterIntensity = 1.0; // Clamped to [0, 1].
 };
 

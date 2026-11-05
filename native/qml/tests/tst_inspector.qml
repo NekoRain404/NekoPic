@@ -53,6 +53,26 @@ TestCase {
         compare(slider.value, -20)
     }
 
+    function test_filterPreviewsUseRevisionAndRetainLabels() {
+        inspector.currentTab = 1
+        verify(inspector.previewsAvailable !== undefined)
+        inspector.previewsAvailable = false
+        const warm = findChild(inspector, "filter-preview-warm")
+        verify(warm !== null)
+        compare(warm.source.toString(), "")
+        compare(findChild(inspector, "filter-warm").text, "Warm")
+        inspector.previewRevision = 7
+        // Standalone QML runner has no C++ provider; pixel delivery is tested in C++.
+        for (let i = 0; i < 12; ++i)
+            ignoreWarning(/.*Invalid image provider: image:\/\/filterpreview\/.*/)
+        inspector.previewsAvailable = true
+        compare(warm.source.toString(), "image://filterpreview/warm/7")
+        inspector.previewRevision = 8
+        compare(warm.source.toString(), "image://filterpreview/warm/8")
+        inspector.previewsAvailable = false
+        compare(warm.source.toString(), "")
+    }
+
     function test_disabledWithoutImage() {
         inspector.adjustmentsEnabled = false
         verify(!findChild(inspector, "adjustment-exposure").enabled)
@@ -121,5 +141,34 @@ TestCase {
         inspector.filtersEnabled = false
         verify(!findChild(inspector, "filter-vivid").enabled)
         verify(!findChild(inspector, "filter-intensity").enabled)
+    }
+
+    function test_filterKeyboardIntensityIsOneGesture() {
+        inspector.currentTab = 1
+        inspector.filterPreset = "warm"
+        inspector.filterIntensity = 42
+        const slider = findChild(inspector, "filter-intensity")
+        slider.forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        compare(filterStarted.count, 1)
+        compare(filterPreview.count, 1)
+        compare(filterFinished.count, 1)
+        compare(filterPreview.signalArguments[0][0], 43)
+        compare(filterFinished.signalArguments[0][0], 43)
+    }
+
+    function test_intensityRemainsEnabledWhilePresetTilesAreLocked() {
+        inspector.currentTab = 1
+        inspector.filterPreset = "warm"
+        verify(inspector.filterIntensityEnabled !== undefined)
+        inspector.filterIntensityEnabled = true
+        inspector.filtersEnabled = false
+        verify(!findChild(inspector, "filter-warm").enabled)
+        const slider = findChild(inspector, "filter-intensity")
+        verify(slider.enabled)
+        slider.forceActiveFocus()
+        keyClick(Qt.Key_Left)
+        compare(filterFinished.count, 1)
+        inspector.filterIntensityEnabled = Qt.binding(function() { return inspector.filtersEnabled })
     }
 }

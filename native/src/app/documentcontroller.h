@@ -6,6 +6,9 @@
 #include <QUrl>
 #include <QList>
 #include <QVariantMap>
+#include <QRectF>
+#include <QVariantList>
+#include <functional>
 #include "core/adjustments.h"
 
 class DocumentController final : public QObject {
@@ -16,6 +19,9 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool adjusting READ adjusting NOTIFY adjustingChanged)
     Q_PROPERTY(bool adjustmentInteractive READ adjustmentInteractive NOTIFY adjustmentInteractiveChanged)
     Q_PROPERTY(QVariantMap adjustmentValues READ adjustmentValues NOTIFY documentChanged)
+    Q_PROPERTY(QString filterPreset READ filterPreset NOTIFY documentChanged)
+    Q_PROPERTY(double filterIntensity READ filterIntensity NOTIFY documentChanged)
+    Q_PROPERTY(bool filterIntensityInteractive READ filterIntensityInteractive NOTIFY filterIntensityInteractiveChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorChanged)
     Q_PROPERTY(bool hasImage READ hasImage NOTIFY documentChanged)
     Q_PROPERTY(int imageWidth READ imageWidth NOTIFY documentChanged)
@@ -34,6 +40,9 @@ public:
     bool adjusting() const;
     bool adjustmentInteractive() const;
     QVariantMap adjustmentValues() const;
+    QString filterPreset() const;
+    double filterIntensity() const;
+    bool filterIntensityInteractive() const;
     QString errorMessage() const;
     bool hasImage() const;
     int imageWidth() const;
@@ -43,6 +52,8 @@ public:
     bool canRedo() const;
     QStringList readableImagePatterns() const;
     QImage image() const;
+    QImage baseImage() const;
+    NekoPic::Adjustments::Parameters adjustmentParameters() const;
 
     Q_INVOKABLE void openImage(const QUrl &url);
     Q_INVOKABLE void openImageDiscardingChanges(const QUrl &url);
@@ -53,18 +64,26 @@ public:
     Q_INVOKABLE void rotateCounterClockwise();
     Q_INVOKABLE void flipHorizontal();
     Q_INVOKABLE void flipVertical();
+    Q_INVOKABLE void cropImage(const QRectF &area);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
     Q_INVOKABLE void beginAdjustment(const QString &key);
     Q_INVOKABLE void previewAdjustment(const QString &key, double value);
     Q_INVOKABLE void finishAdjustment(const QString &key, double value);
     Q_INVOKABLE void resetAdjustments();
+    Q_INVOKABLE void selectFilter(const QString &preset);
+    Q_INVOKABLE void beginFilterIntensity();
+    Q_INVOKABLE void previewFilterIntensity(double value);
+    Q_INVOKABLE void finishFilterIntensity(double value);
+    Q_INVOKABLE void mosaicRectangle(const QRectF &area, int blockSize);
+    Q_INVOKABLE void mosaicStroke(const QVariantList &points, double diameter, int blockSize);
 
 signals:
     void documentChanged();
     void busyChanged();
     void adjustingChanged();
     void adjustmentInteractiveChanged();
+    void filterIntensityInteractiveChanged();
     void errorChanged();
 
 private:
@@ -77,6 +96,8 @@ private:
     void queueAdjustment(const QString &key, double value, bool finish);
     void startAdjustmentWorker();
     void endAdjustment(const QImage &result, bool failed);
+    void queueFilterIntensity(double value, bool finish);
+    void startMosaic(std::function<QImage(const QImage &)> operation);
     struct HistoryEntry {
         QImage image;
         QImage base;
