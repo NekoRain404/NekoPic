@@ -227,6 +227,38 @@ ApplicationWindow {
         }
     }
 
+    Rectangle {
+        anchors.fill: parent
+        visible: dropArea.containsDrag
+        color: Theme.alpha(Theme.accent, 0.06)
+        border.width: 2
+        border.color: Theme.accent
+        z: 1000
+        Label {
+            anchors.centerIn: parent
+            text: qsTr("Drop to open image")
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontHeadline
+            font.weight: Theme.fontWeightDemiBold
+        }
+    }
+    DropArea {
+        id: dropArea
+        anchors.fill: parent
+        onDropped: function(drop) {
+            if (editor.busy || !drop.hasUrls || drop.urls.length === 0) return
+            const target = drop.urls[0]
+            if (editor.dirty) {
+                window.pendingImage = target
+                window.closingRequested = false
+                discardDialog.open()
+            } else {
+                editor.openImage(target)
+            }
+            drop.acceptProposedAction()
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent; spacing: 0
         Rectangle {
