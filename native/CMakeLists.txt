@@ -33,6 +33,12 @@ add_library(nekopic_document STATIC
 target_include_directories(nekopic_document PUBLIC src)
 target_link_libraries(nekopic_document PUBLIC nekopic_core)
 
+# --- platform: recent files, clipboard, OS integration -------------------
+add_library(nekopic_platform STATIC
+    src/platform/recentfiles.cpp src/platform/recentfiles.h)
+target_include_directories(nekopic_platform PUBLIC src)
+target_link_libraries(nekopic_platform PUBLIC Qt6::Core)
+
 # --- render: preview backends and GPU capability probes ------------------
 add_library(nekopic_render STATIC
     src/render/rendercapabilities.cpp src/render/rendercapabilities.h)
@@ -47,7 +53,7 @@ add_library(nekopic_app STATIC
     src/app/languagemanager.cpp src/app/languagemanager.h)
 target_include_directories(nekopic_app PUBLIC src)
 target_link_libraries(nekopic_app PUBLIC nekopic_io nekopic_document nekopic_render
-    Qt6::Concurrent Qt6::Quick Qt6::Qml)
+    nekopic_platform Qt6::Concurrent Qt6::Quick Qt6::Qml)
 
 qt_add_executable(nekopic src/app/main.cpp)
 target_link_libraries(nekopic PRIVATE nekopic_app Qt6::Quick Qt6::Qml Qt6::QuickControls2)
@@ -76,7 +82,7 @@ add_custom_command(OUTPUT "${NEKOPIC_QM}"
 set_source_files_properties("${NEKOPIC_QM}" PROPERTIES QT_RESOURCE_ALIAS "nekopic_zh_CN.qm")
 qt_add_resources(nekopic_app translations PREFIX "/i18n" FILES "${NEKOPIC_QM}")
 
-foreach(target nekopic_core nekopic_io nekopic_document nekopic_render nekopic_app nekopic)
+foreach(target nekopic_core nekopic_io nekopic_document nekopic_platform nekopic_render nekopic_app nekopic)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
 endforeach()
 
@@ -103,6 +109,7 @@ if(BUILD_TESTING)
     nekopic_add_test(filterpreviews tests/tst_filterpreviews.cpp nekopic_app)
     nekopic_add_test(previewcontract tests/tst_previewcontract.cpp nekopic_app)
     nekopic_add_test(languagemanager tests/tst_languagemanager.cpp nekopic_app)
+    nekopic_add_test(recentfiles tests/tst_recentfiles.cpp nekopic_platform)
     if(NEKOPIC_WITH_RUST)
         nekopic_add_test(rustcodecs tests/tst_rustcodecs.cpp nekopic_io)
     endif()

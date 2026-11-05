@@ -91,6 +91,7 @@ signals:
     void adjustmentPreviewChanged();
     void filterIntensityInteractiveChanged();
     void errorChanged();
+    void imageOpened(const QUrl &url);
 
 private:
     enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };

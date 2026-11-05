@@ -258,7 +258,7 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
     setError({});
     setBusy(true);
     auto *watcher = new QFutureWatcher<NekoPic::ImageIO::LoadResult>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path] {
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path, url] {
         const auto result = watcher->result();
         watcher->deleteLater();
         if (!result.error.isEmpty()) setError(result.error);
@@ -271,6 +271,7 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
             currentState_ = savedState_ = ++nextState_;
             ++revision_;
             emit documentChanged();
+            emit imageOpened(url);
         }
         setBusy(false);
     });
@@ -308,7 +309,7 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
     setError({});
     setBusy(true);
     auto *watcher = new QFutureWatcher<NekoPic::ImageIO::SaveResult>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path] {
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, path, url] {
         const auto result = watcher->result();
         watcher->deleteLater();
         if (!result.success) setError(result.error);

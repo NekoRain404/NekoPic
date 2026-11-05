@@ -158,7 +158,39 @@ ApplicationWindow {
             Rectangle { width: 5; height: 5; radius: 3; color: "#99b4a3" }
             Label { Layout.leftMargin: 7; Layout.rightMargin: 17; text: qsTr("Local editing"); color: theme.muted; font.pixelSize: 10 }
         }
-        Menu { title: qsTr("File"); MenuItem { action: openAction } MenuSeparator {} MenuItem { action: saveAction } MenuItem { action: saveAsAction } }
+        Menu {
+            title: qsTr("File")
+            MenuItem { action: openAction }
+            Menu {
+                title: qsTr("Open recent")
+                enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
+                Repeater {
+                    model: typeof recentFiles !== "undefined" ? recentFiles.entries : []
+                    MenuItem {
+                        required property var modelData
+                        text: modelData.name
+                        onTriggered: {
+                            if (editor.dirty) {
+                                window.pendingImage = modelData.url
+                                window.closingRequested = false
+                                discardDialog.open()
+                            } else {
+                                editor.openImage(modelData.url)
+                            }
+                        }
+                    }
+                }
+                MenuSeparator {}
+                MenuItem {
+                    text: qsTr("Clear recent files")
+                    enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
+                    onTriggered: if (typeof recentFiles !== "undefined") recentFiles.clear()
+                }
+            }
+            MenuSeparator {}
+            MenuItem { action: saveAction }
+            MenuItem { action: saveAsAction }
+        }
         Menu { title: qsTr("Edit"); MenuItem { action: undoAction } MenuItem { action: redoAction } }
         Menu { title: qsTr("Image"); MenuItem { action: rotateLeftAction } MenuItem { action: rotateRightAction } MenuItem { action: flipHorizontalAction } MenuItem { action: flipVerticalAction } MenuSeparator {} MenuItem { action: cropAction } }
         Menu {

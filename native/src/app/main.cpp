@@ -1,6 +1,7 @@
 #include "documentcontroller.h"
 #include "filterpreviews.h"
 #include "languagemanager.h"
+#include "platform/recentfiles.h"
 #include "render/rendercapabilities.h"
 
 #include <QGuiApplication>
@@ -31,12 +32,16 @@ int main(int argc, char *argv[])
     DocumentController editor;
     FilterPreviews filterPreviews(editor);
     NekoPic::Render::RenderCapabilities renderCapabilities;
+    NekoPic::Platform::RecentFiles recentFiles;
     QQmlApplicationEngine engine;
     LanguageManager language(engine);
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
     engine.rootContext()->setContextProperty(QStringLiteral("filterPreviews"), &filterPreviews);
     engine.rootContext()->setContextProperty(QStringLiteral("language"), &language);
     engine.rootContext()->setContextProperty(QStringLiteral("renderCapabilities"), &renderCapabilities);
+    engine.rootContext()->setContextProperty(QStringLiteral("recentFiles"), &recentFiles);
+    QObject::connect(&editor, &DocumentController::imageOpened, &recentFiles,
+                     [&recentFiles](const QUrl &url) { recentFiles.add(url); });
     engine.addImageProvider(QStringLiteral("document"), new DocumentImageProvider(editor));
     engine.addImageProvider(QStringLiteral("filterpreview"), filterPreviews.createImageProvider().release());
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
