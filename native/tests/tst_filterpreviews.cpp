@@ -1,5 +1,6 @@
 #include "app/documentcontroller.h"
 #include "app/filterpreviews.h"
+#include "core/filterpresets.h"
 #include <QQuickImageProvider>
 #include <QTemporaryDir>
 #include <QTest>
@@ -42,10 +43,13 @@ void FilterPreviewsTest::thumbnailsUseCurrentBaseAndAdjustments()
     QVERIFY(qAbs(color.green() - 120) <= 1);
     QVERIFY(qAbs(color.blue() - 160) <= 1);
     QCOMPARE(color.alpha(), 192);
-    for (const auto &preset : {"vivid", "warm", "cool", "mono", "vintage"}) {
+    const auto presets = NekoPic::Filters::presetIds();
+    QCOMPARE(presets.size(), 13);
+    for (const auto &preset : presets) {
         const auto image = thumbnail(*provider, preset, revision);
         QCOMPARE(image.size(), original.size());
-        QVERIFY(image != original);
+        if (preset != QStringLiteral("none"))
+            QVERIFY(image != original);
         QCOMPARE(image.pixelColor(0, 0).alpha(), 192);
     }
     const auto mono = thumbnail(*provider, "mono", revision).pixelColor(0, 0);

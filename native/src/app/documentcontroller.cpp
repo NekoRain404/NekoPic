@@ -1,5 +1,6 @@
 #include "documentcontroller.h"
 #include "core/adjustments.h"
+#include "core/filterpresets.h"
 #include "core/autoenhance.h"
 #include "core/histogram.h"
 #include "io/formatregistry.h"
@@ -229,8 +230,9 @@ void DocumentController::autoEnhance()
 
 void DocumentController::selectFilter(const QString &preset)
 {
-    static const QSet<QString> presets{"none", "vivid", "warm", "cool", "mono", "vintage"};
-    if (busy_ || !hasImage() || !presets.contains(preset) || preset == parameters_.filterPreset) return;
+    if (busy_ || !hasImage() || !NekoPic::Filters::isValidPreset(preset)
+        || preset == parameters_.filterPreset)
+        return;
     adjustmentSource_ = image_;
     pendingParameters_ = parameters_;
     pendingParameters_.filterPreset = preset;

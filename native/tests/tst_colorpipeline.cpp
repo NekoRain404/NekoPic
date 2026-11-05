@@ -1,5 +1,6 @@
 #include "adjustments.h"
 #include "colorpipeline.h"
+#include "core/filterpresets.h"
 
 #include <QColorSpace>
 #include <QSet>
@@ -288,6 +289,8 @@ private slots:
     void floatingPreservesFormatAndAlpha_data();
     void floatingPreservesFormatAndAlpha();
     void extremeValuesDoNotCrash();
+    void filterPresetsChangePixelsAndScaleWithIntensity();
+    void filterPresetsMatchLegacyPipeline();
 };
 
 void ColorPipelineTest::keysRoundTrip()
@@ -906,6 +909,65 @@ void ColorPipelineTest::extremeValuesDoNotCrash()
             ? QImage::Format_RGBA64
             : source.format();
         QCOMPARE(result.format(), expectedFormat);
+    }
+}
+
+
+void ColorPipelineTest::filterPresetsChangePixelsAndScaleWithIntensity()
+{
+    const QImage source = makeBands();
+    const auto presets = NekoPic::Filters::presetIds();
+    QCOMPARE(presets.size(), 13);
+
+    Parameters identity;
+    identity.filterPreset = QStringLiteral("none");
+    identity.filterIntensity = 1.0;
+    QVERIFY2(sameBytes(apply(source, identity), source), "none must be an identity");
+
+    for (const auto &preset : presets) {
+        if (preset == QStringLiteral("none"))
+            continue;
+        Parameters off;
+        off.filterPreset = preset;
+        off.filterIntensity = 0.0;
+        QVERIFY2(sameBytes(apply(source, off), source),
+                 qPrintable(preset + QStringLiteral(" at intensity 0 must be a no-op")));
+
+        Parameters half;
+        half.filterPreset = preset;
+        half.filterIntensity = 0.5;
+        const QImage halfImage = apply(source, half);
+        QVERIFY2(halfImage != source,
+                 qPrintable(preset + QStringLiteral(" must change pixels")));
+
+        Parameters full;
+        full.filterPreset = preset;
+        full.filterIntensity = 1.0;
+        const QImage fullImage = apply(source, full);
+        QVERIFY2(fullImage != source,
+                 qPrintable(preset + QStringLiteral(" must change pixels at full strength")));
+        QVERIFY2(fullImage != halfImage,
+                 qPrintable(preset + QStringLiteral(" must scale with intensity")));
+    }
+}
+
+void ColorPipelineTest::filterPresetsMatchLegacyPipeline()
+{
+    const QImage source = makeBands();
+    const auto presets = NekoPic::Filters::presetIds();
+    const double intensities[]{0.0, 0.25, 0.5, 0.75, 1.0};
+    for (const auto &preset : presets) {
+        for (const double intensity : intensities) {
+            Parameters p;
+            p.filterPreset = preset;
+            p.filterIntensity = intensity;
+            const QImage legacy = apply(source, p);
+            const QImage extended = Internal::applyExtended(source, p);
+            QVERIFY2(sameBytes(legacy, extended),
+                     qPrintable(QStringLiteral("legacy/extended mismatch for %1 at %2")
+                                    .arg(preset)
+                                    .arg(intensity)));
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 #include "app/documentcontroller.h"
 #include "core/adjustments.h"
+#include "core/filterpresets.h"
 
 #include <QImage>
 #include <QImageReader>
@@ -49,6 +50,7 @@ private slots:
     void resetAdjustmentsIsOneUndoableEdit();
     void filterPresetCommitsAndPersistsAcrossTransformHistory();
     void filterIntensityPreviewCommitsOnce();
+    void selectsEveryRegistryFilterAndRejectsUnknown();
     void resetAdjustmentsRetainsFilter();
     void mosaicEditsAreUndoable_data();
     void mosaicEditsAreUndoable();
@@ -742,6 +744,33 @@ void DocumentControllerTest::appendedExtensionDoesNotOverwrite()
     controller.saveAs(QUrl::fromLocalFile(dir.filePath("result")), QStringLiteral("png"));
     QVERIFY(!controller.errorMessage().isEmpty());
     QCOMPARE(QImage(dir.filePath("result.png")).pixelColor(0, 0), QColor(Qt::blue));
+}
+
+void DocumentControllerTest::selectsEveryRegistryFilterAndRejectsUnknown()
+{
+    QTemporaryDir dir;
+    QImage original(16, 12, QImage::Format_RGBA64);
+    original.fill(QColor::fromRgba64(40000, 20000, 10000, 65535));
+    QVERIFY(original.save(dir.filePath("source.png")));
+    DocumentController controller;
+    controller.openImage(QUrl::fromLocalFile(dir.filePath("source.png")));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+
+    const auto presets = NekoPic::Filters::presetIds();
+    QCOMPARE(presets.size(), 13);
+    for (const auto &preset : presets) {
+        controller.selectFilter(preset);
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(controller.filterPreset(), preset);
+    }
+
+    // Unknown ids are rejected without changing the committed look.
+    controller.selectFilter(QStringLiteral("neko"));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.filterPreset(), presets.last());
+    controller.selectFilter(QString());
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+    QCOMPARE(controller.filterPreset(), presets.last());
 }
 
 QTEST_MAIN(DocumentControllerTest)
