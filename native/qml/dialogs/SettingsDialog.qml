@@ -48,6 +48,12 @@ NekoDialog {
     property int _lastQuality: 90
     property bool _accepted: false
 
+    /*! Keeps the scroll body above the fixed reset row and dialog footer. */
+    readonly property real _scrollMaxHeight: {
+        const host = root.parent && root.parent.height > 0 ? root.parent.height : 700
+        return Math.max(120, host - 300)
+    }
+
     width: Math.min(560, parent ? Math.max(Theme.controlMinWidth, parent.width - Theme.spacing3xl * 2)
                                 : 560)
     title: root._tr("偏好设置", "Settings")
@@ -201,7 +207,7 @@ NekoDialog {
             id: scroller
             objectName: "settings-scroll"
             Layout.fillWidth: true
-            Layout.preferredHeight: Math.min(settingsColumn.implicitHeight, 460)
+            Layout.preferredHeight: Math.min(settingsColumn.implicitHeight, root._scrollMaxHeight)
             contentWidth: width
             contentHeight: settingsColumn.implicitHeight
             clip: true
@@ -232,7 +238,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("主题", "Theme")
@@ -282,7 +288,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("减少动效", "Reduce motion")
@@ -326,7 +332,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("GPU 预览", "GPU preview")
@@ -361,7 +367,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("显示透明棋盘格", "Show transparency checkerboard")
@@ -396,7 +402,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("关闭前确认", "Confirm before closing")
@@ -440,7 +446,7 @@ NekoDialog {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 2
+                        spacing: Theme.spacingXs
 
                         Text {
                             text: root._tr("导出质量", "Export quality")
@@ -635,6 +641,12 @@ NekoDialog {
                     }
                 }
             }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            implicitHeight: Theme.borderWidth
+            color: Theme.separator
         }
 
         RowLayout {

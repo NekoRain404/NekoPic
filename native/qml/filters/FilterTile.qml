@@ -27,6 +27,13 @@ Item {
 
     implicitHeight: 64
     implicitWidth: 120
+    opacity: controlsEnabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
 
     AbstractButton {
         id: tile
@@ -38,6 +45,17 @@ Item {
         focusPolicy: Qt.StrongFocus
         activeFocusOnTab: true
         padding: 0
+
+        /*! Exposed for tests and integrators: mirrors FilterTile.selected. */
+        readonly property bool selectedState: root.selected
+
+        scale: down ? 0.97 : 1.0
+        Behavior on scale {
+            NumberAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
 
         Accessible.role: Accessible.Button
         Accessible.name: root.label
@@ -103,6 +121,12 @@ Item {
                     easing.type: Motion.decelerateEasing
                 }
             }
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: Motion.duration(Motion.fast)
+                    easing.type: Motion.decelerateEasing
+                }
+            }
         }
     }
 
@@ -115,13 +139,23 @@ Item {
         anchors.margins: 2
         width: 20
         height: 20
-        enabled: root.presetId !== "none"
+        enabled: root.presetId !== "none" && root.controlsEnabled
         visible: root.presetId !== "none"
+        hoverEnabled: true
         focusPolicy: Qt.StrongFocus
-        activeFocusOnTab: root.presetId !== "none"
+        activeFocusOnTab: root.presetId !== "none" && root.controlsEnabled
+        opacity: enabled ? 1 : Theme.opacityDisabled
 
         readonly property bool isFavourite: root.favourite
         text: isFavourite ? "★" : "☆"
+
+        scale: down ? 0.88 : (hovered ? 1.08 : 1.0)
+        Behavior on scale {
+            NumberAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
 
         Accessible.role: Accessible.CheckBox
         Accessible.name: isFavourite ? qsTr("Remove %1 from favourites").arg(root.label)
@@ -138,13 +172,26 @@ Item {
             font.pixelSize: Theme.fontSmall
             color: favouriteButton.isFavourite ? Theme.accent
                  : favouriteButton.hovered ? Theme.textPrimary : Theme.textSecondary
+            Behavior on color {
+                ColorAnimation {
+                    duration: Motion.duration(Motion.fast)
+                    easing.type: Motion.decelerateEasing
+                }
+            }
         }
 
         background: Rectangle {
             radius: width / 2
-            color: Theme.alpha(Theme.background, 0.82)
+            color: favouriteButton.hovered ? Theme.alpha(Theme.surfaceRaised, 0.92)
+                                           : Theme.alpha(Theme.background, 0.82)
             border.width: favouriteButton.visualFocus ? Theme.focusRingWidth : 0
             border.color: Theme.focusRing
+            Behavior on color {
+                ColorAnimation {
+                    duration: Motion.duration(Motion.fast)
+                    easing.type: Motion.decelerateEasing
+                }
+            }
         }
     }
 }

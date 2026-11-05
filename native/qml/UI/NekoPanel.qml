@@ -56,6 +56,18 @@ Item {
         color: root.backgroundColor
         border.width: root.borderWidth
         border.color: root.borderColor
+        Behavior on color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
+        Behavior on border.color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
     }
 
     Item {

@@ -5,28 +5,34 @@ import QtQuick.Layouts
 import "UI"
 import "inspector"
 import "components"
-import "filters"
 
 /*!
-    Inspector — native counterpart of the H5 five-tab colour workspace.
+    Inspector — the native five-tab colour workspace.
 
-    The top-level Adjust / Filters segmented control is unchanged. Adjust is
-    organised into 基础, HSL, 曲线, 色彩分级 and 细节/效果; Filters hosts the full
-    preset registry with live previews, search, category chips, favourites and
-    the strength control. All adjustment gestures are forwarded through the
-    public adjustmentStarted / Preview / Finished signals so Main.qml and the
-    controller need no changes.
+    The inspector is deliberately colour-only: the five Adjust sub-tabs
+    (基础, HSL, 曲线, 色彩分级, 细节/效果) form one continuous workspace and
+    presets live in the standalone FiltersPanel tool surface. All adjustment
+    gestures are forwarded through the public adjustmentStarted / Preview /
+    Finished signals so Main.qml and the controller need no changes.
+
+    Compatibility:
+      • `currentTab` and the filter* properties/signals are retained so the
+        existing shell binding keeps compiling while it migrates the filter
+        workspace to its own host. They no longer drive any UI here.
 */
 Rectangle {
     id: root
 
     property var theme
+    /*! Compatibility only: 0 = colour workspace, 1 = external filters tool. */
     property int currentTab: 0
     /*! Adjust sub-tab: 0 基础, 1 HSL, 2 曲线, 3 色彩分级, 4 细节/效果. */
     property int adjustTab: 0
     property bool adjustmentsEnabled: false
     property var adjustmentValues: ({})
     property var histogramBins: []
+
+    /*! Retained for Main's filter bindings until the standalone host lands. */
     property bool filtersEnabled: false
     property bool filterIntensityEnabled: filtersEnabled
     property string filterPreset: "none"
@@ -77,139 +83,120 @@ Rectangle {
     signal adjustmentFinished(string key, real value)
     signal adjustmentReset()
     signal autoEnhanceRequested()
+
+    /*! Compatibility signals for the external filter workspace. */
     signal filterSelected(string preset)
     signal filterIntensityStarted()
     signal filterIntensityPreview(real value)
     signal filterIntensityFinished(real value)
 
-    color: theme.panel
+    color: Theme.panel
     implicitWidth: 292
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
+        // ── Workspace heading ──────────────────────────────────────────────
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: 23
-            Layout.rightMargin: 23
-            Layout.topMargin: 20
-            Layout.bottomMargin: 16
-            spacing: 4
-            Label {
+            Layout.leftMargin: Theme.spacingXl
+            Layout.rightMargin: Theme.spacingXl
+            Layout.topMargin: Theme.spacingXl
+            Layout.bottomMargin: Theme.spacingMd
+            spacing: Theme.spacingXs
+
+            Text {
+                Layout.fillWidth: true
                 text: qsTr("LIGHT & COLOR")
-                font.pixelSize: 9
-                font.weight: Font.DemiBold
-                color: root.theme.muted
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontCaption
+                font.weight: Theme.fontWeightDemiBold
+                font.letterSpacing: Theme.trackingWide
+                elide: Text.ElideRight
             }
-            Label {
-                text: root.currentTab === 0 ? qsTr("Adjust") : qsTr("Filters")
-                font.pixelSize: 19
-                font.weight: Font.DemiBold
-                color: root.theme.text
+            Text {
+                Layout.fillWidth: true
+                text: qsTr("Adjust")
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontHeadline
+                font.weight: Theme.fontWeightDemiBold
+                elide: Text.ElideRight
             }
         }
 
-        NekoSegmentedControl {
-            id: tabs
+        // ── Fixed five-subtab strip ────────────────────────────────────────
+        AdjustTabBar {
+            objectName: "adjust-subtabs"
             Layout.fillWidth: true
-            Layout.leftMargin: 23
-            Layout.rightMargin: 23
-            model: [qsTr("Adjust"), qsTr("Filters")]
-            accessibleName: qsTr("Adjustment sections")
-            Component.onCompleted: currentIndex = root.currentTab
-            onActivated: function(index) { root.currentTab = index }
-            Connections {
-                target: root
-                function onCurrentTabChanged() {
-                    if (tabs.currentIndex !== root.currentTab)
-                        tabs.currentIndex = root.currentTab
-                }
+            Layout.leftMargin: Theme.spacingXl
+            Layout.rightMargin: Theme.spacingXl
+            Layout.bottomMargin: Theme.spacingSm
+            model: root.adjustTabLabels
+            currentIndex: root.adjustTab
+            onActivated: function(index) { root.adjustTab = index }
+        }
+
+        // ── Section heading + reset ────────────────────────────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: Theme.spacingXl
+            Layout.rightMargin: Theme.spacingXl
+            Layout.bottomMargin: Theme.spacingSm
+            spacing: Theme.spacingSm
+
+            Text {
+                Layout.fillWidth: true
+                text: root.adjustTabLabels[Math.max(0, Math.min(4, root.adjustTab))]
+                color: Theme.textPrimary
+                font.pixelSize: Theme.fontSmall
+                font.weight: Theme.fontWeightDemiBold
+                elide: Text.ElideRight
+            }
+
+            NekoButton {
+                id: resetButton
+                objectName: "adjustment-reset"
+                enabled: root.adjustmentsEnabled
+                text: qsTr("Reset")
+                variant: "ghost"
+                iconName: "reset"
+                implicitHeight: Theme.controlHeightSm
+                leftPadding: Theme.spacingSm
+                rightPadding: Theme.spacingSm
+                accessibleName: qsTr("Reset all adjustments")
+                onClicked: root.adjustmentReset()
             }
         }
 
+        // ── Scrollable colour controls ─────────────────────────────────────
         ScrollView {
             id: inspectorScroll
             objectName: "inspector-scroll"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.topMargin: 20
             clip: true
             contentWidth: availableWidth
+
+            ScrollBar.vertical: NekoScrollBar {
+                objectName: "inspector-scrollbar"
+                policy: ScrollBar.AsNeeded
+                accessibleName: qsTr("Inspector content scroll")
+            }
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
             ColumnLayout {
                 width: parent.width
                 spacing: 0
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.bottomMargin: 15
-                    Label {
-                        text: root.currentTab === 0
-                              ? root.adjustTabLabels[Math.max(0, Math.min(4, root.adjustTab))]
-                              : qsTr("Presets")
-                        color: root.theme.text
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                    }
-                    Item { Layout.fillWidth: true }
-                    NekoButton {
-                        id: resetButton
-                        objectName: "adjustment-reset"
-                        visible: root.currentTab === 0
-                        enabled: root.adjustmentsEnabled
-                        text: qsTr("Reset")
-                        variant: "ghost"
-                        implicitHeight: 26
-                        leftPadding: Theme.spacingSm
-                        rightPadding: Theme.spacingSm
-                        onClicked: root.adjustmentReset()
-                    }
-                }
-
-                // ── Filters ─────────────────────────────────────────────────
-                FiltersPanel {
-                    objectName: "filters-panel"
-                    visible: root.currentTab === 1
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.bottomMargin: 18
-                    currentPreset: root.filterPreset
-                    intensity: root.filterIntensity
-                    presetsEnabled: root.filtersEnabled
-                    intensityEnabled: root.filterIntensityEnabled
-                    previewsAvailable: root.previewsAvailable
-                    previewRevision: root.previewRevision
-                    onFilterSelected: function(preset) { root.filterSelected(preset) }
-                    onIntensityStarted: root.filterIntensityStarted()
-                    onIntensityPreview: function(value) { root.filterIntensityPreview(value) }
-                    onIntensityFinished: function(value) { root.filterIntensityFinished(value) }
-                }
-
-                // ── Adjust sub-tabs ─────────────────────────────────────────
-                AdjustTabBar {
-                    objectName: "adjust-subtabs"
-                    visible: root.currentTab === 0
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 14
-                    model: root.adjustTabLabels
-                    currentIndex: root.adjustTab
-                    onActivated: function(index) { root.adjustTab = index }
-                }
-
                 // 基础
                 ColumnLayout {
-                    visible: root.currentTab === 0 && root.adjustTab === 0
+                    visible: root.adjustTab === 0
                     Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 18
+                    Layout.leftMargin: Theme.spacingXl
+                    Layout.rightMargin: Theme.spacingXl
+                    Layout.topMargin: Theme.spacingMd
+                    Layout.bottomMargin: Theme.spacingLg
                     spacing: Theme.spacingLg
 
                     NekoButton {
@@ -297,12 +284,12 @@ Rectangle {
                 // HSL
                 HslControls {
                     objectName: "hsl-controls"
-                    visible: root.currentTab === 0 && root.adjustTab === 1
+                    visible: root.adjustTab === 1
                     Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 18
+                    Layout.leftMargin: Theme.spacingXl
+                    Layout.rightMargin: Theme.spacingXl
+                    Layout.topMargin: Theme.spacingMd
+                    Layout.bottomMargin: Theme.spacingLg
                     values: root.adjustmentValues
                     controlsEnabled: root.adjustmentsEnabled
                     onGestureStarted: function(key) { root.adjustmentStarted(key) }
@@ -313,12 +300,12 @@ Rectangle {
                 // 曲线
                 CurveEditor {
                     objectName: "curve-editor"
-                    visible: root.currentTab === 0 && root.adjustTab === 2
+                    visible: root.adjustTab === 2
                     Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 18
+                    Layout.leftMargin: Theme.spacingXl
+                    Layout.rightMargin: Theme.spacingXl
+                    Layout.topMargin: Theme.spacingMd
+                    Layout.bottomMargin: Theme.spacingLg
                     values: root.adjustmentValues
                     controlsEnabled: root.adjustmentsEnabled
                     onGestureStarted: function(key) { root.adjustmentStarted(key) }
@@ -329,12 +316,12 @@ Rectangle {
                 // 色彩分级
                 GradeControls {
                     objectName: "grade-controls"
-                    visible: root.currentTab === 0 && root.adjustTab === 3
+                    visible: root.adjustTab === 3
                     Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 18
+                    Layout.leftMargin: Theme.spacingXl
+                    Layout.rightMargin: Theme.spacingXl
+                    Layout.topMargin: Theme.spacingMd
+                    Layout.bottomMargin: Theme.spacingLg
                     values: root.adjustmentValues
                     controlsEnabled: root.adjustmentsEnabled
                     onGestureStarted: function(key) { root.adjustmentStarted(key) }
@@ -344,12 +331,12 @@ Rectangle {
 
                 // 细节/效果
                 ColumnLayout {
-                    visible: root.currentTab === 0 && root.adjustTab === 4
+                    visible: root.adjustTab === 4
                     Layout.fillWidth: true
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.topMargin: 16
-                    Layout.bottomMargin: 18
+                    Layout.leftMargin: Theme.spacingXl
+                    Layout.rightMargin: Theme.spacingXl
+                    Layout.topMargin: Theme.spacingMd
+                    Layout.bottomMargin: Theme.spacingLg
                     spacing: Theme.spacingLg
 
                     Section {
@@ -423,5 +410,4 @@ Rectangle {
             }
         }
     }
-
 }

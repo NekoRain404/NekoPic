@@ -12,4 +12,5 @@ NekoPanel 1.0 NekoPanel.qml
 NekoCard 1.0 NekoCard.qml
 NekoSectionHeader 1.0 NekoSectionHeader.qml
 NekoScrollBar 1.0 NekoScrollBar.qml
+NekoToolTip 1.0 NekoToolTip.qml
 NekoDialog 1.0 NekoDialog.qml

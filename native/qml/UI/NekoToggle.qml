@@ -27,6 +27,12 @@ AbstractButton {
     activeFocusOnTab: true
 
     opacity: enabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
     Accessible.role: Accessible.CheckBox
     Accessible.name: accessibleName.length > 0 ? accessibleName : (text.length > 0 ? text : qsTr("Toggle"))
     Accessible.checkable: true
@@ -59,6 +65,13 @@ AbstractButton {
                 color: Theme.controlKnob
                 border.width: root.checked ? 0 : Theme.borderWidth
                 border.color: Theme.border
+                scale: root.enabled && root.hovered ? 1.06 : 1.0
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Motion.duration(Motion.fast)
+                        easing.type: Motion.decelerateEasing
+                    }
+                }
                 Behavior on x {
                     NumberAnimation {
                         duration: Motion.duration(Motion.fast)

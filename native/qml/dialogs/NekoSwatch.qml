@@ -22,6 +22,20 @@ AbstractButton {
     hoverEnabled: true
     focusPolicy: Qt.StrongFocus
     activeFocusOnTab: true
+    opacity: enabled ? 1 : Theme.opacityDisabled
+    scale: down ? 0.94 : (hovered && enabled ? 1.04 : 1.0)
+    Behavior on scale {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
 
     readonly property color checkInk: root.showChecker ? Theme.textPrimary
                                                        : Theme.contrastColor(root.swatchColor)
@@ -39,6 +53,12 @@ AbstractButton {
         border.width: root.selected ? Theme.borderWidth * 2 : Theme.borderWidth
         border.color: root.selected ? Theme.accent
                                     : root.hovered ? Theme.textSecondary : Theme.border
+        Behavior on border.color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
     }
 
     contentItem: Item {

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import "../UI"
 
@@ -77,63 +78,91 @@ NekoDialog {
     title: qsTr("Keyboard shortcuts")
     description: qsTr("Shortcuts available in the editor. Crop shortcuts work while the crop tool is active.")
 
+    readonly property real _listMaxHeight: {
+        const host = root.parent && root.parent.height > 0 ? root.parent.height : 700
+        return Math.max(180, host - 280)
+    }
+
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacingLg
 
-        Repeater {
-            model: root.groups
+        Flickable {
+            id: groupsScroller
+            objectName: "shortcuts-scroll"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(groupsColumn.implicitHeight, root._listMaxHeight)
+            contentWidth: width
+            contentHeight: groupsColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: NekoScrollBar {
+                objectName: "shortcuts-scrollbar"
+                policy: ScrollBar.AsNeeded
+                accessibleName: qsTr("Shortcut list scroll")
+            }
 
-            delegate: ColumnLayout {
-                id: groupColumn
-                required property var modelData
-                Layout.fillWidth: true
-                spacing: Theme.spacingXs
-
-                NekoSectionHeader {
-                    Layout.fillWidth: true
-                    text: groupColumn.modelData.title
-                    eyebrow: true
-                    showDivider: true
-                }
+            ColumnLayout {
+                id: groupsColumn
+                width: groupsScroller.width
+                spacing: Theme.spacingLg
 
                 Repeater {
-                    model: groupColumn.modelData.entries
+                    model: root.groups
 
-                    delegate: RowLayout {
+                    delegate: ColumnLayout {
+                        id: groupColumn
                         required property var modelData
                         Layout.fillWidth: true
-                        Layout.topMargin: Theme.spacingXs
-                        spacing: Theme.spacingSm
+                        spacing: Theme.spacingXs
 
-                        Text {
+                        NekoSectionHeader {
                             Layout.fillWidth: true
-                            text: modelData.action
-                            color: Theme.textPrimary
-                            font.pixelSize: Theme.fontSmall
-                            elide: Text.ElideRight
-                            verticalAlignment: Text.AlignVCenter
+                            text: groupColumn.modelData.title
+                            eyebrow: true
+                            showDivider: true
                         }
 
-                        Rectangle {
-                            implicitWidth: shortcutLabel.implicitWidth + Theme.spacingMd * 2
-                            implicitHeight: Theme.iconSizeLg
-                            radius: Theme.radiusXs
-                            color: Theme.background
-                            border.width: Theme.borderWidth
-                            border.color: Theme.border
+                        Repeater {
+                            model: groupColumn.modelData.entries
 
-                            Text {
-                                id: shortcutLabel
-                                anchors.centerIn: parent
-                                text: modelData.shortcut
-                                color: Theme.textSecondary
-                                font.pixelSize: Theme.fontCaption
-                                font.weight: Theme.fontWeightMedium
+                            delegate: RowLayout {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                Layout.topMargin: Theme.spacingXs
+                                spacing: Theme.spacingSm
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: modelData.action
+                                    color: Theme.textPrimary
+                                    font.pixelSize: Theme.fontSmall
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+
+                                Rectangle {
+                                    implicitWidth: shortcutLabel.implicitWidth + Theme.spacingMd * 2
+                                    implicitHeight: Theme.iconSizeLg
+                                    radius: Theme.radiusXs
+                                    color: Theme.background
+                                    border.width: Theme.borderWidth
+                                    border.color: Theme.border
+
+                                    Text {
+                                        id: shortcutLabel
+                                        anchors.centerIn: parent
+                                        text: modelData.shortcut
+                                        color: Theme.textSecondary
+                                        font.pixelSize: Theme.fontCaption
+                                        font.weight: Theme.fontWeightMedium
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
             }
         }
 

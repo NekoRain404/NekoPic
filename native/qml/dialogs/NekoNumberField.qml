@@ -35,6 +35,13 @@ Item {
 
     implicitWidth: Theme.controlMinWidth
     implicitHeight: Theme.controlHeight
+    opacity: enabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
 
     onMinimumChanged: refreshFromText()
     onMaximumChanged: refreshFromText()
@@ -102,7 +109,8 @@ Item {
             border.width: Theme.borderWidth
             border.color: root.trimmedText.length > 0 && !root.valid
                           ? Theme.danger
-                          : input.activeFocus ? Theme.accent : Theme.border
+                          : input.activeFocus ? Theme.focusRing
+                          : input.hovered ? Theme.textTertiary : Theme.border
             Behavior on border.color {
                 ColorAnimation {
                     duration: Motion.duration(Motion.fast)

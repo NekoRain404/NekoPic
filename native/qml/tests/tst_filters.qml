@@ -194,4 +194,33 @@ TestCase {
         panel.currentPreset = "sunset"
         compare(label.text, "Sunset")
     }
+
+    function test_gridFitsNarrowPanelWidths() {
+        const widths = [292, 260]
+        for (let w = 0; w < widths.length; ++w) {
+            panel.width = widths[w]
+            wait(0)
+            const grid = findChild(panel, "filter-grid")
+            verify(grid !== null)
+            verify(grid.columns <= 3, "unexpected column count " + grid.columns)
+            verify(grid.width <= panel.width + 0.5,
+                   "grid " + grid.width + " exceeds panel " + panel.width)
+            for (let i = 0; i < ids.length; ++i) {
+                const button = tile(ids[i])
+                if (!button.visible)
+                    continue
+                const point = button.mapToItem(panel, 0, 0)
+                verify(point.x >= -0.5, ids[i] + " overflows the left edge")
+                verify(point.x + button.width <= panel.width + 0.5,
+                       ids[i] + " overflows the right edge at " + panel.width + "px")
+            }
+            const search = findChild(panel, "filter-search")
+            verify(search.mapToItem(panel, 0, 0).x + search.width <= panel.width + 0.5,
+                   "search field overflows at " + panel.width + "px")
+            const slider = findChild(panel, "filter-intensity")
+            verify(slider.mapToItem(panel, 0, 0).x + slider.width <= panel.width + 0.5,
+                   "strength slider overflows at " + panel.width + "px")
+        }
+        panel.width = 292
+    }
 }

@@ -47,6 +47,12 @@ Item {
     implicitHeight: Theme.sliderHeight
     activeFocusOnTab: true
     opacity: enabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
 
     Accessible.role: Accessible.Slider
     Accessible.name: accessibleName
@@ -137,7 +143,15 @@ Item {
         width: root.trackWidth
         height: Theme.sliderTrackHeight
         radius: height / 2
-        color: Theme.border
+        color: handleArea.containsMouse && root.enabled
+               ? Theme.alpha(Theme.textSecondary, 0.38)
+               : Theme.border
+        Behavior on color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
     }
 
     Rectangle {
@@ -147,7 +161,14 @@ Item {
         width: track.width * root.fillWidth
         height: track.height
         radius: track.radius
-        color: root.enabled ? Theme.accent : Theme.textTertiary
+        color: !root.enabled ? Theme.textTertiary
+             : (root.dragging || handleArea.containsMouse) ? Theme.accentHover : Theme.accent
+        Behavior on color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
         Behavior on x {
             enabled: !root.dragging
             NumberAnimation {
@@ -184,8 +205,16 @@ Item {
         y: (root.height - height) / 2
         color: Theme.controlKnob
         border.width: Theme.borderWidth
-        border.color: root.activeFocus ? Theme.focusRing : Theme.panel
-        scale: root.dragging ? 1.08 : (handleArea.containsMouse ? 1.02 : 1.0)
+        border.color: root.activeFocus ? Theme.focusRing
+                    : (root.dragging || handleArea.containsMouse) ? Theme.textTertiary
+                    : Theme.panel
+        scale: root.dragging ? 1.20 : (handleArea.containsMouse ? 1.14 : 1.0)
+        Behavior on border.color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
         Behavior on x {
             enabled: !root.dragging
             NumberAnimation {
@@ -199,6 +228,14 @@ Item {
                 easing.type: Motion.decelerateEasing
             }
         }
+    }
+
+    NekoToolTip {
+        visible: root.enabled && (root.dragging || handleArea.containsMouse)
+        text: root.accessibleName.length > 0
+              ? root.accessibleName + " · " + root.valueText
+              : root.valueText
+        accessibleName: text
     }
 
     Rectangle {
