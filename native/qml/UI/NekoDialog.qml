@@ -34,8 +34,38 @@ Popup {
     width: Math.min(Theme.dialogWidth,
                     parent ? Math.max(Theme.controlMinWidth, parent.width - Theme.spacing3xl * 2)
                            : Theme.dialogWidth)
-    height: implicitHeight
+    height: parent && parent.height > 0
+            ? Math.min(implicitHeight, parent.height - Theme.spacing2xl)
+            : implicitHeight
     implicitHeight: contentColumn.implicitHeight + topPadding + bottomPadding
+    transformOrigin: Item.Center
+
+    /*! Decelerating fade + tiny scale keeps the modal from popping in. */
+    enter: Transition {
+        NumberAnimation {
+            property: "opacity"
+            from: 0.0
+            to: 1.0
+            duration: Motion.duration(Motion.standard)
+            easing.type: Motion.decelerateEasing
+        }
+        NumberAnimation {
+            property: "scale"
+            from: 0.98
+            to: 1.0
+            duration: Motion.duration(Motion.standard)
+            easing.type: Motion.decelerateEasing
+        }
+    }
+    exit: Transition {
+        NumberAnimation {
+            property: "opacity"
+            from: 1.0
+            to: 0.0
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.accelerateEasing
+        }
+    }
 
     background: NekoPanel {
         elevation: NekoPanel.High

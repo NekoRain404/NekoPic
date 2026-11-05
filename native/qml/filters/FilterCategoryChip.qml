@@ -28,6 +28,13 @@ AbstractButton {
     Accessible.checked: root.selected
 
     opacity: enabled ? 1 : Theme.opacityDisabled
+    scale: down ? 0.96 : 1.0
+    Behavior on scale {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
 
     background: Rectangle {
         radius: Theme.radiusPill
@@ -37,6 +44,12 @@ AbstractButton {
         border.width: root.selected ? Theme.borderWidth : 0
         border.color: root.selected ? Theme.accent : "transparent"
         Behavior on color {
+            ColorAnimation {
+                duration: Motion.duration(Motion.fast)
+                easing.type: Motion.decelerateEasing
+            }
+        }
+        Behavior on border.color {
             ColorAnimation {
                 duration: Motion.duration(Motion.fast)
                 easing.type: Motion.decelerateEasing

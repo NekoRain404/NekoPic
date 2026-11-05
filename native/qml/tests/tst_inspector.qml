@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtTest
 import ".."
 
@@ -72,9 +73,6 @@ TestCase {
         previewNotification.enabled = false
         inspector.adjustmentValues = defaultValues()
         inspector.adjustmentsEnabled = true
-        inspector.filtersEnabled = true
-        inspector.filterPreset = "none"
-        inspector.filterIntensity = 100
         const scroll = findChild(inspector, "inspector-scroll")
         if (scroll && scroll.contentItem)
             scroll.contentItem.contentY = 0
@@ -97,24 +95,37 @@ TestCase {
         compare(slider.value, -20)
     }
 
-    function test_filterPreviewsUseRevisionAndRetainLabels() {
-        inspector.currentTab = 1
-        verify(inspector.previewsAvailable !== undefined)
-        inspector.previewsAvailable = false
-        const warm = findChild(inspector, "filter-preview-warm")
-        verify(warm !== null)
-        compare(warm.source.toString(), "")
-        compare(findChild(inspector, "filter-warm").text, "Warm")
-        inspector.previewRevision = 7
-        // Standalone QML runner has no C++ provider; pixel delivery is tested in C++.
-        for (let i = 0; i < 13; ++i)
-            ignoreWarning(/.*Invalid image provider: image:\/\/filterpreview\/.*/)
+    function test_colourOnlyWorkspaceHasNoEmbeddedFilters() {
+        // Filters now live in their own standalone panel; the inspector keeps
+        // only the five-tab colour workspace.
+        verify(findChild(inspector, "filters-panel") === null)
+        verify(findChild(inspector, "tabs") === null)
+        verify(findChild(inspector, "adjust-subtabs") !== null)
+        verify(inspector.adjustTabLabels.length === 5)
+
+        // Compatibility surface used by Main.qml is still present.
+        inspector.filtersEnabled = true
+        inspector.filterPreset = "warm"
+        inspector.filterIntensity = 33
         inspector.previewsAvailable = true
-        compare(warm.source.toString(), "image://filterpreview/warm/7")
-        inspector.previewRevision = 8
-        compare(warm.source.toString(), "image://filterpreview/warm/8")
-        inspector.previewsAvailable = false
-        compare(warm.source.toString(), "")
+        inspector.previewRevision = 4
+        compare(inspector.filtersEnabled, true)
+        compare(inspector.filterPreset, "warm")
+        compare(inspector.filterIntensity, 33)
+        compare(inspector.previewsAvailable, true)
+        compare(inspector.previewRevision, 4)
+        inspector.filterSelected("warm")
+        compare(filterSelected.count, 1)
+        compare(filterSelected.signalArguments[0][0], "warm")
+    }
+
+    function test_scrollViewUsesDesignSystemScrollBar() {
+        const scroll = findChild(inspector, "inspector-scroll")
+        verify(scroll !== null)
+        const bar = findChild(inspector, "inspector-scrollbar")
+        verify(bar !== null)
+        compare(bar.Accessible.role, Accessible.ScrollBar)
+        verify(scroll.ScrollBar.horizontal.policy === ScrollBar.AlwaysOff)
     }
 
     function test_disabledWithoutImage() {
@@ -164,64 +175,16 @@ TestCase {
         verify(slider.value > 0)
     }
 
-    function test_selectingPresetEmitsBackendId() {
-        inspector.currentTab = 1
-        const button = findChild(inspector, "filter-vintage")
-        verify(button !== null)
-        mouseClick(button)
-        compare(filterSelected.count, 1)
-        compare(filterSelected.signalArguments[0][0], "vintage")
-    }
-
-    function test_filterIntensityTracksControllerAndGesture() {
-        inspector.currentTab = 1
-        inspector.filterPreset = "warm"
-        inspector.filterIntensity = 42
-        const slider = findChild(inspector, "filter-intensity")
-        compare(slider.value, 42)
-        mousePress(slider, slider.width / 2, slider.height / 2)
-        mouseMove(slider, slider.width * 0.75, slider.height / 2)
-        mouseRelease(slider, slider.width * 0.75, slider.height / 2)
-        compare(filterStarted.count, 1)
-        verify(filterPreview.count > 0)
-        compare(filterFinished.count, 1)
-        compare(filterFinished.signalArguments[0][0], slider.value)
-    }
-
-    function test_filtersDisabledWithoutImage() {
+    function test_filterCompatibilityPropsDoNotRenderControls() {
         inspector.currentTab = 1
         inspector.filtersEnabled = false
-        verify(!findChild(inspector, "filter-vivid").enabled)
-        verify(!findChild(inspector, "filter-intensity").enabled)
-    }
-
-    function test_filterKeyboardIntensityIsOneGesture() {
-        inspector.currentTab = 1
+        verify(findChild(inspector, "filter-vivid") === null)
+        verify(findChild(inspector, "filter-intensity") === null)
+        inspector.filtersEnabled = true
         inspector.filterPreset = "warm"
         inspector.filterIntensity = 42
-        const slider = findChild(inspector, "filter-intensity")
-        slider.forceActiveFocus()
-        keyClick(Qt.Key_Right)
-        compare(filterStarted.count, 1)
-        compare(filterPreview.count, 1)
-        compare(filterFinished.count, 1)
-        compare(filterPreview.signalArguments[0][0], 43)
-        compare(filterFinished.signalArguments[0][0], 43)
-    }
-
-    function test_intensityRemainsEnabledWhilePresetTilesAreLocked() {
-        inspector.currentTab = 1
-        inspector.filterPreset = "warm"
-        verify(inspector.filterIntensityEnabled !== undefined)
-        inspector.filterIntensityEnabled = true
-        inspector.filtersEnabled = false
-        verify(!findChild(inspector, "filter-warm").enabled)
-        const slider = findChild(inspector, "filter-intensity")
-        verify(slider.enabled)
-        slider.forceActiveFocus()
-        keyClick(Qt.Key_Left)
-        compare(filterFinished.count, 1)
-        inspector.filterIntensityEnabled = Qt.binding(function() { return inspector.filtersEnabled })
+        compare(inspector.filterPreset, "warm")
+        compare(inspector.filterIntensity, 42)
     }
 
     // ── Five-tab colour workspace ───────────────────────────────────────────

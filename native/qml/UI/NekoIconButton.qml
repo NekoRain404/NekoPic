@@ -33,6 +33,12 @@ AbstractButton {
     activeFocusOnTab: true
 
     opacity: enabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
     scale: down && enabled ? 0.96 : 1.0
     Behavior on scale {
         NumberAnimation {
@@ -65,6 +71,12 @@ AbstractButton {
             name: root.iconName
             color: root.ink
         }
+    }
+
+    NekoToolTip {
+        visible: root.hovered && root.enabled && root.text.length === 0
+        text: root.accessibleName.length > 0 ? root.accessibleName : root.iconName
+        accessibleName: root.Accessible.name
     }
 
     Rectangle {

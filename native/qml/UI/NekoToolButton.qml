@@ -90,6 +90,12 @@ AbstractButton {
         }
     }
 
+    NekoToolTip {
+        visible: root.hovered && root.enabled
+        text: root.accessibleName.length > 0 ? root.accessibleName : root.text
+        accessibleName: root.Accessible.name
+    }
+
     Rectangle {
         anchors.fill: parent
         anchors.margins: -Theme.focusRingOffset

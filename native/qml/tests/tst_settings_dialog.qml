@@ -403,4 +403,37 @@ TestCase {
         dialog.close()
         tryVerify(function() { return !dialog.opened }, 3000)
     }
+
+    function test_smallWindowsKeepExportReachableAboveFooter() {
+        const sizes = [[900, 700], [860, 600]]
+        for (let i = 0; i < sizes.length; ++i) {
+            testCase.width = sizes[i][0]
+            testCase.height = sizes[i][1]
+            const dialog = make()
+            openDialog(dialog)
+            verify(dialog.height <= sizes[i][1], "dialog is taller than the window")
+            const scroller = child(dialog, "settings-scroll")
+            const reset = child(dialog, "settings-reset")
+            verify(scroller !== null && reset !== null)
+            const scrollPoint = scroller.mapToItem(dialog.contentItem, 0, 0)
+            const resetPoint = reset.mapToItem(dialog.contentItem, 0, 0)
+            verify(scrollPoint.y + scroller.height <= resetPoint.y + 0.5,
+                   "scroll body overlaps the reset row at " + sizes[i][0] + "x" + sizes[i][1])
+            verify(scroller.contentHeight > scroller.height,
+                   "settings body should scroll at " + sizes[i][0] + "x" + sizes[i][1])
+
+            const warm = child(dialog, "settings-background-warm-grey")
+            scrollTo(dialog, warm)
+            wait(10)
+            const warmPoint = warm.mapToItem(scroller, 0, 0)
+            verify(warmPoint.y >= -0.5,
+                   "export background is above the scroll viewport")
+            verify(warmPoint.y + warm.height <= scroller.height + 0.5,
+                   "export background is below the scroll viewport")
+            dialog.close()
+            tryVerify(function() { return !dialog.opened }, 3000)
+        }
+        testCase.width = 1000
+        testCase.height = 800
+    }
 }

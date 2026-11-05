@@ -150,11 +150,24 @@ ColumnLayout {
             font.pixelSize: Theme.fontSmall
         }
         Item { Layout.fillWidth: true }
-        Label {
-            objectName: "filter-intensity-value"
-            text: Math.round(intensitySlider.value) + "%"
-            color: Theme.textTertiary
-            font.pixelSize: Theme.fontCaption
+
+        Rectangle {
+            implicitWidth: Math.max(42, intensityValue.implicitWidth + Theme.spacingMd)
+            implicitHeight: 20
+            radius: Theme.radiusXs
+            color: Theme.background
+            border.width: Theme.borderWidth
+            border.color: Theme.separator
+
+            Label {
+                id: intensityValue
+                objectName: "filter-intensity-value"
+                anchors.centerIn: parent
+                text: Math.round(intensitySlider.value) + "%"
+                color: Theme.textSecondary
+                font.pixelSize: Theme.fontCaption
+                font.weight: Theme.fontWeightMedium
+            }
         }
     }
 
@@ -216,7 +229,14 @@ ColumnLayout {
             radius: Theme.radiusSm
             color: Theme.background
             border.width: searchField.activeFocus ? Theme.focusRingWidth : Theme.borderWidth
-            border.color: searchField.activeFocus ? Theme.focusRing : Theme.border
+            border.color: searchField.activeFocus ? Theme.focusRing
+                        : searchField.hovered ? Theme.textTertiary : Theme.border
+            Behavior on border.color {
+                ColorAnimation {
+                    duration: Motion.duration(Motion.fast)
+                    easing.type: Motion.decelerateEasing
+                }
+            }
         }
     }
 
@@ -251,9 +271,13 @@ ColumnLayout {
     GridLayout {
         objectName: "filter-grid"
         Layout.fillWidth: true
-        columns: 4
-        rowSpacing: 6
-        columnSpacing: 6
+        // Three columns keep each preview comfortably above the 64 px tile
+        // minimum at both 260 px and 292 px panel widths. Tiles must be
+        // allowed to shrink below their implicit width; otherwise the grid
+        // reports a 4 × 120 px minimum and clips the right edge.
+        columns: root.width > 0 && root.width < 232 ? 2 : 3
+        rowSpacing: Theme.spacingSm
+        columnSpacing: Theme.spacingSm
 
         Repeater {
             model: root.presets
@@ -262,6 +286,9 @@ ColumnLayout {
                 required property var modelData
                 visible: root.presetVisible(modelData)
                 Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                Layout.preferredWidth: 0
+                Layout.preferredHeight: 68
                 presetId: modelData.id
                 label: modelData.label
                 selected: root.currentPreset === modelData.id
@@ -275,15 +302,40 @@ ColumnLayout {
         }
     }
 
-    Label {
+    Item {
         objectName: "filter-empty"
         Layout.fillWidth: true
+        Layout.preferredHeight: 132
         visible: root.visibleCount === 0
-        text: qsTr("No looks match. Try another category or search.")
-        wrapMode: Text.WordWrap
-        horizontalAlignment: Text.AlignHCenter
-        color: Theme.textTertiary
-        font.pixelSize: Theme.fontSmall
+
+        Accessible.role: Accessible.StaticText
+        Accessible.name: emptyLabel.text
+
+        Column {
+            anchors.centerIn: parent
+            width: Math.min(parent.width, 220)
+            spacing: Theme.spacingSm
+
+            NekoIcon {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: Theme.iconSizeLg
+                height: Theme.iconSizeLg
+                name: "filters"
+                color: Theme.textTertiary
+                opacity: 0.7
+            }
+
+            Label {
+                id: emptyLabel
+                width: parent.width
+                text: qsTr("No looks match. Try another category or search.")
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                color: Theme.textTertiary
+                font.pixelSize: Theme.fontSmall
+                lineHeight: Theme.lineHeightNormal
+            }
+        }
     }
 
 }

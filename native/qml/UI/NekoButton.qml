@@ -46,6 +46,12 @@ AbstractButton {
     activeFocusOnTab: true
 
     opacity: enabled ? 1 : Theme.opacityDisabled
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Motion.duration(Motion.fast)
+            easing.type: Motion.decelerateEasing
+        }
+    }
     scale: down && enabled ? 0.98 : 1.0
     Behavior on scale {
         NumberAnimation {
