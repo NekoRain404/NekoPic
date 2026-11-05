@@ -412,30 +412,58 @@ void boxBlurLuminance(const QImage &work, std::vector<float> &output,
     output.swap(scratch);
 }
 
-// Filter presets: kept numerically identical to the existing floating path.
-enum class Preset { None, Mono, Vivid, Warm, Vintage, Cool, Unknown };
+// Filter presets: kept numerically identical to the legacy fast path.
+enum class Preset {
+    None,
+    Fresh,
+    Vivid,
+    Warm,
+    Cool,
+    Film,
+    Faded,
+    Vintage,
+    Sunset,
+    Soft,
+    Cream,
+    Mono,
+    Silver,
+    Unknown,
+};
 
 Preset parsePreset(const QString &preset)
 {
     if (preset.isEmpty() || preset == "none")
         return Preset::None;
-    if (preset == "mono")
-        return Preset::Mono;
+    if (preset == "fresh")
+        return Preset::Fresh;
     if (preset == "vivid")
         return Preset::Vivid;
     if (preset == "warm")
         return Preset::Warm;
-    if (preset == "vintage")
-        return Preset::Vintage;
     if (preset == "cool")
         return Preset::Cool;
+    if (preset == "film")
+        return Preset::Film;
+    if (preset == "faded")
+        return Preset::Faded;
+    if (preset == "vintage")
+        return Preset::Vintage;
+    if (preset == "sunset")
+        return Preset::Sunset;
+    if (preset == "soft")
+        return Preset::Soft;
+    if (preset == "cream")
+        return Preset::Cream;
+    if (preset == "mono")
+        return Preset::Mono;
+    if (preset == "silver")
+        return Preset::Silver;
     return Preset::Unknown;
 }
 
 bool isActivePreset(Preset preset)
 {
-    return preset == Preset::Mono || preset == Preset::Vivid || preset == Preset::Warm
-        || preset == Preset::Vintage || preset == Preset::Cool;
+    return preset != Preset::None && preset != Preset::Unknown;
 }
 
 struct Rgb {
@@ -444,14 +472,58 @@ struct Rgb {
     double blue;
 };
 
+Rgb clampedColor(Rgb color)
+{
+    return {clamp01(color.red), clamp01(color.green), clamp01(color.blue)};
+}
+
+Rgb brightnessColor(Rgb color, double amount)
+{
+    return {color.red * amount, color.green * amount, color.blue * amount};
+}
+
+Rgb contrastColor(Rgb color, double amount)
+{
+    return {(color.red - 0.5) * amount + 0.5, (color.green - 0.5) * amount + 0.5,
+            (color.blue - 0.5) * amount + 0.5};
+}
+
+Rgb saturationColor(Rgb color, double amount)
+{
+    const double luminance = luma(color.red, color.green, color.blue);
+    return {luminance + (color.red - luminance) * amount,
+            luminance + (color.green - luminance) * amount,
+            luminance + (color.blue - luminance) * amount};
+}
+
+// Partial sepia matrix matching the H5 prototype's `sepia(amount)`.
+Rgb sepiaColor(Rgb color, double amount)
+{
+    const Rgb sepia{0.393 * color.red + 0.769 * color.green + 0.189 * color.blue,
+                    0.349 * color.red + 0.686 * color.green + 0.168 * color.blue,
+                    0.272 * color.red + 0.534 * color.green + 0.131 * color.blue};
+    return {color.red + (sepia.red - color.red) * amount,
+            color.green + (sepia.green - color.green) * amount,
+            color.blue + (sepia.blue - color.blue) * amount};
+}
+
+// Keep this formula-for-formula identical to Adjustments::filterTarget in
+// adjustments.cpp. Both pipelines must produce the same look at every
+// intensity.
 Rgb filterTarget(Rgb color, Preset preset)
 {
     const auto [red, green, blue] = color;
-    const double luminance = luma(red, green, blue);
-    if (preset == Preset::Mono) {
+    if (preset == Preset::None || preset == Preset::Unknown) {
+        return color;
+    } else if (preset == Preset::Mono) {
+        const double luminance = luma(red, green, blue);
         return {luminance, luminance, luminance};
-    }
-    if (preset == Preset::Vivid) {
+    } else if (preset == Preset::Silver) {
+        const double luminance = luma(red, green, blue);
+        const Rgb gray{luminance, luminance, luminance};
+        return clampedColor(contrastColor(gray, 1.28));
+    } else if (preset == Preset::Vivid) {
+        const double luminance = luma(red, green, blue);
         color.red = std::clamp((red - 0.5) * 1.18 + 0.5, 0.0, 1.0);
         color.green = std::clamp((green - 0.5) * 1.18 + 0.5, 0.0, 1.0);
         color.blue = std::clamp((blue - 0.5) * 1.18 + 0.5, 0.0, 1.0);
@@ -470,6 +542,41 @@ Rgb filterTarget(Rgb color, Preset preset)
     } else if (preset == Preset::Cool) {
         color.red = std::max(0.0, red - 0.12 * red);
         color.blue = std::min(1.0, blue + 0.12 * (1.0 - blue));
+    } else if (preset == Preset::Fresh) {
+        // CSS: brightness(1.06) contrast(1.07) saturate(1.12)
+        color = brightnessColor(color, 1.06);
+        color = contrastColor(color, 1.07);
+        color = saturationColor(color, 1.12);
+        return clampedColor(color);
+    } else if (preset == Preset::Film) {
+        // CSS: sepia(.22) contrast(1.18) saturate(.85)
+        color = sepiaColor(color, 0.22);
+        color = contrastColor(color, 1.18);
+        color = saturationColor(color, 0.85);
+        return clampedColor(color);
+    } else if (preset == Preset::Faded) {
+        // CSS: brightness(1.1) contrast(.82) saturate(.76)
+        color = brightnessColor(color, 1.10);
+        color = contrastColor(color, 0.82);
+        color = saturationColor(color, 0.76);
+        return clampedColor(color);
+    } else if (preset == Preset::Sunset) {
+        // CSS: sepia(.4) saturate(1.3)
+        color = sepiaColor(color, 0.40);
+        color = saturationColor(color, 1.30);
+        return clampedColor(color);
+    } else if (preset == Preset::Soft) {
+        // CSS: brightness(1.1) contrast(.86) saturate(.92)
+        color = brightnessColor(color, 1.10);
+        color = contrastColor(color, 0.86);
+        color = saturationColor(color, 0.92);
+        return clampedColor(color);
+    } else if (preset == Preset::Cream) {
+        // CSS: sepia(.2) brightness(1.08) contrast(.9)
+        color = sepiaColor(color, 0.20);
+        color = brightnessColor(color, 1.08);
+        color = contrastColor(color, 0.90);
+        return clampedColor(color);
     }
     return color;
 }

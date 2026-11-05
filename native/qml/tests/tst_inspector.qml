@@ -107,7 +107,7 @@ TestCase {
         compare(findChild(inspector, "filter-warm").text, "Warm")
         inspector.previewRevision = 7
         // Standalone QML runner has no C++ provider; pixel delivery is tested in C++.
-        for (let i = 0; i < 12; ++i)
+        for (let i = 0; i < 13; ++i)
             ignoreWarning(/.*Invalid image provider: image:\/\/filterpreview\/.*/)
         inspector.previewsAvailable = true
         compare(warm.source.toString(), "image://filterpreview/warm/7")

@@ -5,15 +5,17 @@ import QtQuick.Layouts
 import "UI"
 import "inspector"
 import "components"
+import "filters"
 
 /*!
     Inspector — native counterpart of the H5 five-tab colour workspace.
 
     The top-level Adjust / Filters segmented control is unchanged. Adjust is
-    organised into 基础, HSL, 曲线, 色彩分级 and 细节/效果; Filters keeps the
-    existing preset grid and strength control. All adjustment gestures are
-    forwarded through the public adjustmentStarted / Preview / Finished
-    signals so Main.qml and the controller need no changes.
+    organised into 基础, HSL, 曲线, 色彩分级 and 细节/效果; Filters hosts the full
+    preset registry with live previews, search, category chips, favourites and
+    the strength control. All adjustment gestures are forwarded through the
+    public adjustmentStarted / Preview / Finished signals so Main.qml and the
+    controller need no changes.
 */
 Rectangle {
     id: root
@@ -167,148 +169,24 @@ Rectangle {
                     }
                 }
 
-                // ── Filters (preserved behaviour and layout) ────────────────
-                Label {
-                    visible: root.currentTab === 1
-                    Layout.leftMargin: 23
-                    Layout.rightMargin: 23
-                    Layout.fillWidth: true
-                    Layout.bottomMargin: 20
-                    wrapMode: Text.WordWrap
-                    text: qsTr("Choose a look, then adjust its strength.")
-                    color: root.theme.muted
-                    font.pixelSize: 11
-                }
-
-                ColumnLayout {
+                // ── Filters ─────────────────────────────────────────────────
+                FiltersPanel {
+                    objectName: "filters-panel"
                     visible: root.currentTab === 1
                     Layout.fillWidth: true
                     Layout.leftMargin: 23
                     Layout.rightMargin: 23
-                    spacing: 12
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Label {
-                            text: qsTr("Current look")
-                            color: root.theme.muted
-                            font.pixelSize: 10
-                        }
-                        Item { Layout.fillWidth: true }
-                        Label {
-                            text: root.filterPreset === "none" ? qsTr("Original") : filterName(root.filterPreset)
-                            color: root.theme.text
-                            font.pixelSize: 11
-                        }
-                    }
-
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: 2
-                        rowSpacing: 9
-                        columnSpacing: 9
-
-                        Repeater {
-                            model: [
-                                { id: "none", label: qsTr("Original"), color: "#828b8a" },
-                                { id: "vivid", label: qsTr("Vivid"), color: "#bd7464" },
-                                { id: "warm", label: qsTr("Warm"), color: "#c49762" },
-                                { id: "cool", label: qsTr("Cool"), color: "#66959b" },
-                                { id: "mono", label: qsTr("Mono"), color: "#737579" },
-                                { id: "vintage", label: qsTr("Vintage"), color: "#9d8263" }
-                            ]
-
-                            delegate: Button {
-                                id: filterButton
-                                required property var modelData
-                                Layout.fillWidth: true
-                                implicitHeight: 78
-                                objectName: "filter-" + modelData.id
-                                text: modelData.label
-                                enabled: root.filtersEnabled
-                                contentItem: Item {}
-                                onClicked: root.filterSelected(modelData.id)
-                                background: Rectangle {
-                                    radius: 5
-                                    color: root.filterPreset === filterButton.modelData.id
-                                           ? root.theme.raised
-                                           : filterButton.hovered ? root.theme.hover : root.theme.background
-                                    border.width: root.filterPreset === filterButton.modelData.id ? 1 : 0
-                                    border.color: root.filterPreset === filterButton.modelData.id
-                                                  ? root.theme.accent : root.theme.border
-                                    Column {
-                                        anchors.fill: parent
-                                        anchors.margins: 6
-                                        spacing: 4
-                                        Rectangle {
-                                            width: parent.width
-                                            height: 40
-                                            radius: 3
-                                            color: filterButton.modelData.color
-                                            clip: true
-                                            Image {
-                                                objectName: "filter-preview-" + filterButton.modelData.id
-                                                anchors.fill: parent
-                                                source: root.previewsAvailable
-                                                        ? "image://filterpreview/" + filterButton.modelData.id + "/" + root.previewRevision : ""
-                                                fillMode: Image.PreserveAspectCrop
-                                                cache: false
-                                                visible: status === Image.Ready
-                                            }
-                                        }
-                                        Label {
-                                            width: parent.width
-                                            text: filterButton.modelData.label
-                                            color: root.theme.text
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            elide: Text.ElideRight
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.topMargin: 4
-                        Label {
-                            text: qsTr("Strength")
-                            color: root.theme.muted
-                            font.pixelSize: 11
-                        }
-                        Item { Layout.fillWidth: true }
-                        Label {
-                            objectName: "filter-intensity-value"
-                            text: Math.round(intensitySlider.value) + "%"
-                            color: root.theme.muted
-                            font.pixelSize: 10
-                        }
-                    }
-
-                    NekoSlider {
-                        id: intensitySlider
-                        objectName: "filter-intensity"
-                        Layout.fillWidth: true
-                        from: 0
-                        to: 100
-                        stepSize: 1
-                        defaultValue: 100
-                        enabled: root.filterIntensityEnabled && root.filterPreset !== "none"
-                        accessibleName: qsTr("Filter strength")
-                        onBegin: root.filterIntensityStarted()
-                        onPreview: function(value) { root.filterIntensityPreview(value) }
-                        onFinish: function(value) { root.filterIntensityFinished(value) }
-                        Component.onCompleted: value = root.filterIntensity
-                        Connections {
-                            target: root
-                            function onFilterIntensityChanged() {
-                                if (!intensitySlider.dragging)
-                                    intensitySlider.value = root.filterIntensity
-                            }
-                        }
-                    }
+                    Layout.bottomMargin: 18
+                    currentPreset: root.filterPreset
+                    intensity: root.filterIntensity
+                    presetsEnabled: root.filtersEnabled
+                    intensityEnabled: root.filterIntensityEnabled
+                    previewsAvailable: root.previewsAvailable
+                    previewRevision: root.previewRevision
+                    onFilterSelected: function(preset) { root.filterSelected(preset) }
+                    onIntensityStarted: root.filterIntensityStarted()
+                    onIntensityPreview: function(value) { root.filterIntensityPreview(value) }
+                    onIntensityFinished: function(value) { root.filterIntensityFinished(value) }
                 }
 
                 // ── Adjust sub-tabs ─────────────────────────────────────────
@@ -546,14 +424,4 @@ Rectangle {
         }
     }
 
-    function filterName(id) {
-        switch (id) {
-        case "vivid": return qsTr("Vivid")
-        case "warm": return qsTr("Warm")
-        case "cool": return qsTr("Cool")
-        case "mono": return qsTr("Mono")
-        case "vintage": return qsTr("Vintage")
-        default: return qsTr("Original")
-        }
-    }
 }

@@ -1,5 +1,6 @@
 #include "filterpreviews.h"
 #include "documentcontroller.h"
+#include "core/filterpresets.h"
 #include <QQuickImageProvider>
 #include <QReadWriteLock>
 #include <QtConcurrentRun>
@@ -95,7 +96,7 @@ void FilterPreviews::startWorker()
             if (!debounce_.isActive()) startWorker();
             return;
         }
-        if (images.size() != 6) return;
+        if (images.size() != NekoPic::Filters::presetIds().size()) return;
         {
             QWriteLocker locker(&cache_->lock);
             cache_->images = std::move(images);
@@ -106,13 +107,14 @@ void FilterPreviews::startWorker()
         emit changed();
     });
     watcher_.setFuture(QtConcurrent::run([source, parameters] {
-        // Downsample before effects; only these six small results enter the cache.
+        // Downsample before effects; only these small results enter the cache.
         const auto small = (source.width() > 192 || source.height() > 144)
             ? source.scaled(192, 144, Qt::KeepAspectRatio, Qt::SmoothTransformation) : source;
         Batch images;
-        for (const auto &preset : {"none", "vivid", "warm", "cool", "mono", "vintage"}) {
+        const auto presets = NekoPic::Filters::presetIds();
+        for (const auto &preset : presets) {
             auto tileParameters = parameters;
-            tileParameters.filterPreset = QString::fromLatin1(preset);
+            tileParameters.filterPreset = preset;
             auto image = NekoPic::Adjustments::apply(small, tileParameters)
                              .convertToFormat(QImage::Format_RGBA8888);
             if (image.isNull()) return Batch{};
