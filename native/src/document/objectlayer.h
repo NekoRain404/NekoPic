@@ -23,6 +23,11 @@ public:
     ObjectLayer(const ObjectLayer &) = delete;
     ObjectLayer &operator=(const ObjectLayer &) = delete;
 
+    // Moving transfers ownership of the object list and is used to install a
+    // freshly built layer (for example a transformed clone) atomically.
+    ObjectLayer(ObjectLayer &&) noexcept = default;
+    ObjectLayer &operator=(ObjectLayer &&) noexcept = default;
+
     // Takes ownership and returns the object's stable id. Null is ignored.
     ObjectId add(std::unique_ptr<DocumentObject> object);
 
@@ -61,8 +66,9 @@ public:
     // miss.
     ObjectId hitTest(const QPointF &point, qreal tolerance = 0.0) const;
 
-    // Pre-multiplies the transform onto every object, for image rotate/flip/
-    // scale. The same matrix should be applied to the pixels by the caller.
+    // Applies the same document-space transform to every object, for image
+    // rotate/flip/scale. The same matrix should be applied to the pixels by
+    // the caller.
     void applyTransform(const QTransform &transform);
 
     // After a crop, remove objects entirely outside kept and translate the
@@ -72,6 +78,15 @@ public:
     void crop(const QRect &kept, const QPoint &offset);
     // Convenience overload: new origin becomes kept.topLeft().
     void crop(const QRect &kept);
+
+    // Deep copy of every object, preserving ids. The returned layer is owned
+    // by the caller and shares no mutable state with this one. Used to take
+    // immutable history snapshots and to stage worker-thread edits.
+    std::shared_ptr<ObjectLayer> clone() const;
+
+    // Replaces the contents with a deep copy of other, preserving ids. The
+    // source (normally a history snapshot) is left untouched.
+    void restoreFrom(const ObjectLayer &other);
 
 private:
     std::vector<std::unique_ptr<DocumentObject>> objects_;

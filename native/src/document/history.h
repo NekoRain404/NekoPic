@@ -4,16 +4,22 @@
 
 #include <QImage>
 #include <QList>
+#include <memory>
 #include <optional>
 
 namespace NekoPic::Document {
 
+class ObjectLayer;
+
 // One undoable document state. QImage is implicitly shared, so storing a
-// snapshot is cheap until either side is modified.
+// snapshot is cheap until either side is modified. The object layer is a deep
+// clone held through shared_ptr<const ObjectLayer>; it is never mutated after
+// being recorded, so entries are independent of the live document.
 struct HistoryEntry {
     QImage image;
     QImage base;
     Adjustments::Parameters parameters;
+    std::shared_ptr<const ObjectLayer> objects;
     quint64 state = 0;
 };
 

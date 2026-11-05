@@ -67,23 +67,29 @@ void DocumentController::resizeImage(int width, int height)
     }
     const auto base = baseImage_;
     const auto parameters = parameters_;
+    const auto objects = objects_.clone();
+    const QSize sourceSize = base.size();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, parameters] {
+    auto *watcher = new QFutureWatcher<EditResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         auto result = watcher->result();
         watcher->deleteLater();
-        if (result.first.isNull() || result.second.isNull())
+        if (result.image.isNull() || result.base.isNull())
             setError(tr("Could not resize the image."));
         else
-            applyEdit(std::move(result.first), std::move(result.second), parameters);
+            commitEdit(std::move(result));
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([base, parameters, width, height] {
+    watcher->setFuture(QtConcurrent::run([base, parameters, objects, width, height, sourceSize] {
         auto scaledBase = scalePreservingMetadata(base, width, height);
-        auto rendered = scaledBase.isNull() ? QImage{}
-                                            : NekoPic::Adjustments::apply(scaledBase, parameters);
-        return qMakePair(std::move(rendered), std::move(scaledBase));
+        if (scaledBase.isNull()) return EditResult{};
+        // Positions, glyph outlines and stroke widths scale through the object
+        // transform exactly like the resampled pixels.
+        objects->applyTransform(QTransform::fromScale(
+            qreal(width) / sourceSize.width(), qreal(height) / sourceSize.height()));
+        auto rendered = DocumentController::composeImage(scaledBase, parameters, objects.get());
+        return EditResult{std::move(rendered), std::move(scaledBase), parameters, objects};
     }));
 }
 
@@ -100,24 +106,28 @@ void DocumentController::resizeCanvas(int width, int height, int anchor, const Q
         return;
     }
     const auto base = baseImage_;
-    const auto rendered = image_;
     const auto parameters = parameters_;
+    const auto objects = objects_.clone();
     setError({});
     setBusy(true);
-    auto *watcher = new QFutureWatcher<QPair<QImage, QImage>>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, parameters] {
+    auto *watcher = new QFutureWatcher<EditResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
         auto result = watcher->result();
         watcher->deleteLater();
-        if (result.first.isNull() || result.second.isNull())
+        if (result.image.isNull() || result.base.isNull())
             setError(tr("Could not change the canvas size."));
         else
-            applyEdit(std::move(result.first), std::move(result.second), parameters);
+            commitEdit(std::move(result));
         setBusy(false);
     });
-    watcher->setFuture(QtConcurrent::run([base, rendered, width, height, anchor, background] {
+    watcher->setFuture(QtConcurrent::run([base, parameters, objects, width, height, anchor, background] {
         const auto offset = canvasOffset(QSize(width, height), base.size(), anchor);
         auto newBase = canvasPreservingMetadata(base, width, height, offset, background);
-        auto newRendered = canvasPreservingMetadata(rendered, width, height, offset, background);
-        return qMakePair(std::move(newRendered), std::move(newBase));
+        if (newBase.isNull()) return EditResult{};
+        // Canvas changes translate objects by the same anchor offset; they are
+        // not scaled.
+        objects->applyTransform(QTransform::fromTranslate(offset.x(), offset.y()));
+        auto rendered = DocumentController::composeImage(newBase, parameters, objects.get());
+        return EditResult{std::move(rendered), std::move(newBase), parameters, objects};
     }));
 }

@@ -12,6 +12,7 @@
 #include <functional>
 #include "core/adjustments.h"
 #include "document/history.h"
+#include "document/objectlayer.h"
 
 class DocumentController final : public QObject {
     Q_OBJECT
@@ -28,6 +29,7 @@ class DocumentController final : public QObject {
     Q_PROPERTY(bool filterIntensityInteractive READ filterIntensityInteractive NOTIFY filterIntensityInteractiveChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorChanged)
     Q_PROPERTY(bool hasImage READ hasImage NOTIFY documentChanged)
+    Q_PROPERTY(bool hasObjects READ hasObjects NOTIFY documentChanged)
     Q_PROPERTY(int imageWidth READ imageWidth NOTIFY documentChanged)
     Q_PROPERTY(int imageHeight READ imageHeight NOTIFY documentChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY documentChanged)
@@ -55,6 +57,7 @@ public:
     bool filterIntensityInteractive() const;
     QString errorMessage() const;
     bool hasImage() const;
+    bool hasObjects() const;
     int imageWidth() const;
     int imageHeight() const;
     bool dirty() const;
@@ -97,6 +100,12 @@ public:
     Q_INVOKABLE void finishFilterIntensity(double value);
     Q_INVOKABLE void mosaicRectangle(const QRectF &area, int blockSize);
     Q_INVOKABLE void mosaicStroke(const QVariantList &points, double diameter, int blockSize);
+    Q_INVOKABLE void addText(const QString &text, qreal x, qreal y, qreal fontSize,
+                             const QColor &color, int alignment);
+    Q_INVOKABLE bool removeObject(quint64 id);
+    Q_INVOKABLE void clearObjects();
+    Q_INVOKABLE void moveObject(quint64 id, qreal dx, qreal dy);
+    Q_INVOKABLE quint64 objectAt(qreal x, qreal y) const;
 
 signals:
     void documentChanged();
@@ -113,10 +122,33 @@ signals:
 
 private:
     enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };
+
+    // Result of a worker that rebuilds pixels and/or the object layer.
+    struct EditResult {
+        QImage image;
+        QImage base;
+        NekoPic::Adjustments::Parameters parameters;
+        std::shared_ptr<NekoPic::Document::ObjectLayer> objects;
+    };
+
     void startTransform(Transform transform);
     void setBusy(bool busy);
     void setError(const QString &error);
-    void applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters);
+
+    // Renders the document: adjustments/filters over base, then objects on top.
+    // Pure function, safe to call from a worker thread with private snapshots.
+    static QImage composeImage(const QImage &base,
+                               const NekoPic::Adjustments::Parameters &parameters,
+                               const NekoPic::Document::ObjectLayer *objects);
+
+    void applyEdit(QImage image, QImage base, NekoPic::Adjustments::Parameters parameters,
+                   std::shared_ptr<NekoPic::Document::ObjectLayer> objects = {});
+    void commitEdit(EditResult result);
+
+    // Clones the live layer, applies mutation on the GUI thread, then rasterises
+    // the result in a worker. A false return from mutation rejects the edit
+    // without touching history or busy state.
+    void startObjectEdit(std::function<bool(NekoPic::Document::ObjectLayer &)> mutation);
     void queueAdjustment(const QString &key, double value, bool finish);
     void startAdjustmentWorker();
     void endAdjustment(const QImage &result, bool failed);
@@ -126,6 +158,7 @@ private:
     QImage baseImage_;
     NekoPic::Adjustments::Parameters parameters_;
     NekoPic::Adjustments::Parameters pendingParameters_;
+    NekoPic::Document::ObjectLayer objects_;
     QString path_;
     QString error_;
     bool busy_ = false;
