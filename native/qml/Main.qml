@@ -45,15 +45,21 @@ ApplicationWindow {
             language.setLanguage(settings.locale)
     }
     function openSettings() {
-        if (typeof settings === "undefined") return
-        settingsDialog.themeMode = settings.themeMode
-        settingsDialog.reduceMotion = settings.reduceMotion
-        settingsDialog.gpuPreviewEnabled = settings.gpuPreviewEnabled
-        settingsDialog.exportQuality = settings.exportQuality
-        settingsDialog.jpegBackground = settings.jpegBackground
-        settingsDialog.localeId = settings.locale
-        settingsDialog.confirmOnClose = settings.confirmOnClose
-        settingsDialog.showCheckerboard = settings.showCheckerboard
+        if (typeof settings !== "undefined") {
+            settingsDialog.themeMode = settings.themeMode
+            settingsDialog.reduceMotion = settings.reduceMotion
+            settingsDialog.gpuPreviewEnabled = settings.gpuPreviewEnabled
+            settingsDialog.exportQuality = settings.exportQuality
+            settingsDialog.jpegBackground = settings.jpegBackground
+            settingsDialog.localeId = settings.locale
+            settingsDialog.confirmOnClose = settings.confirmOnClose
+            settingsDialog.showCheckerboard = settings.showCheckerboard
+        } else {
+            settingsDialog.themeMode = window.followSystemTheme ? "system"
+                                     : window.darkTheme ? "dark" : "light"
+            settingsDialog.reduceMotion = window.reduceMotion
+            settingsDialog.localeId = typeof language !== "undefined" ? language.locale : "zh_CN"
+        }
         settingsDialog.open()
     }
     Component.onCompleted: applySettings()
@@ -301,6 +307,7 @@ ApplicationWindow {
     }
     SettingsDialog {
         id: settingsDialog
+        objectName: "settingsDialog"
         parent: Overlay.overlay
         anchors.centerIn: parent
         onSettingChanged: function(key, value) {
@@ -466,6 +473,7 @@ ApplicationWindow {
                 CommandButton { action: cropAction; iconName: "crop" }
                 Item { Layout.fillWidth: true }
                 NekoButton {
+                    objectName: "settingsButton"
                     text: qsTr("Settings"); variant: "ghost"
                     onClicked: window.openSettings()
                     ToolTip.visible: hovered; ToolTip.text: qsTr("Preferences (Ctrl+,)")

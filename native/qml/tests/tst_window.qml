@@ -232,6 +232,20 @@ TestCase {
         window.destroy()
     }
 
+    function test_settingsButtonOpensDialog() {
+        const component = Qt.createComponent("../Main.qml")
+        const window = component.createObject(null)
+        verify(window !== null, component.errorString())
+        const button = visualChild(window.contentItem, "settingsButton")
+        verify(button !== null)
+        mouseClick(button)
+        const dialog = findChild(window, "settingsDialog")
+        verify(dialog !== null)
+        verify(dialog.opened)
+        dialog.close()
+        window.destroy()
+    }
+
     function test_toolPanelsAreMutuallyExclusive() {
         const component = Qt.createComponent("../Main.qml")
         const window = component.createObject(null)

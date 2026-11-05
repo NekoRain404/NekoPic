@@ -75,20 +75,35 @@ int main(int argc, char *argv[])
     // Optional command-line image: `nekopic photo.jpg`.
     const auto arguments = app.arguments();
     QString screenshotPath;
+    QString startTool;
+    bool openSettingsOnStart = false;
     for (int index = 1; index < arguments.size(); ++index) {
         const auto argument = arguments.at(index);
         if (argument == QLatin1String("--screenshot") && index + 1 < arguments.size()) {
             screenshotPath = arguments.at(++index);
             continue;
         }
+        if (argument == QLatin1String("--tool") && index + 1 < arguments.size()) {
+            startTool = arguments.at(++index);
+            continue;
+        }
+        if (argument == QLatin1String("--settings")) {
+            openSettingsOnStart = true;
+            continue;
+        }
         if (argument.startsWith(QLatin1String("--"))) continue;
         editor.openImage(QUrl::fromLocalFile(argument));
     }
 
+    auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
+    if (!startTool.isEmpty() && window)
+        window->setProperty("activeTool", startTool);
+    if (openSettingsOnStart && window)
+        QMetaObject::invokeMethod(window, "openSettings");
+
     // Development/visual-regression hook: render the window offscreen once the
     // document is idle, then exit. Never used by normal launches.
     if (!screenshotPath.isEmpty()) {
-        auto *window = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
         if (window) {
             auto *poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);
