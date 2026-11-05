@@ -44,6 +44,7 @@ NekoDialog {
             title: qsTr("Tools"),
             entries: [
                 { action: qsTr("Crop"), shortcut: "C" },
+                { action: qsTr("Add text"), shortcut: "T" },
                 { action: qsTr("Eyedropper"), shortcut: "I" },
                 { action: qsTr("Apply crop"), shortcut: "Enter" },
                 { action: qsTr("Cancel crop or eyedropper"), shortcut: "Esc" }
