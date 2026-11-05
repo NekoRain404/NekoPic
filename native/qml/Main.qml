@@ -338,6 +338,9 @@ ApplicationWindow {
     Connections {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
+        function onImageOpened(url) {
+            window.activeTool = "adjust"
+        }
         function onImageSaved() {
             if (!window.saveBeforePending) {
                 window.showStatus(qsTr("Image saved"))
