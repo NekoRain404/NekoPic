@@ -614,13 +614,17 @@ TestCase {
                 wait(0)
 
                 let panel = null
-                for (let j = 0; j < panelNames.length; ++j) {
-                    const candidate = findChild(window, panelNames[j])
-                    if (candidate !== null && candidate.visible) {
-                        panel = candidate
-                        break
+                tryVerify(function() {
+                    panel = null
+                    for (let j = 0; j < panelNames.length; ++j) {
+                        const candidate = findChild(window, panelNames[j])
+                        if (candidate !== null && candidate.visible && candidate.width > 0) {
+                            panel = candidate
+                            return true
+                        }
                     }
-                }
+                    return false
+                }, 1500, "side panel for " + tools[i])
                 verify(panel !== null, "missing side panel for " + tools[i])
 
                 if (expectedPanelWidth < 0) {
