@@ -21,6 +21,7 @@
 //   add_test(NAME bench_pipeline_smoke COMMAND bench_pipeline --quick)
 // and give it a generous timeout.
 
+#include "app/filterpreviews.h"
 #include "core/adjustments.h"
 #include "core/filterpresets.h"
 #include "core/mosaic.h"
@@ -938,6 +939,18 @@ int main(int argc, char** argv)
         filterPreviews.append(timedRow(
             QStringLiteral("filter-previews"), QStringLiteral("batch (downscale + 13 presets)"),
             QStringLiteral("RGBA8888"), size, source.sizeInBytes(), resultBytes, stats, note));
+
+        const auto parallelStats = measure(options.runs, [&source, &parameters] {
+            const auto batch = FilterPreviews::generateBatch(source, parameters);
+            for (auto it = batch.cbegin(); it != batch.cend(); ++it)
+                consume(it.value());
+        });
+        filterPreviews.append(timedRow(
+            QStringLiteral("filter-previews"),
+            QStringLiteral("batch (production parallel)"),
+            QStringLiteral("RGBA8888"), size, source.sizeInBytes(), resultBytes, parallelStats,
+            QStringLiteral("13 presets via FilterPreviews::generateBatch; %1 ms median")
+                .arg(formatMs(parallelStats.median))));
     }
 
     // --- 3. Mosaic rectangle and stroke on 12 MP ------------------------------

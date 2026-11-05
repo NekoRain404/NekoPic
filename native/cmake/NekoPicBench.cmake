@@ -15,6 +15,7 @@
 add_executable(bench_pipeline tests/bench_pipeline.cpp)
 target_include_directories(bench_pipeline PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(bench_pipeline PRIVATE
+    nekopic_app
     nekopic_core
     nekopic_document
     nekopic_io

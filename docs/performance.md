@@ -372,6 +372,7 @@ Mapping note: `exposure` UI units map to shader stops via `ui / 25`
 CPU/GPU parity tolerances are documented in ADR-0003: 2/255 (2/65535 at 16
 bits) for the double-precision CPU mirror, and 4/255 for GPU pixel readback
 because of 32-bit float ordering and 8-bit texture storage.
+
 ## 11. 2026-11-05 P1: parallel filter previews and RGBA8 mosaic direct path
 
 - `FilterPreviews::generateBatch` fans the 13 presets out over 4-6 `std::thread`
@@ -396,13 +397,41 @@ Focused timings (Release, shared host, median):
 
 | Case | Before ms | After ms | Speedup |
 | --- | ---: | ---: | ---: |
-| 13 previews, 2 MP source | 34.1 | 8.8 | 3.9x |
-| 13 previews, 8 MP source | 43.0 | 13.4 | 3.2x |
+| 13 previews, 0.5 MP source | 29.3 | 6.7 | 4.4x |
+| 13 previews, 2 MP source | 35.6 | 9.9 | 3.6x |
+| 13 previews, 8 MP source | 32.6 | 10.7 | 3.0x |
 | 12 MP RGBA8888 mosaic rect (blocks 8/32/128) | 133.4 / 134.4 / 145.7 | 22.5 / 21.8 / 22.4 | ~6x |
 | 12 MP RGBA8888 mosaic stroke (blocks 8/32/128) | 62.4 / 60.4 / 79.7 | 26.8 / 20.6 / 21.2 | ~3x |
 | 12 MP RGBA64 mosaic rect / stroke (block 32) | 39.5 / 32.9 | 35.5 / 30.5 | unchanged path |
+
+After integration, the built-in `bench_pipeline` runs both the serial reference and the production `FilterPreviews::generateBatch` path; the preview figures above are the production parallel row (Release, `--quick --jobs 1`).
 
 Limitations: float and extended-parameter preview batches still run a full
 `apply` per preset (the shared base is only provably exact on the integer fast
 path); the mosaic fast path covers only the listed 8-bit layouts, and other
 formats keep the generic 16-bit loop.
+
+## 12. 2026-11-05 P0: interactive proxy preview and adjusted-base cache
+
+- Interactive CPU previews for sources >= 2.5 MP now render adjustments on a
+  cached proxy capped at 1600x1000, scale the result back to the full canvas,
+  then composite live objects. `image_` stays full-size, so object coordinates
+  and the finishing pass are unchanged; the finishing pass always renders at
+  full resolution and was verified bit-identical to the direct pipeline.
+- The four basic GPU keys skip the proxy because the shader already covers
+  them; filter-intensity drags and advanced keys use it.
+- Object edits reuse a cached `Adjustments::apply(base, parameters)` result.
+  The cache is keyed by base `QImage::cacheKey()` plus an exact field-by-field
+  parameter comparison and is invalidated by open/transform/crop/resize/pixel
+  edits/adjustment commits/undo/redo. Cache misses are filled by the worker.
+- Measured in a Debug build (8 MP, advanced combined): full apply 1887 ms;
+  first proxy preview 386 ms; cached proxy preview 378 ms; cached object move
+  14 ms and 13 ms; full-resolution finish 1944 ms (bit-identical). Debug ratios
+  understate Release absolute speed; the meaningful result is the ~5x
+  interactive reduction and sub-20 ms warm object edits.
+- Tests: `documentcontroller_test` covers full-resolution commit parity after a
+  proxy preview, cache misses/hits, parameter invalidation and undo/redo
+  consistency. Full `ctest` and the ASan/UBSan suite pass.
+- Cost: the cache retains one full-resolution adjusted image (~30 MB at 8 MP).
+  Proxy previews are intentionally approximate for neighbourhood/position
+  effects (clarity, sharpen, vignette, noise); the committed image is exact.
