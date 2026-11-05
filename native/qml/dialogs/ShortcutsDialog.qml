@@ -33,6 +33,8 @@ NekoDialog {
         {
             title: qsTr("View"),
             entries: [
+                { action: qsTr("Zoom in"), shortcut: "Ctrl+=" },
+                { action: qsTr("Zoom out"), shortcut: "Ctrl+-" },
                 { action: qsTr("Fit to window"), shortcut: "Ctrl+0" },
                 { action: qsTr("Actual size (100%)"), shortcut: "Ctrl+1" },
                 { action: qsTr("Command palette…"), shortcut: "Ctrl+K" }
