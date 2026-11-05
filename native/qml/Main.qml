@@ -31,9 +31,138 @@ ApplicationWindow {
     property url pendingExportUrl
     property url lastFolder: ""
     property string activeTool: "adjust"
+    // Temporary keyboard overrides. They never change activeTool, so the tool
+    // the user had selected is restored naturally on release.
+    property bool spacePanHeld: false
+    property bool compareHeld: false
+    // A focused TextInput/TextEdit must keep Space and M for editing. TextInput
+    // exposes an integer cursorPosition; overlays may expose a point with the
+    // same name, so the type check matters.
+    readonly property bool textInputFocused: activeFocusItem !== null
+        && typeof activeFocusItem.cursorPosition === "number"
+    readonly property bool canvasShortcutsEnabled: editor.hasImage && !editor.busy
+        && !blockingModal && !textInputFocused
+    readonly property bool spacePanActive: spacePanHeld && activeTool !== "pan" && !editor.busy
+    // Hints shown in the canvas bottom bar while a tool is active.
+    readonly property string activeToolHint: {
+        if (!editor.hasImage) return ""
+        if (spacePanActive) return qsTr("拖动画布")
+        switch (activeTool) {
+        case "select": return qsTr("点选对象 · Shift 多选 · Delete 删除")
+        case "brush": return qsTr("拖动绘制 · 一笔一次撤销")
+        case "text": return qsTr("点击画布放置文字")
+        case "shapes": return shapePanel.shapeKind === "polygon"
+                ? qsTr("点击顶点 · Enter 闭合")
+                : qsTr("拖动绘制 · Shift 约束比例/角度")
+        case "mosaic": return qsTr("拖动选择区域")
+        case "crop": return qsTr("拖动边缘 · Enter 应用 / Esc 取消")
+        case "pan": return qsTr("拖动画布")
+        case "eye": return qsTr("点击取色 · Esc 取消")
+        default: return ""
+        }
+    }
     property string transientStatus: ""
     property bool reduceMotion: false
     function showStatus(message) { transientStatus = message; statusTimer.restart() }
+    function toolLabel(tool) {
+        switch (tool) {
+        case "select": return qsTr("Select")
+        case "pan": return qsTr("Pan")
+        case "adjust": return qsTr("Adjust")
+        case "filters": return qsTr("Filters")
+        case "brush": return qsTr("Brush")
+        case "text": return qsTr("Text")
+        case "shapes": return qsTr("Shapes")
+        case "mosaic": return qsTr("Mosaic")
+        case "eye": return qsTr("Eyedropper")
+        case "crop": return qsTr("Crop")
+        default: return ""
+        }
+    }
+    function beginSpacePan() {
+        if (!canvasShortcutsEnabled || spacePanHeld) return false
+        spacePanHeld = true
+        showStatus(toolLabel("pan"))
+        return true
+    }
+    function endSpacePan() {
+        if (!spacePanHeld) return
+        spacePanHeld = false
+        if (editor.hasImage && !blockingModal) showStatus(toolLabel(activeTool))
+    }
+    function beginCompareHold() {
+        if (!editor.hasImage || blockingModal || textInputFocused || compareHeld) return false
+        compareHeld = true
+        canvas.compareActive = true
+        showStatus(qsTranslate("EditorCanvas", "ORIGINAL"))
+        return true
+    }
+    function endCompareHold() {
+        if (!compareHeld) return
+        compareHeld = false
+        canvas.compareActive = false
+        if (editor.hasImage && !blockingModal) showStatus(qsTranslate("EditorCanvas", "WORKSPACE"))
+    }
+    function resetInteractionOverrides() {
+        spacePanHeld = false
+        compareHeld = false
+        if (canvas) canvas.compareActive = false
+    }
+    function exitActiveTool() {
+        if (activeTool === "adjust") return false
+        if (canvas) {
+            canvas.cancelPendingGesture()
+            if (activeTool === "select") canvas.clearSelection()
+        }
+        activeTool = "adjust"
+        showStatus(toolLabel("adjust"))
+        return true
+    }
+    // One path for every "open another image" entry point so a dirty document
+    // always asks for confirmation exactly like the Open dialog does.
+    function requestOpen(url) {
+        if (editor.busy || url === undefined || url === null || String(url).length === 0)
+            return false
+        if (editor.dirty) {
+            pendingImage = url
+            closingRequested = false
+            discardDialog.open()
+        } else {
+            editor.openImage(url)
+        }
+        return true
+    }
+    function handleCanvasKeyPress(event) {
+        // Auto-repeat must not toggle hold state on and off.
+        if (event.isAutoRepeat) {
+            if ((event.key === Qt.Key_Space && spacePanHeld)
+                    || (event.key === Qt.Key_M && compareHeld)) {
+                event.accepted = true
+                return
+            }
+        }
+        if (event.key === Qt.Key_Space && event.modifiers === Qt.NoModifier) {
+            if (beginSpacePan()) event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_M && event.modifiers === Qt.NoModifier) {
+            if (beginCompareHold()) event.accepted = true
+            return
+        }
+        if (event.key === Qt.Key_Escape) {
+            if (blockingModal || textInputFocused) return
+            if (exitActiveTool()) event.accepted = true
+        }
+    }
+    function handleCanvasKeyRelease(event) {
+        if (event.key === Qt.Key_Space) {
+            if (spacePanHeld) { endSpacePan(); event.accepted = true }
+            return
+        }
+        if (event.key === Qt.Key_M) {
+            if (compareHeld) { endCompareHold(); event.accepted = true }
+        }
+    }
     function applySettings() {
         if (typeof settings === "undefined") return
         const mode = settings.themeMode
@@ -79,8 +208,14 @@ ApplicationWindow {
         editor.cropImage(area)
         activeTool = "adjust"
     }
-    onActiveToolChanged: if (activeTool === "adjust" || activeTool === "filters")
-                            inspector.currentTab = activeTool === "filters" ? 1 : 0
+    onActiveToolChanged: {
+        if (activeTool === "adjust" || activeTool === "filters")
+            inspector.currentTab = activeTool === "filters" ? 1 : 0
+        if (canvas) canvas.cancelPendingGesture()
+        showStatus(toolLabel(activeTool))
+    }
+    onBlockingModalChanged: if (blockingModal) resetInteractionOverrides()
+    onActiveChanged: if (!active) resetInteractionOverrides()
     onClosing: function(close) {
         const shouldConfirm = typeof settings === "undefined" || settings.confirmOnClose
         if (editor.busy || (editor.dirty && shouldConfirm && !discardConfirmed)) {
@@ -158,13 +293,7 @@ ApplicationWindow {
         nameFilters: [qsTr("Images") + " (" + editor.readableImagePatterns.join(" ") + ")", qsTr("All files (*)")]
         onAccepted: {
             window.lastFolder = currentFolder
-            if (editor.dirty) {
-                window.pendingImage = selectedFile
-                window.closingRequested = false
-                discardDialog.open()
-            } else {
-                editor.openImage(selectedFile)
-            }
+            window.requestOpen(selectedFile)
         }
     }
     FileDialog {
@@ -199,13 +328,15 @@ ApplicationWindow {
         onRejected: if (window.saveBeforePending) window.saveBeforePending = false
     }
     Dialog {
-        id: errorDialog; title: qsTr("Unable to complete operation"); modal: true
+        id: errorDialog; objectName: "errorDialog"
+        title: qsTr("Unable to complete operation"); modal: true
         anchors.centerIn: parent; standardButtons: Dialog.Ok
         onClosed: editor.clearError()
         Label { text: editor.errorMessage; wrapMode: Text.WordWrap; width: 360; color: theme.text }
     }
     Dialog {
-        id: discardDialog; title: qsTr("Save changes before continuing?"); modal: true
+        id: discardDialog; objectName: "discardDialog"
+        title: qsTr("Save changes before continuing?"); modal: true
         anchors.centerIn: parent; standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
         onAccepted: {
             window.saveBeforePending = true
@@ -341,6 +472,7 @@ ApplicationWindow {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
         function onImageOpened(url) {
+            window.resetInteractionOverrides()
             window.activeTool = window.startupTool.length > 0 ? window.startupTool : "adjust"
             window.startupTool = ""
         }
@@ -379,28 +511,24 @@ ApplicationWindow {
             title: qsTr("File")
             MenuItem { action: openAction }
             Menu {
+                objectName: "recentMenu"
                 title: qsTr("Open recent")
                 enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
+                         && !editor.busy
                 Repeater {
                     model: typeof recentFiles !== "undefined" ? recentFiles.entries : []
                     MenuItem {
                         required property var modelData
                         text: modelData.name
-                        onTriggered: {
-                            if (editor.dirty) {
-                                window.pendingImage = modelData.url
-                                window.closingRequested = false
-                                discardDialog.open()
-                            } else {
-                                editor.openImage(modelData.url)
-                            }
-                        }
+                        enabled: !editor.busy
+                        onTriggered: window.requestOpen(modelData.url)
                     }
                 }
                 MenuSeparator {}
                 MenuItem {
                     text: qsTr("Clear recent files")
                     enabled: typeof recentFiles !== "undefined" && recentFiles.entries.length > 0
+                             && !editor.busy
                     onTriggered: if (typeof recentFiles !== "undefined") recentFiles.clear()
                 }
             }
@@ -453,20 +581,18 @@ ApplicationWindow {
         anchors.fill: parent
         onDropped: function(drop) {
             if (editor.busy || !drop.hasUrls || drop.urls.length === 0) return
-            const target = drop.urls[0]
-            if (editor.dirty) {
-                window.pendingImage = target
-                window.closingRequested = false
-                discardDialog.open()
-            } else {
-                editor.openImage(target)
-            }
+            window.requestOpen(drop.urls[0])
             drop.acceptProposedAction()
         }
     }
 
     ColumnLayout {
+        id: shellLayout
         anchors.fill: parent; spacing: 0
+        focus: true
+        activeFocusOnTab: false
+        Keys.onPressed: function(event) { window.handleCanvasKeyPress(event) }
+        Keys.onReleased: function(event) { window.handleCanvasKeyRelease(event) }
         Rectangle {
             Layout.fillWidth: true; Layout.preferredHeight: 58; color: theme.panel
             RowLayout {
@@ -559,6 +685,9 @@ ApplicationWindow {
                 eyedropperActive: window.activeTool === "eye"
                 textActive: window.activeTool === "text"
                 panActive: window.activeTool === "pan"
+                spacePanActive: window.spacePanActive
+                busy: editor.busy
+                toolHint: window.activeToolHint
                 selectionActive: window.activeTool === "select"
                 shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
                 polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
@@ -619,8 +748,8 @@ ApplicationWindow {
                     else editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize)
                 }
                 recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
-                onRecentRequested: function(url) { editor.openImage(url) }
-                onOpenRequested: openDialog.open()
+                onRecentRequested: function(url) { window.requestOpen(url) }
+                onOpenRequested: if (!editor.busy) openDialog.open()
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             Inspector {
@@ -637,14 +766,21 @@ ApplicationWindow {
                 onAdjustmentPreview: function(key, value) { editor.previewAdjustment(key, value) }
                 onAdjustmentFinished: function(key, value) { editor.finishAdjustment(key, value) }
                 onAdjustmentReset: editor.resetAdjustments()
-                onAutoEnhanceRequested: editor.autoEnhance()
+                onAutoEnhanceRequested: {
+                    editor.autoEnhance()
+                    window.showStatus(qsTr("Auto enhance"))
+                }
                 filtersEnabled: editor.hasImage && !editor.busy
                 filterIntensityEnabled: editor.hasImage && (!editor.busy || editor.filterIntensityInteractive)
                 filterPreset: editor.filterPreset
                 previewsAvailable: filterPreviews.ready
                 previewRevision: filterPreviews.revision
                 filterIntensity: editor.filterIntensity
-                onFilterSelected: function(preset) { editor.selectFilter(preset) }
+                onFilterSelected: function(preset) {
+                    editor.selectFilter(preset)
+                    window.showStatus(preset === "none" ? qsTr("Filters")
+                                                        : qsTr("Filters") + " · " + preset)
+                }
                 onFilterIntensityStarted: editor.beginFilterIntensity()
                 onFilterIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
                 onFilterIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
@@ -672,7 +808,11 @@ ApplicationWindow {
                         intensityEnabled: editor.hasImage && (!editor.busy || editor.filterIntensityInteractive)
                         previewsAvailable: filterPreviews.ready
                         previewRevision: filterPreviews.revision
-                        onFilterSelected: function(preset) { editor.selectFilter(preset) }
+                        onFilterSelected: function(preset) {
+                            editor.selectFilter(preset)
+                            window.showStatus(preset === "none" ? qsTr("Filters")
+                                                                : qsTr("Filters") + " · " + preset)
+                        }
                         onIntensityStarted: editor.beginFilterIntensity()
                         onIntensityPreview: function(value) { editor.previewFilterIntensity(value) }
                         onIntensityFinished: function(value) { editor.finishFilterIntensity(value) }
@@ -752,7 +892,13 @@ ApplicationWindow {
                 anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 15
                 Label { text: editor.hasImage ? editor.imageWidth + " × " + editor.imageHeight + " px" : "— × — px"; color: theme.muted; font.pixelSize: 10 }
                 Item { Layout.fillWidth: true }
-                Label { text: window.transientStatus.length > 0 ? window.transientStatus : (editor.busy ? qsTr("Working…") : editor.dirty ? qsTr("Unsaved changes") : qsTr("Local editing")); color: theme.muted; font.pixelSize: 10 }
+                Label {
+                    objectName: "statusMessage"
+                    text: editor.busy ? qsTr("Working…")
+                          : window.transientStatus.length > 0 ? window.transientStatus
+                          : editor.dirty ? qsTr("Unsaved changes") : qsTr("Local editing")
+                    color: theme.muted; font.pixelSize: 10
+                }
                 Timer { id: statusTimer; interval: 2200; onTriggered: window.transientStatus = "" }
             }
         }
@@ -829,7 +975,8 @@ ApplicationWindow {
         ].concat((typeof recentFiles !== "undefined" && recentFiles.entries)
                  ? recentFiles.entries.map(function(entry) {
                        return { title: entry.name, detail: qsTr("Recent"),
-                                run: function() { editor.openImage(entry.url) } }
+                                enabled: !editor.busy,
+                                run: function() { window.requestOpen(entry.url) } }
                    })
                  : [])
     }

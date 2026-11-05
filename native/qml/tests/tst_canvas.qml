@@ -303,4 +303,55 @@ TestCase {
         compare(view.contentY, 150)
         canvas.imageUrl = ""
     }
+    function test_spacePanOverridePansWithLeftButton() {
+        canvas.panActive = false
+        canvas.spacePanActive = true
+        canvas.fitting = false
+        canvas.zoom = 2
+        canvas.imageWidth = 1200; canvas.imageHeight = 800
+        verify(canvas.effectivePanActive)
+        const view = findChild(canvas, "canvasView")
+        view.contentX = 100
+        view.contentY = 80
+        mousePress(canvas, 300, 200)
+        mouseMove(canvas, 260, 170)
+        mouseRelease(canvas, 260, 170)
+        verify(view.contentX > 100 || view.contentY > 80)
+        canvas.spacePanActive = false
+        verify(!canvas.effectivePanActive)
+        canvas.imageWidth = 1200; canvas.imageHeight = 800
+        canvas.fitImage()
+    }
+    function test_busyDisablesPointerAndShowsBusyCursor() {
+        canvas.spacePanActive = true
+        canvas.busy = true
+        verify(!canvas.effectivePanActive)
+        const panArea = findChild(canvas, "panMouseArea")
+        verify(panArea !== null)
+        compare(panArea.cursorShape, Qt.BusyCursor)
+        const view = findChild(canvas, "canvasView")
+        canvas.actualSize()
+        view.contentX = 240
+        view.contentY = 150
+        mouseDrag(view, 250, 150, 30, 20, Qt.MiddleButton)
+        compare(view.contentX, 240)
+        compare(view.contentY, 150)
+        canvas.busy = false
+        canvas.spacePanActive = false
+        compare(panArea.cursorShape, Qt.ArrowCursor)
+        canvas.fitImage()
+    }
+    function test_toolHintReplacesGenericReadyText() {
+        const hint = findChild(canvas, "canvasHintLabel")
+        verify(hint !== null)
+        canvas.toolHint = ""
+        wait(0)
+        compare(hint.text, qsTr("Image ready"))
+        canvas.toolHint = "Drag to pan"
+        wait(0)
+        compare(hint.text, "Drag to pan")
+        canvas.toolHint = ""
+        wait(0)
+        compare(hint.text, qsTr("Image ready"))
+    }
 }
