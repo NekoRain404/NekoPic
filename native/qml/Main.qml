@@ -16,6 +16,7 @@ ApplicationWindow {
     visible: true
     title: (editor.hasImage ? editor.fileName + (editor.dirty ? " *" : "") + " - " : "") + "NekoPic"
     property bool darkTheme: true
+    property string themeVariant: ""
     property bool followSystemTheme: false
     readonly property bool systemDark: Qt.styleHints.colorScheme === Qt.ColorScheme.Dark
     // Letter shortcuts must not fire while the user is typing in a modal.
@@ -242,8 +243,15 @@ ApplicationWindow {
     function applySettings() {
         if (typeof settings === "undefined") return
         const mode = settings.themeMode
+        const variants = ["midnight", "warm", "graphite", "contrast"]
+        window.themeVariant = variants.indexOf(mode) >= 0 ? mode : ""
         window.followSystemTheme = mode === "system"
-        if (mode !== "system") window.darkTheme = mode === "dark"
+        if (mode === "system")
+            window.darkTheme = window.systemDark
+        else if (window.themeVariant.length > 0)
+            window.darkTheme = mode !== "warm"
+        else
+            window.darkTheme = mode === "dark"
         window.reduceMotion = settings.reduceMotion
         editor.exportQuality = settings.exportQuality
         editor.jpegBackground = settings.jpegBackground
@@ -400,6 +408,7 @@ ApplicationWindow {
     property alias foregroundColor: toolSettings.foregroundColor
     onForegroundColorChanged: applyForegroundToTools()
     Binding { target: Theme; property: "dark"; value: window.followSystemTheme ? window.systemDark : window.darkTheme }
+    Binding { target: Theme; property: "themeId"; value: window.themeVariant }
     Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
     color: theme.background
     palette.window: theme.panel
@@ -654,8 +663,15 @@ ApplicationWindow {
             if (typeof settings === "undefined") return
             settings[key] = value
             if (key === "themeMode") {
+                const variants = ["midnight", "warm", "graphite", "contrast"]
+                window.themeVariant = variants.indexOf(value) >= 0 ? value : ""
                 window.followSystemTheme = value === "system"
-                if (value !== "system") window.darkTheme = value === "dark"
+                if (value === "system")
+                    window.darkTheme = window.systemDark
+                else if (window.themeVariant.length > 0)
+                    window.darkTheme = value !== "warm"
+                else
+                    window.darkTheme = value === "dark"
             } else if (key === "reduceMotion") {
                 window.reduceMotion = value
             } else if (key === "exportQuality") {

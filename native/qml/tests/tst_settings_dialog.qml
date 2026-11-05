@@ -166,7 +166,7 @@ TestCase {
             verify(child(dialog, controls[i]) !== null, "missing control " + controls[i])
 
         const theme = child(dialog, "settings-theme")
-        compare(theme.count, 3)
+        compare(theme.count, 7)
         compare(theme.currentIndex, 2)
 
         openDialog(dialog)
@@ -242,6 +242,15 @@ TestCase {
         // Selecting the already-active segment does not emit again.
         theme.activate(2)
         compare(spy.count, 3)
+
+        // Extended palettes are first-class modes in the same control.
+        theme.activate(3)
+        compare(dialog.themeMode, "midnight")
+        compare(spy.count, 4)
+        theme.activate(5)
+        compare(dialog.themeMode, "graphite")
+        compare(spy.count, 5)
+        compare(spy.signalArguments[4][1], "graphite")
     }
 
     function test_motionToggleEmits() {

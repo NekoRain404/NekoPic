@@ -49,6 +49,12 @@ private slots:
         settings.setThemeMode(QStringLiteral("dark"));
         QCOMPARE(settings.themeMode(), QStringLiteral("dark"));
 
+        for (const auto &mode : {QStringLiteral("midnight"), QStringLiteral("warm"),
+                                 QStringLiteral("graphite"), QStringLiteral("contrast")}) {
+            settings.setThemeMode(mode);
+            QCOMPARE(settings.themeMode(), mode);
+        }
+
         // Unknown values fall back to the documented default.
         settings.setThemeMode(QStringLiteral("neko"));
         QCOMPARE(settings.themeMode(), QStringLiteral("dark"));

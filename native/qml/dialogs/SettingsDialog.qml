@@ -88,7 +88,7 @@ NekoDialog {
     signal recoveryDiscardRequested()
 
     // ── Internal state ─────────────────────────────────────────────────────
-    readonly property var _themeModes: ["system", "light", "dark"]
+    readonly property var _themeModes: ["system", "light", "dark", "midnight", "warm", "graphite", "contrast"]
     readonly property var _startupToolIds: [
         "adjust", "filters", "select", "pan", "brush",
         "text", "shapes", "mosaic", "eye", "crop"

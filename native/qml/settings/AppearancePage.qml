@@ -22,7 +22,7 @@ ColumnLayout {
     signal themeSelected(string mode)
     signal reduceMotionToggled(bool checked)
 
-    readonly property var themeModes: ["system", "light", "dark"]
+    readonly property var themeModes: ["system", "light", "dark", "midnight", "warm", "graphite", "contrast"]
 
     Layout.fillWidth: true
     spacing: Theme.spacingLg
@@ -57,21 +57,41 @@ ColumnLayout {
         showDivider: true
     }
 
-    SettingRow {
-        label: page._tr("主题", "Theme")
-        hint: page._tr("跟随系统设置，或固定为浅色或深色。",
-                       "Follow the system setting, or use a fixed light or dark appearance.")
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: Theme.spacingXs
+
+        Text {
+            Layout.fillWidth: true
+            text: page._tr("主题", "Theme")
+            color: Theme.textPrimary
+            font.pixelSize: Theme.fontBody
+            font.weight: Theme.fontWeightMedium
+        }
+        Text {
+            Layout.fillWidth: true
+            text: page._tr("跟随系统，或选择浅色、深色与四套精选调色板。",
+                           "Follow the system, or pick light, dark and four curated palettes.")
+            color: Theme.textTertiary
+            font.pixelSize: Theme.fontCaption
+            lineHeight: Theme.lineHeightNormal
+            wrapMode: Text.WordWrap
+        }
 
         NekoSegmentedControl {
             id: themeControl
             objectName: "settings-theme"
-            width: 210
+            Layout.fillWidth: true
             enabled: !page.busy
             accessibleName: page._tr("主题", "Theme")
             model: [
                 page._tr("系统", "System"),
                 page._tr("浅色", "Light"),
-                page._tr("深色", "Dark")
+                page._tr("深色", "Dark"),
+                page._tr("午夜", "Midnight"),
+                page._tr("暖纸", "Warm paper"),
+                page._tr("石墨", "Graphite"),
+                page._tr("高对比", "Contrast")
             ]
 
             onActivated: function(index) {
