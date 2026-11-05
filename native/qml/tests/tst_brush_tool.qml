@@ -70,6 +70,11 @@ TestCase {
         canvasPan.wheelEvents = 0
 
         panel.enabled = true
+        panel.width = 292
+        panel.height = 620
+        const scroller = findChild(panel, "brush-scroll")
+        if (scroller !== null)
+            scroller.contentY = 0
         panel.diameter = 24
         panel.color = panel.blackColor
     }
@@ -333,6 +338,27 @@ TestCase {
 
     // ── Settings panel ──────────────────────────────────────────────────────
 
+    function test_panelScrollsCleanlyAtCompactHeight() {
+        panel.height = 320
+        waitForRendering(panel)
+        const scroller = panelChild("brush-scroll")
+        verify(scroller !== null)
+        verify(scroller.contentHeight > scroller.height,
+               "brush panel should scroll at compact height")
+        compare(scroller.contentWidth, scroller.width)
+
+        const slider = panelChild("brush-diameter")
+        const reset = panelChild("brush-reset")
+        verify(slider.width <= scroller.width)
+        verify(reset.width <= scroller.width)
+
+        scroller.contentY = Math.max(0, scroller.contentHeight - scroller.height)
+        waitForRendering(panel)
+        panel.diameter = 96
+        mouseClick(reset)
+        compare(panel.diameter, panel.defaultDiameter)
+    }
+
     function test_panelDefaultsAndObjectNames() {
         compare(panel.diameter, 24)
         verify(Qt.colorEqual(panel.color, panel.blackColor))
@@ -364,7 +390,8 @@ TestCase {
 
         mouseClick(slider, 0, slider.height / 2)
         compare(panel.diameter, 4)
-        mouseClick(slider, slider.width - 1, slider.height / 2)
+        slider.forceActiveFocus()
+        keyClick(Qt.Key_End)
         compare(panel.diameter, 512)
 
         // External changes follow without dragging the handle.

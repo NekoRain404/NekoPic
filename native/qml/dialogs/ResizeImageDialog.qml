@@ -52,6 +52,12 @@ NekoDialog {
     property bool _ready: false
     property bool _resolved: false
 
+    /*! Keeps the option body above the fixed error line and action row. */
+    readonly property real _scrollMaxHeight: {
+        const host = root.parent && root.parent.height > 0 ? root.parent.height : 700
+        return Math.max(160, host - 250)
+    }
+
     signal resizeRequested(int width, int height)
 
     title: qsTr("Resize image")
@@ -119,6 +125,26 @@ NekoDialog {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: Theme.spacingMd
+
+        Flickable {
+            id: resizeScroller
+            objectName: "resize-scroll"
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(resizeColumn.implicitHeight, root._scrollMaxHeight)
+            contentWidth: width
+            contentHeight: resizeColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: NekoScrollBar {
+                objectName: "resize-scrollbar"
+                policy: ScrollBar.AsNeeded
+                accessibleName: qsTr("Resize options scroll")
+            }
+
+            ColumnLayout {
+                id: resizeColumn
+                width: resizeScroller.width
+                spacing: Theme.spacingMd
 
         Text {
             objectName: "resize-original"
@@ -202,6 +228,8 @@ NekoDialog {
             color: Theme.textPrimary
             font.pixelSize: Theme.fontSmall
             wrapMode: Text.WordWrap
+        }
+            }
         }
 
         Text {

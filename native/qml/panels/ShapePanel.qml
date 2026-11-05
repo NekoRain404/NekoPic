@@ -86,9 +86,24 @@ Rectangle {
         ]
     }
 
-    ColumnLayout {
+    Flickable {
+        id: scroller
+        objectName: "shape-scroll"
         anchors.fill: parent
         anchors.margins: Theme.spacing2xl
+        contentWidth: width
+        contentHeight: content.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: NekoScrollBar {
+            objectName: "shape-scrollbar"
+            policy: ScrollBar.AsNeeded
+            accessibleName: qsTr("Shape settings scroll")
+        }
+
+    ColumnLayout {
+        id: content
+        width: scroller.width
         spacing: Theme.spacingLg
 
         Label {
@@ -309,5 +324,6 @@ Rectangle {
         }
 
         Item { Layout.fillHeight: true }
+    }
     }
 }

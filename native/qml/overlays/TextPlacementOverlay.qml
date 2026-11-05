@@ -58,6 +58,22 @@ Item {
 
     property point _cursorDisplay: Qt.point(0, 0)
     property bool _positioned: false
+    /*! Focus ring is reserved for keyboard users; mouse placement is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
 
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Text placement")
@@ -92,8 +108,12 @@ Item {
 
     onActiveChanged: {
         resetCursor()
-        if (active)
+        if (active) {
+            _keyboardFocus = false
+            _mouseFocusRequest = true
             forceActiveFocus(Qt.OtherFocusReason)
+            Qt.callLater(function() { _mouseFocusRequest = false })
+        }
     }
     onUsableChanged: if (!usable) resetCursor()
     onWidthChanged: preview.requestPaint()
@@ -101,6 +121,7 @@ Item {
     onVisibleRectChanged: preview.requestPaint()
 
     Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
         if (usable) {
             root.cancelled()
             event.accepted = true
@@ -156,13 +177,16 @@ Item {
         }
     }
 
-    // Visible focus indicator for keyboard users.
+    // Subtle focus indicator for keyboard users only.
     Rectangle {
+        objectName: "textPlacementFocusRing"
         anchors.fill: preview
+        anchors.margins: 1
+        radius: Theme.radiusXs
         color: "transparent"
         border.width: Theme.focusRingWidth
         border.color: Theme.focusRing
-        visible: root.activeFocus && root.usable
+        visible: root.activeFocus && root.usable && root._keyboardFocus
     }
 
     MouseArea {
@@ -173,7 +197,7 @@ Item {
         acceptedButtons: Qt.LeftButton
         hoverEnabled: true
         preventStealing: true
-        cursorShape: Qt.CrossCursor
+        cursorShape: Qt.IBeamCursor
         onWheel: function(wheel) { wheel.accepted = false }
         onPositionChanged: function(mouse) {
             if (!root.usable)
@@ -189,7 +213,7 @@ Item {
         onPressed: function(mouse) {
             if (!root.usable)
                 return
-            root.forceActiveFocus(Qt.MouseFocusReason)
+            root.takeMouseFocus()
             root._cursorDisplay = Qt.point(mouse.x, mouse.y)
             root._positioned = true
             preview.requestPaint()

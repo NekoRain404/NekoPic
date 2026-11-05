@@ -73,14 +73,44 @@ Item {
         return Math.hypot(first.x - displayPoint.x, first.y - displayPoint.y) <= 14
     }
 
+    /*! Focus ring is reserved for keyboard users; clicking is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
+
     onActiveChanged: if (!active) reset()
     onPointsChanged: preview.requestPaint()
     onVisibleRectChanged: preview.requestPaint()
 
-    Keys.onReturnPressed: function(event) { finish(); event.accepted = true }
-    Keys.onEnterPressed: function(event) { finish(); event.accepted = true }
-    Keys.onEscapePressed: function(event) { cancel(); event.accepted = true }
+    Keys.onReturnPressed: function(event) {
+        root._keyboardFocus = true
+        finish()
+        event.accepted = true
+    }
+    Keys.onEnterPressed: function(event) {
+        root._keyboardFocus = true
+        finish()
+        event.accepted = true
+    }
+    Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
+        cancel()
+        event.accepted = true
+    }
     Keys.onPressed: function(event) {
+        root._keyboardFocus = true
         if (event.key === Qt.Key_Backspace) {
             removeLast()
             event.accepted = true
@@ -136,11 +166,14 @@ Item {
     }
 
     Rectangle {
+        objectName: "polygonFocusRing"
         anchors.fill: parent
+        anchors.margins: 1
+        radius: Theme.radiusXs
         color: "transparent"
         border.width: Theme.focusRingWidth
         border.color: Theme.focusRing
-        visible: root.activeFocus && root.enabled
+        visible: root.activeFocus && root.enabled && root._keyboardFocus
     }
 
     MouseArea {
@@ -155,7 +188,7 @@ Item {
             preview.requestPaint()
         }
         onClicked: function(mouse) {
-            root.forceActiveFocus()
+            root.takeMouseFocus()
             if (root.nearFirst(Qt.point(mouse.x, mouse.y))) {
                 root.finish()
                 return

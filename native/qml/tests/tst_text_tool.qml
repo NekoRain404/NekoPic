@@ -50,6 +50,8 @@ TestCase {
     function init() {
         Theme.dark = true
         Theme.reduceMotion = true
+        testCase.width = 900
+        testCase.height = 700
 
         overlay.active = false
         overlay.inputEnabled = true
@@ -83,6 +85,19 @@ TestCase {
     function openDialog(dialog) {
         dialog.open()
         tryVerify(function() { return dialog.opened }, 3000)
+    }
+
+    /*! Brings a scrollable body control into view before clicking it. */
+    function clickInDialog(dialog, item) {
+        const scroller = child(dialog, "text-dialog-scroll")
+        if (scroller && item) {
+            const pos = item.mapToItem(scroller.contentItem, 0, 0)
+            const maxY = Math.max(0, scroller.contentHeight - scroller.height)
+            const target = pos.y - (scroller.height - item.height) / 2
+            scroller.contentY = Math.max(0, Math.min(maxY, target))
+            waitForRendering(scroller)
+        }
+        mouseClick(item)
     }
 
     // ── Placement overlay ───────────────────────────────────────────────────
@@ -309,7 +324,7 @@ TestCase {
 
             const cell = child(dialog, "text-align-" + i)
             verify(cell !== null)
-            mouseClick(cell)
+            clickInDialog(dialog, cell)
             compare(dialog.alignment, expected[i])
             compare(dialog.alignmentIndex, i)
         }
@@ -361,17 +376,17 @@ TestCase {
         verify(white !== null && black !== null && warm !== null)
         compare(white.selected, true)
 
-        mouseClick(black)
+        clickInDialog(dialog, black)
         verify(Qt.colorEqual(dialog.textColor, "#000000"))
         compare(black.selected, true)
         compare(white.selected, false)
 
-        mouseClick(warm)
+        clickInDialog(dialog, warm)
         verify(Qt.colorEqual(dialog.textColor, dialog.warmGreyColor))
         compare(warm.selected, true)
         compare(black.selected, false)
 
-        mouseClick(child(dialog, "text-color-red"))
+        clickInDialog(dialog, child(dialog, "text-color-red"))
         verify(Qt.colorEqual(dialog.textColor, dialog.redColor))
     }
 
@@ -419,12 +434,12 @@ TestCase {
         compare(outlineWidth.to, 64)
         compare(outlineWidth.enabled, false)
 
-        mouseClick(child(dialog, "text-dialog-outline"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline"))
         compare(dialog.outlineEnabled, true)
         compare(outlineWidth.enabled, true)
         compare(dialog.effectiveOutlineWidth, 2)
 
-        mouseClick(child(dialog, "text-dialog-bold"))
+        clickInDialog(dialog, child(dialog, "text-dialog-bold"))
         compare(dialog.bold, true)
         compare(dialog.fontWeight, 700)
     }
@@ -476,11 +491,11 @@ TestCase {
             dialog.fontFamily = dialog.fontFamilies[0]
         dialog.lineHeight = 1.6
         dialog.textPadding = 12
-        mouseClick(child(dialog, "text-dialog-outline"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline"))
         dialog.outlineWidth = 6
-        mouseClick(child(dialog, "text-dialog-outline-color-red"))
-        mouseClick(child(dialog, "text-color-black"))
-        mouseClick(child(dialog, "text-align-8"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline-color-red"))
+        clickInDialog(dialog, child(dialog, "text-color-black"))
+        clickInDialog(dialog, child(dialog, "text-align-8"))
 
         compare(dialog.canAccept, true)
         mouseClick(child(dialog, "text-dialog-accept"))
@@ -522,8 +537,8 @@ TestCase {
 
         dialog.text = "  Hello world  "
         dialog.fontSize = 64
-        mouseClick(child(dialog, "text-color-black"))
-        mouseClick(child(dialog, "text-align-8"))
+        clickInDialog(dialog, child(dialog, "text-color-black"))
+        clickInDialog(dialog, child(dialog, "text-align-8"))
 
         compare(dialog.canAccept, true)
         mouseClick(child(dialog, "text-dialog-accept"))
@@ -646,11 +661,11 @@ TestCase {
         dialog.text = "  Changed  "
         dialog.fontSize = 50
         dialog.bold = true
-        mouseClick(child(dialog, "text-color-black"))
-        mouseClick(child(dialog, "text-align-8"))
-        mouseClick(child(dialog, "text-dialog-outline"))
+        clickInDialog(dialog, child(dialog, "text-color-black"))
+        clickInDialog(dialog, child(dialog, "text-align-8"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline"))
         dialog.outlineWidth = 6
-        mouseClick(child(dialog, "text-dialog-outline-color-red"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline-color-red"))
         compare(dialog.canAccept, true)
 
         mouseClick(child(dialog, "text-dialog-accept"))
@@ -737,12 +752,53 @@ TestCase {
 
         // The densest styling state (outline, bold, maximum spacing) still fits.
         dialog.text = "Styled"
-        mouseClick(child(dialog, "text-dialog-outline"))
-        mouseClick(child(dialog, "text-dialog-bold"))
+        clickInDialog(dialog, child(dialog, "text-dialog-outline"))
+        clickInDialog(dialog, child(dialog, "text-dialog-bold"))
         dialog.lineHeight = 2.5
         dialog.textPadding = 64
         verify(dialog.height <= testCase.height)
         compare(dialog.canAccept, true)
         compare(dialog.height, dialog.implicitHeight)
+    }
+
+    function test_dialogFits860x600AndScrolls() {
+        testCase.width = 860
+        testCase.height = 600
+
+        const dialog = makeDialog({ imageWidth: 4000, imageHeight: 3000,
+                                    anchorX: 2000, anchorY: 1500 })
+        openDialog(dialog)
+
+        verify(dialog.height <= testCase.height - Theme.spacing2xl)
+        verify(dialog.y >= 0)
+        verify(dialog.width <= testCase.width)
+
+        const scroller = child(dialog, "text-dialog-scroll")
+        verify(scroller !== null)
+        verify(scroller.contentHeight > scroller.height,
+               "text styles should scroll at 860×600")
+        compare(scroller.contentWidth, scroller.width)
+
+        // The error line and the action row are outside the scroller.
+        dialog.text = ""
+        compare(dialog.requestCreate(), false)
+        waitForRendering(scroller)
+        const error = child(dialog, "text-dialog-error")
+        const accept = child(dialog, "text-dialog-accept")
+        const errorBefore = error.mapToItem(dialog.contentItem, 0, 0).y
+        const acceptBefore = accept.mapToItem(dialog.contentItem, 0, 0).y
+        verify(error.visible)
+
+        scroller.contentY = Math.max(0, scroller.contentHeight - scroller.height)
+        waitForRendering(scroller)
+        fuzzyCompare(error.mapToItem(dialog.contentItem, 0, 0).y, errorBefore, 0.5)
+        fuzzyCompare(accept.mapToItem(dialog.contentItem, 0, 0).y, acceptBefore, 0.5)
+        verify(acceptBefore + accept.height <= dialog.height + 0.5,
+               "fixed footer must stay inside the dialog")
+
+        // Controls near the bottom are reachable and usable once scrolled.
+        clickInDialog(dialog, child(dialog, "text-align-8"))
+        compare(dialog.alignment, Qt.AlignRight | Qt.AlignBottom)
+        dialog.close()
     }
 }

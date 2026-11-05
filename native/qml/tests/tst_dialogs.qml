@@ -28,6 +28,8 @@ TestCase {
     function init() {
         Theme.dark = true
         Theme.reduceMotion = true
+        testCase.width = 1100
+        testCase.height = 900
     }
 
     function make(component, props) {
@@ -329,6 +331,74 @@ TestCase {
         compare(args[2], Qt.AlignRight | Qt.AlignBottom)
         fuzzyCompare(args[3].a, 0, 0.001)
         tryVerify(function() { return !dialog.opened }, 3000)
+    }
+
+    // ── Compact-window fit and scrolling ────────────────────────────────────
+
+    function test_resizeAndCanvasFitCompactWindow() {
+        testCase.width = 860
+        testCase.height = 600
+
+        const resize = make(resizeComponent, { imageWidth: 4000, imageHeight: 3000 })
+        openDialog(resize)
+        const resizeScroller = child(resize, "resize-scroll")
+        verify(resizeScroller !== null)
+        verify(resize.height <= testCase.height - Theme.spacing2xl)
+        verify(resize.y >= 0)
+        const resizeAccept = child(resize, "resize-accept")
+        const resizeAcceptPos = resizeAccept.mapToItem(resize.contentItem, 0, 0)
+        verify(resizeAcceptPos.y + resizeAccept.height <= resize.height + 0.5,
+               "resize footer must stay inside the dialog")
+        compare(resizeScroller.contentWidth, resizeScroller.width)
+        verify(resizeScroller.contentHeight <= resizeScroller.height + 0.5
+               || resizeScroller.height > 0)
+        resize.close()
+        tryVerify(function() { return !resize.opened }, 3000)
+
+        const canvas = make(canvasComponent, { imageWidth: 4000, imageHeight: 3000 })
+        openDialog(canvas)
+        const canvasScroller = child(canvas, "canvas-scroll")
+        verify(canvasScroller !== null)
+        verify(canvas.height <= testCase.height - Theme.spacing2xl)
+        const canvasAccept = child(canvas, "canvas-accept")
+        const canvasAcceptPos = canvasAccept.mapToItem(canvas.contentItem, 0, 0)
+        verify(canvasAcceptPos.y + canvasAccept.height <= canvas.height + 0.5,
+               "canvas footer must stay inside the dialog")
+        verify(canvasScroller.contentHeight > canvasScroller.height,
+               "canvas options should scroll at 860×600")
+
+        // The anchor grid is reachable by scrolling, and clickable afterwards.
+        const anchor = child(canvas, "canvas-anchor-bottom-right")
+        const anchorPos = anchor.mapToItem(canvasScroller.contentItem, 0, 0)
+        canvasScroller.contentY = Math.max(0, Math.min(
+            canvasScroller.contentHeight - canvasScroller.height,
+            anchorPos.y - canvasScroller.height + anchor.height + Theme.spacingMd))
+        waitForRendering(canvasScroller)
+        mouseClick(anchor)
+        compare(canvas.anchor, Qt.AlignRight | Qt.AlignBottom)
+
+        // Footer stays put while the body scrolls.
+        const before = canvasAccept.mapToItem(canvas.contentItem, 0, 0).y
+        canvasScroller.contentY = 0
+        waitForRendering(canvasScroller)
+        const after = canvasAccept.mapToItem(canvas.contentItem, 0, 0).y
+        fuzzyCompare(before, after, 0.5)
+        canvas.close()
+    }
+
+    function test_dialogsFitAt900x700() {
+        testCase.width = 900
+        testCase.height = 700
+
+        const resize = make(resizeComponent, { imageWidth: 4000, imageHeight: 3000 })
+        openDialog(resize)
+        verify(resize.height <= testCase.height - Theme.spacing2xl)
+        resize.close()
+
+        const canvas = make(canvasComponent, { imageWidth: 4000, imageHeight: 3000 })
+        openDialog(canvas)
+        verify(canvas.height <= testCase.height - Theme.spacing2xl)
+        canvas.close()
     }
 
     // ── Shortcuts ───────────────────────────────────────────────────────────

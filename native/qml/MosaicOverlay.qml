@@ -1,4 +1,5 @@
 import QtQuick
+import "UI"
 
 // Place over the displayed image rectangle, excluding letterboxing and borders.
 // Signals use image pixels: x = localX * imageWidth / width (and likewise y).
@@ -33,6 +34,22 @@ Item {
     property point _cursor: Qt.point(0, 0)
     property var _points: []
     property real _sampleDistance: 1
+    /*! Focus ring is reserved for keyboard users; painting is silent. */
+    property bool _keyboardFocus: false
+    property bool _mouseFocusRequest: false
+
+    function takeMouseFocus() {
+        _keyboardFocus = false
+        _mouseFocusRequest = true
+        forceActiveFocus(Qt.MouseFocusReason)
+        Qt.callLater(function() { _mouseFocusRequest = false })
+    }
+
+    onActiveFocusChanged: {
+        if (activeFocus && !_mouseFocusRequest)
+            _keyboardFocus = true
+        _mouseFocusRequest = false
+    }
 
     function imagePoint(x, y) {
         return Qt.point(Math.max(0, Math.min(imageWidth, x * imageWidth / width)),
@@ -66,6 +83,7 @@ Item {
     onHeightChanged: mask.requestPaint()
     onBrushDiameterChanged: mask.requestPaint()
     Keys.onEscapePressed: function(event) {
+        root._keyboardFocus = true
         if (_drawing) {
             cancelGesture()
             event.accepted = true
@@ -130,6 +148,17 @@ Item {
             }
         }
     }
+    Rectangle {
+        objectName: "mosaicFocusRing"
+        anchors.fill: parent
+        anchors.margins: 1
+        radius: Theme.radiusXs
+        color: "transparent"
+        border.width: Theme.focusRingWidth
+        border.color: Theme.focusRing
+        visible: root.activeFocus && root.usable && root._keyboardFocus
+    }
+
     MouseArea {
         id: pointer
         anchors.fill: parent
@@ -142,7 +171,7 @@ Item {
         onWheel: function(wheel) { wheel.accepted = false }
         onContainsMouseChanged: mask.requestPaint()
         onPressed: function(mouse) {
-            root.forceActiveFocus(Qt.MouseFocusReason)
+            root.takeMouseFocus()
             root._start = root.imagePoint(mouse.x, mouse.y)
             root._end = root._start
             root._cursor = root._start
