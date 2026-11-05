@@ -63,6 +63,7 @@ TestCase {
     SignalSpy { id: moves; target: overlay; signalName: "moveRequested" }
     SignalSpy { id: removes; target: overlay; signalName: "removeRequested" }
     SignalSpy { id: selections; target: overlay; signalName: "selectionChanged" }
+    SignalSpy { id: doubleClicks; target: overlay; signalName: "doubleClicked" }
     SignalSpy { id: cancels; target: overlay; signalName: "cancelled" }
 
     function initTestCase() {
@@ -102,6 +103,7 @@ TestCase {
         moves.clear()
         removes.clear()
         selections.clear()
+        doubleClicks.clear()
         cancels.clear()
         canvasPan.presses = 0
         canvasPan.wheelEvents = 0
@@ -285,6 +287,59 @@ TestCase {
         mouseClick(overlay, 50, 25)
         compare(moves.count, 0)
         compare(overlay.selectedId, 7)
+    }
+
+    // ── Double click ────────────────────────────────────────────────────────
+
+    function test_doubleClickOnSelectedObjectEmitsOnceAndDoesNotMove() {
+        overlay.selectAt(200, 100)
+        compare(overlay.selectedId, 7)
+        selections.clear()
+
+        mouseDoubleClickSequence(overlay, 50, 25) // inside the selected box
+        compare(doubleClicks.count, 1)
+        compare(doubleClicks.signalArguments[0][0], 7)
+        // The second press must not start or commit a move.
+        compare(moves.count, 0)
+        compare(overlay.dragging, false)
+        compare(overlay.previewDelta, Qt.point(0, 0))
+        compare(overlay.selectedId, 7)
+        compare(selections.count, 0)
+    }
+
+    function test_doubleClickDirectlyOnUnselectedObjectSelectsAndEmits() {
+        compare(overlay.selectedId, 0)
+        mouseDoubleClickSequence(overlay, 175, 87) // image (700, 348), id 9
+        compare(doubleClicks.count, 1)
+        compare(doubleClicks.signalArguments[0][0], 9)
+        compare(overlay.selectedId, 9)
+        compare(moves.count, 0)
+        compare(overlay.dragging, false)
+    }
+
+    function test_doubleClickOnEmptySpaceEmitsNothing() {
+        overlay.selectAt(200, 100)
+        selections.clear()
+        mouseDoubleClickSequence(overlay, 10, 10) // image (40, 40), no object
+        compare(doubleClicks.count, 0)
+        compare(moves.count, 0)
+        // A miss still clears the selection, matching a normal click.
+        compare(overlay.selectedId, 0)
+    }
+
+    function test_doubleClickAndDragKeepIndependentContracts() {
+        overlay.selectAt(200, 100)
+        mouseDoubleClickSequence(overlay, 50, 25)
+        compare(doubleClicks.count, 1)
+
+        // A subsequent single drag still moves exactly once.
+        mousePress(overlay, 50, 25)
+        compare(overlay.dragging, true)
+        mouseMove(overlay, 60, 30)
+        mouseRelease(overlay, 60, 30)
+        compare(moves.count, 1)
+        compare(moves.signalArguments[0][1], 40)
+        compare(moves.signalArguments[0][2], 20)
     }
 
     function test_dragClampsToImageEdges() {

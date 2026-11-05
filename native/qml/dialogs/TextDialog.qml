@@ -33,6 +33,15 @@ NekoDialog {
     property int imageHeight: 0
     property bool busy: false
 
+    /*!
+        Edit mode reopens an existing text object. `loadTextInfo()` switches
+        it on and fills every control from a DocumentController.textInfo()
+        map; accept then emits `textUpdateRequested` instead of the create
+        signals. `editId` is the id of the object being edited.
+    */
+    property bool editMode: false
+    property var editId: 0
+
     /*! Raw text content of the editor. */
     property alias text: textInput.text
     property real fontSize: 32
@@ -84,7 +93,8 @@ NekoDialog {
     readonly property bool anchorValid: hasImage
                                         && anchorX >= 0 && anchorX <= imageWidth
                                         && anchorY >= 0 && anchorY <= imageHeight
-    readonly property bool canAccept: !busy && textValid && fontSizeValid
+    readonly property bool editIdValid: !editMode || Number(editId) > 0
+    readonly property bool canAccept: !busy && editIdValid && textValid && fontSizeValid
                                       && lineHeightValid && paddingValid
                                       && outlineWidthValid && anchorValid
     readonly property int alignmentIndex: indexForAlignment(alignment)
@@ -96,6 +106,8 @@ NekoDialog {
                                             ? Math.max(0, Math.min(imageHeight, anchorY)) : 0
 
     readonly property string validationMessage: {
+        if (!editIdValid)
+            return qsTr("No text object to edit.")
         if (!textValid)
             return qsTr("Enter some text.")
         if (!fontSizeValid)
@@ -132,9 +144,18 @@ NekoDialog {
                                int fontWeight, real fontSize, color color, int alignment,
                                color outlineColor, real outlineWidth, real lineHeight,
                                real padding)
+    /*!
+        Emitted on accept in edit mode. `info` carries the original `id` plus
+        every styled field, using the same keys as DocumentController.textInfo():
+        id, text, x, y, fontFamily, fontWeight, fontSize, color, alignment,
+        outlineColor, outlineWidth, lineHeight, padding.
+    */
+    signal textUpdateRequested(var info)
 
-    title: qsTr("Add text")
-    description: qsTr("Type your text, choose a style, then place it on the image.")
+    title: root.editMode ? qsTr("Edit text") : qsTr("Add text")
+    description: root.editMode
+                 ? qsTr("Update the text, style and position.")
+                 : qsTr("Type your text, choose a style, then place it on the image.")
     acceptText: ""
     rejectText: ""
 
@@ -235,8 +256,10 @@ NekoDialog {
 
     /*! Maps Qt alignment flags back to a 0–8 grid index (row-major). */
     function indexForAlignment(value) {
-        const column = (value & Qt.AlignHCenter) ? 1 : (value & Qt.AlignRight) ? 2 : 0
-        const row = (value & Qt.AlignVCenter) ? 1 : (value & Qt.AlignBottom) ? 2 : 0
+        // A missing horizontal/vertical flag means the centre, matching the
+        // anchor semantics of DocumentController.addTextStyled().
+        const column = (value & Qt.AlignLeft) ? 0 : (value & Qt.AlignRight) ? 2 : 1
+        const row = (value & Qt.AlignTop) ? 0 : (value & Qt.AlignBottom) ? 2 : 1
         return row * 3 + column
     }
 
@@ -245,6 +268,42 @@ NekoDialog {
                        qsTr("Left"), qsTr("Center"), qsTr("Right"),
                        qsTr("Bottom left"), qsTr("Bottom"), qsTr("Bottom right")]
         return names[Math.max(0, Math.min(names.length - 1, index))]
+    }
+
+    /*!
+        Fills the dialog from a DocumentController.textInfo() map and switches
+        to edit mode. Returns false for an unusable payload. Anchor values are
+        assigned as-is so the caller can surface an out-of-image position
+        through the normal validation message.
+    */
+    function loadTextInfo(info) {
+        if (!info || typeof info !== "object" || info.text === undefined
+                || info.x === undefined || info.y === undefined)
+            return false
+        editMode = true
+        editId = info.id !== undefined ? info.id : 0
+        text = String(info.text)
+        anchorX = Number(info.x)
+        anchorY = Number(info.y)
+        fontFamily = info.fontFamily !== undefined ? String(info.fontFamily) : ""
+        bold = (Number(info.fontWeight) || 400) >= 600
+        if (info.fontSize !== undefined)
+            fontSize = Number(info.fontSize)
+        if (info.color !== undefined)
+            textColor = info.color
+        if (info.alignment !== undefined)
+            alignment = Number(info.alignment)
+        if (info.lineHeight !== undefined)
+            lineHeight = Number(info.lineHeight)
+        if (info.padding !== undefined)
+            textPadding = Number(info.padding)
+        const width = Number(info.outlineWidth) || 0
+        outlineEnabled = width > 0
+        outlineWidth = width > 0 ? width : 2
+        if (info.outlineColor !== undefined)
+            outlineColor = info.outlineColor
+        syncSliders()
+        return true
     }
 
     /*! Clamps an anchor into the image and writes it back. */
@@ -264,6 +323,25 @@ NekoDialog {
         _attempted = false
         const content = text.trim()
         const roundedSize = Math.round(fontSize)
+        if (editMode) {
+            root.textUpdateRequested({
+                id: root.editId,
+                text: content,
+                x: effectiveAnchorX,
+                y: effectiveAnchorY,
+                fontFamily: fontFamily,
+                fontWeight: fontWeight,
+                fontSize: roundedSize,
+                color: textColor,
+                alignment: alignment,
+                outlineColor: outlineColor,
+                outlineWidth: effectiveOutlineWidth,
+                lineHeight: lineHeight,
+                padding: Math.round(textPadding)
+            })
+            close()
+            return true
+        }
         root.styledTextRequested(content, effectiveAnchorX, effectiveAnchorY,
                                  fontFamily, fontWeight, roundedSize, textColor, alignment,
                                  outlineColor, effectiveOutlineWidth, lineHeight,
@@ -882,7 +960,9 @@ NekoDialog {
 
             NekoButton {
                 objectName: "text-dialog-accept"
-                text: root.busy ? qsTr("Adding…") : qsTr("Add text")
+                text: root.editMode
+                      ? (root.busy ? qsTr("Saving…") : qsTr("Save"))
+                      : (root.busy ? qsTr("Adding…") : qsTr("Add text"))
                 variant: "primary"
                 enabled: root.canAccept
                 onClicked: root.requestCreate()

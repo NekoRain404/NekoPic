@@ -564,6 +564,157 @@ TestCase {
         compare(accept.enabled, true)
     }
 
+    // ── Edit mode ───────────────────────────────────────────────────────────
+
+    function test_editModeDefaultsAndCreateContractUnchanged() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        compare(dialog.editMode, false)
+        compare(dialog.editId, 0)
+        compare(dialog.editIdValid, true)
+        compare(child(dialog, "text-dialog-accept").text, "Add text")
+    }
+
+    function test_loadTextInfoFillsFieldsAndEnablesEditMode() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        openDialog(dialog)
+
+        const family = dialog.fontFamilies.length > 0 ? dialog.fontFamilies[0] : ""
+        const loaded = dialog.loadTextInfo({
+            id: 42,
+            text: "Existing",
+            x: 210,
+            y: 140,
+            fontFamily: family,
+            fontWeight: 700,
+            fontSize: 44,
+            color: "#c0504d",
+            alignment: Qt.AlignRight | Qt.AlignBottom,
+            outlineColor: "#4a6fa5",
+            outlineWidth: 5,
+            lineHeight: 1.5,
+            padding: 12
+        })
+
+        verify(loaded)
+        compare(dialog.editMode, true)
+        compare(dialog.editId, 42)
+        compare(dialog.editIdValid, true)
+        compare(dialog.text, "Existing")
+        compare(dialog.anchorX, 210)
+        compare(dialog.anchorY, 140)
+        compare(dialog.fontFamily, family)
+        compare(dialog.bold, true)
+        compare(dialog.fontWeight, 700)
+        compare(dialog.fontSize, 44)
+        verify(Qt.colorEqual(dialog.textColor, "#c0504d"))
+        compare(dialog.alignment, Qt.AlignRight | Qt.AlignBottom)
+        compare(dialog.outlineEnabled, true)
+        compare(dialog.outlineWidth, 5)
+        verify(Qt.colorEqual(dialog.outlineColor, "#4a6fa5"))
+        compare(dialog.lineHeight, 1.5)
+        compare(dialog.textPadding, 12)
+        compare(dialog.canAccept, true)
+        compare(child(dialog, "text-dialog-accept").text, "Save")
+
+        // Malformed payloads are ignored.
+        compare(dialog.loadTextInfo(null), false)
+        compare(dialog.loadTextInfo({}), false)
+        compare(dialog.loadTextInfo({ text: "no anchors" }), false)
+        compare(dialog.editId, 42)
+    }
+
+    function test_editModeAcceptEmitsUpdatePayloadOnly() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        openDialog(dialog)
+        const family = dialog.fontFamilies.length > 0 ? dialog.fontFamilies[0] : ""
+        dialog.loadTextInfo({
+            id: 77, text: "Before", x: 210, y: 140,
+            fontFamily: family, fontWeight: 400, fontSize: 36,
+            color: "#ffffff", alignment: Qt.AlignCenter,
+            outlineColor: "#000000", outlineWidth: 0,
+            lineHeight: 1.0, padding: 4
+        })
+
+        const updates = createTemporaryObject(spyComponent, testCase,
+                                              { target: dialog, signalName: "textUpdateRequested" })
+        const styled = createTemporaryObject(spyComponent, testCase,
+                                             { target: dialog, signalName: "styledTextRequested" })
+        const legacy = createTemporaryObject(spyComponent, testCase,
+                                             { target: dialog, signalName: "textRequested" })
+        verify(updates !== null && styled !== null && legacy !== null)
+
+        dialog.text = "  Changed  "
+        dialog.fontSize = 50
+        dialog.bold = true
+        mouseClick(child(dialog, "text-color-black"))
+        mouseClick(child(dialog, "text-align-8"))
+        mouseClick(child(dialog, "text-dialog-outline"))
+        dialog.outlineWidth = 6
+        mouseClick(child(dialog, "text-dialog-outline-color-red"))
+        compare(dialog.canAccept, true)
+
+        mouseClick(child(dialog, "text-dialog-accept"))
+
+        compare(updates.count, 1)
+        const info = updates.signalArguments[0][0]
+        compare(info.id, 77)
+        compare(info.text, "Changed")
+        compare(info.x, 210)
+        compare(info.y, 140)
+        compare(info.fontFamily, family)
+        compare(info.fontWeight, 700)
+        compare(info.fontSize, 50)
+        verify(Qt.colorEqual(info.color, "#000000"))
+        compare(info.alignment, Qt.AlignRight | Qt.AlignBottom)
+        verify(Qt.colorEqual(info.outlineColor, dialog.redColor))
+        compare(info.outlineWidth, 6)
+        verify(Math.abs(info.lineHeight - 1.0) < 0.001)
+        compare(info.padding, 4)
+
+        // Edit mode never emits the create signals.
+        compare(styled.count, 0)
+        compare(legacy.count, 0)
+        tryVerify(function() { return !dialog.opened }, 3000)
+    }
+
+    function test_editModeDisabledStates() {
+        const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
+        openDialog(dialog)
+        const accept = child(dialog, "text-dialog-accept")
+
+        // Edit mode without an id cannot be accepted.
+        dialog.editMode = true
+        dialog.text = "Needs an id"
+        compare(dialog.editIdValid, false)
+        compare(dialog.canAccept, false)
+        compare(accept.enabled, false)
+        compare(dialog.requestCreate(), false)
+        compare(child(dialog, "text-dialog-error").visible, true)
+
+        dialog.loadTextInfo({
+            id: 5, text: "Editable", x: 20, y: 30,
+            fontFamily: "", fontWeight: 400, fontSize: 32,
+            color: "#ffffff", alignment: Qt.AlignCenter,
+            outlineColor: "#000000", outlineWidth: 0,
+            lineHeight: 1.0, padding: 4
+        })
+        compare(dialog.editIdValid, true)
+        compare(dialog.canAccept, true)
+        compare(accept.enabled, true)
+
+        // Busy disables every control, like create mode.
+        dialog.busy = true
+        compare(dialog.canAccept, false)
+        compare(accept.enabled, false)
+        compare(child(dialog, "text-dialog-text").enabled, false)
+        compare(child(dialog, "text-dialog-font-size").enabled, false)
+        compare(accept.text, "Saving…")
+
+        dialog.busy = false
+        compare(accept.enabled, true)
+        compare(accept.text, "Save")
+    }
+
     function test_escapeRejects() {
         const dialog = makeDialog({ imageWidth: 1000, imageHeight: 500 })
         openDialog(dialog)
