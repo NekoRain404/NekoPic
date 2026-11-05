@@ -165,7 +165,19 @@ ApplicationWindow {
             title: qsTr("View")
             MenuItem { action: fitAction } MenuItem { action: actualAction } MenuSeparator {}
             MenuItem { text: qsTr("Dark theme"); checkable: true; checked: window.darkTheme; onTriggered: window.darkTheme = checked }
-            Menu { title: qsTr("Language"); MenuItem { text: "English"; onTriggered: language.setLanguage("en") } MenuItem { text: "简体中文"; onTriggered: language.setLanguage("zh_CN") } }
+            Menu {
+                title: qsTr("Language")
+                Repeater {
+                    model: typeof language !== "undefined" ? language.availableLocales : []
+                    MenuItem {
+                        required property var modelData
+                        text: modelData.nativeName
+                        checkable: true
+                        checked: typeof language !== "undefined" && language.locale === modelData.id
+                        onTriggered: if (typeof language !== "undefined") language.setLanguage(modelData.id)
+                    }
+                }
+            }
         }
     }
 

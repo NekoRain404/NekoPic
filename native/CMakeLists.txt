@@ -43,13 +43,13 @@ target_link_libraries(nekopic_render PUBLIC nekopic_core Qt6::Quick)
 add_library(nekopic_app STATIC
     src/app/documentcontroller.cpp src/app/documentcontroller.h
     src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_geometry.cpp
-    src/app/filterpreviews.cpp src/app/filterpreviews.h)
+    src/app/filterpreviews.cpp src/app/filterpreviews.h
+    src/app/languagemanager.cpp src/app/languagemanager.h)
 target_include_directories(nekopic_app PUBLIC src)
 target_link_libraries(nekopic_app PUBLIC nekopic_io nekopic_document nekopic_render
-    Qt6::Concurrent Qt6::Quick)
+    Qt6::Concurrent Qt6::Quick Qt6::Qml)
 
 qt_add_executable(nekopic src/app/main.cpp)
-target_sources(nekopic PRIVATE src/app/languagemanager.cpp src/app/languagemanager.h)
 target_link_libraries(nekopic PRIVATE nekopic_app Qt6::Quick Qt6::Qml Qt6::QuickControls2)
 
 file(GLOB_RECURSE NEKOPIC_QML CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/*.qml")
@@ -74,7 +74,7 @@ add_custom_command(OUTPUT "${NEKOPIC_QM}"
     COMMAND "${QT_LRELEASE}" "${CMAKE_CURRENT_SOURCE_DIR}/i18n/nekopic_zh_CN.ts" -qm "${NEKOPIC_QM}"
     DEPENDS i18n/nekopic_zh_CN.ts VERBATIM)
 set_source_files_properties("${NEKOPIC_QM}" PROPERTIES QT_RESOURCE_ALIAS "nekopic_zh_CN.qm")
-qt_add_resources(nekopic translations PREFIX "/i18n" FILES "${NEKOPIC_QM}")
+qt_add_resources(nekopic_app translations PREFIX "/i18n" FILES "${NEKOPIC_QM}")
 
 foreach(target nekopic_core nekopic_io nekopic_document nekopic_render nekopic_app nekopic)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
@@ -102,6 +102,7 @@ if(BUILD_TESTING)
     nekopic_add_test(crop tests/tst_crop.cpp nekopic_app)
     nekopic_add_test(filterpreviews tests/tst_filterpreviews.cpp nekopic_app)
     nekopic_add_test(previewcontract tests/tst_previewcontract.cpp nekopic_app)
+    nekopic_add_test(languagemanager tests/tst_languagemanager.cpp nekopic_app)
     if(NEKOPIC_WITH_RUST)
         nekopic_add_test(rustcodecs tests/tst_rustcodecs.cpp nekopic_io)
     endif()
