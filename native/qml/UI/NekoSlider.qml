@@ -144,8 +144,8 @@ Item {
         height: Theme.sliderTrackHeight
         radius: height / 2
         color: handleArea.containsMouse && root.enabled
-               ? Theme.alpha(Theme.textSecondary, 0.38)
-               : Theme.border
+               ? Theme.alpha(Theme.textSecondary, 0.65)
+               : Theme.alpha(Theme.textSecondary, 0.45)
         Behavior on color {
             ColorAnimation {
                 duration: Motion.duration(Motion.fast)
@@ -207,7 +207,7 @@ Item {
         border.width: Theme.borderWidth
         border.color: root.activeFocus ? Theme.focusRing
                     : (root.dragging || handleArea.containsMouse) ? Theme.textTertiary
-                    : Theme.panel
+                    : Theme.alpha(Theme.textSecondary, 0.65)
         scale: root.dragging ? 1.20 : (handleArea.containsMouse ? 1.14 : 1.0)
         Behavior on border.color {
             ColorAnimation {
