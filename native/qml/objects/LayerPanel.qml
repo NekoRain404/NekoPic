@@ -95,7 +95,12 @@ Rectangle {
     }
 
     function _summaryList() {
-        return Array.isArray(summaries) ? summaries : []
+        // Q_INVOKABLE QVariantList values reach QML as array-like objects:
+        // indexed access and `length` work, but Array.isArray() is false.
+        if (summaries === undefined || summaries === null
+                || typeof summaries.length !== "number")
+            return []
+        return summaries
     }
 
     function _summaryIds() {
@@ -111,7 +116,10 @@ Rectangle {
 
     /*! selectedIds filtered to ids that still exist, in list order. */
     function _selectedValid() {
-        const input = Array.isArray(selectedIds) ? selectedIds : [selectedIds]
+        const input = (selectedIds === undefined || selectedIds === null)
+                ? []
+                : (typeof selectedIds.length === "number" && typeof selectedIds !== "string")
+                  ? selectedIds : [selectedIds]
         const available = _summaryIds()
         const result = []
         for (let i = 0; i < input.length; ++i) {

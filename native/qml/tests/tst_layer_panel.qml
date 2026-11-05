@@ -99,6 +99,19 @@ TestCase {
         verify(!control("lock-3").checked)
     }
 
+    function test_arrayLikeSummariesFromController() {
+        // Q_INVOKABLE QVariantList values reach QML as array-like objects:
+        // indexed access and `length` work, but Array.isArray() is false.
+        panel.summaries = {
+            length: 1,
+            0: { id: 9, kind: "text", name: "Controller text",
+                 bounds: Qt.rect(10, 10, 50, 20), visible: true, locked: false }
+        }
+        compare(panel._summaryList().length, 1)
+        compare(panel._summaryIds().length, 1)
+        compare(panel._summaryIds()[0], 9)
+    }
+
     function test_selectedIdsHighlightRows() {
         requireRows()
         panel.selectedIds = [2]
