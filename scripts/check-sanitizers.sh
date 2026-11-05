@@ -16,6 +16,8 @@ echo "== build (-j $jobs) =="
 cmake --build "$build_dir" -j "$jobs"
 
 echo "== c++ tests under ASan/UBSan =="
+# The GTK platform theme leaks singleton data at exit; keep ASan focused on us.
+export QT_QPA_PLATFORMTHEME=
 ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 \
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
 ctest --test-dir "$build_dir" --output-on-failure
