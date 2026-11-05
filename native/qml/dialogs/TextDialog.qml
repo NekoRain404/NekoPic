@@ -7,9 +7,16 @@ import "../UI"
     TextDialog — content and style for a new text object.
 
     The integrator supplies the image-space anchor picked by
-    TextPlacementOverlay, then connects `textRequested()` to the controller:
+    TextPlacementOverlay and connects either signal to the controller:
 
         editor.addText(text, anchorX, anchorY, fontSize, color, alignment)
+        editor.addTextStyled(text, anchorX, anchorY, fontFamily, fontWeight,
+                             fontSize, color, alignment, outlineColor,
+                             outlineWidth, lineHeight, padding)
+
+    `textRequested` is kept for compatibility with the original six-argument
+    command. `styledTextRequested` is emitted on every accept with the full
+    style payload; an empty fontFamily means the system default family.
 
     The anchor is expected in document image pixels. Accept is disabled when
     the text is empty or only whitespace, when the anchor falls outside the
@@ -33,16 +40,53 @@ NekoDialog {
     /*! Nine-way Qt alignment flags (Qt.AlignLeft/HCenter/Right × top/center/bottom). */
     property int alignment: Qt.AlignCenter
 
+    /*! Typography. Empty fontFamily selects the system default family. */
+    property string fontFamily: ""
+    property bool bold: false
+    property real lineHeight: 1.0
+    property real textPadding: 4
+    property bool outlineEnabled: false
+    property color outlineColor: root.blackColor
+    property real outlineWidth: 2
+
     readonly property real minFontSize: 4
     readonly property real maxFontSize: 512
+    readonly property real minLineHeight: 0.8
+    readonly property real maxLineHeight: 2.5
+    readonly property real minPadding: 0
+    readonly property real maxPadding: 64
+    readonly property real minOutlineWidth: 0
+    readonly property real maxOutlineWidth: 64
+
+    /*! System font list, exposed for the compact family selector. */
+    readonly property var fontFamilies: Qt.fontFamilies()
+    readonly property var fontFamilyModel: [qsTr("System default")].concat(fontFamilies)
+    readonly property int fontFamilyIndex: {
+        if (fontFamily.length === 0)
+            return 0
+        const index = fontFamilies.indexOf(fontFamily)
+        return index >= 0 ? index + 1 : 0
+    }
+
+    /*! QFont weight for the styled command (Normal or Bold). */
+    readonly property int fontWeight: bold ? 700 : 400
+    /*! Width sent to the controller; zero when the outline is disabled. */
+    readonly property real effectiveOutlineWidth: outlineEnabled ? outlineWidth : 0
 
     readonly property bool textValid: text.trim().length > 0
     readonly property bool fontSizeValid: fontSize >= minFontSize && fontSize <= maxFontSize
+    readonly property bool lineHeightValid: lineHeight >= minLineHeight
+                                             && lineHeight <= maxLineHeight
+    readonly property bool paddingValid: textPadding >= minPadding && textPadding <= maxPadding
+    readonly property bool outlineWidthValid: outlineWidth >= minOutlineWidth
+                                              && outlineWidth <= maxOutlineWidth
     readonly property bool hasImage: imageWidth > 0 && imageHeight > 0
     readonly property bool anchorValid: hasImage
                                         && anchorX >= 0 && anchorX <= imageWidth
                                         && anchorY >= 0 && anchorY <= imageHeight
-    readonly property bool canAccept: !busy && textValid && fontSizeValid && anchorValid
+    readonly property bool canAccept: !busy && textValid && fontSizeValid
+                                      && lineHeightValid && paddingValid
+                                      && outlineWidthValid && anchorValid
     readonly property int alignmentIndex: indexForAlignment(alignment)
 
     /*! Anchor clamped into the image, used by the preview. */
@@ -56,6 +100,12 @@ NekoDialog {
             return qsTr("Enter some text.")
         if (!fontSizeValid)
             return qsTr("Font size must be between %1 and %2 px.").arg(minFontSize).arg(maxFontSize)
+        if (!lineHeightValid)
+            return qsTr("Line height must be between %1 and %2.").arg(minLineHeight).arg(maxLineHeight)
+        if (!paddingValid)
+            return qsTr("Padding must be between %1 and %2 px.").arg(minPadding).arg(maxPadding)
+        if (!outlineWidthValid)
+            return qsTr("Outline width must be between %1 and %2 px.").arg(minOutlineWidth).arg(maxOutlineWidth)
         if (!hasImage)
             return qsTr("Open an image before adding text.")
         if (!anchorValid)
@@ -78,18 +128,39 @@ NekoDialog {
 
     signal textRequested(string text, real anchorX, real anchorY, real fontSize,
                          color color, int alignment)
+    signal styledTextRequested(string text, real anchorX, real anchorY, string fontFamily,
+                               int fontWeight, real fontSize, color color, int alignment,
+                               color outlineColor, real outlineWidth, real lineHeight,
+                               real padding)
 
     title: qsTr("Add text")
     description: qsTr("Type your text, choose a style, then place it on the image.")
     acceptText: ""
     rejectText: ""
 
+    /*! Maps a selector index to a family name (index 0 is the default). */
+    function fontFamilyAt(index) {
+        if (index <= 0)
+            return ""
+        return fontFamilies[index - 1] || ""
+    }
+
+    function syncSliders() {
+        if (fontSizeSlider)
+            fontSizeSlider.value = Math.round(fontSize)
+        if (lineHeightSlider)
+            lineHeightSlider.value = lineHeight
+        if (paddingSlider)
+            paddingSlider.value = textPadding
+        if (outlineWidthSlider)
+            outlineWidthSlider.value = outlineWidth
+    }
+
     onOpened: {
         _resolved = false
         _attempted = false
         _ready = true
-        if (fontSizeSlider)
-            fontSizeSlider.value = fontSize
+        syncSliders()
         textInput.forceActiveFocus(Qt.OtherFocusReason)
     }
     onClosed: {
@@ -100,8 +171,7 @@ NekoDialog {
     }
     Component.onCompleted: {
         _ready = true
-        if (fontSizeSlider)
-            fontSizeSlider.value = fontSize
+        syncSliders()
     }
 
     onFontSizeChanged: {
@@ -113,6 +183,43 @@ NekoDialog {
         if (_ready && fontSizeSlider && !fontSizeSlider.dragging
                 && fontSizeSlider.value !== clamped)
             fontSizeSlider.value = clamped
+    }
+
+    onLineHeightChanged: {
+        const step = 0.05
+        const clamped = Math.max(minLineHeight,
+                                 Math.min(maxLineHeight,
+                                          Math.round(lineHeight / step) * step))
+        if (Math.abs(lineHeight - clamped) > 0.0001) {
+            lineHeight = clamped
+            return
+        }
+        if (_ready && lineHeightSlider && !lineHeightSlider.dragging
+                && Math.abs(lineHeightSlider.value - clamped) > 0.0001)
+            lineHeightSlider.value = clamped
+    }
+
+    onTextPaddingChanged: {
+        const clamped = Math.max(minPadding, Math.min(maxPadding, Math.round(textPadding)))
+        if (textPadding !== clamped) {
+            textPadding = clamped
+            return
+        }
+        if (_ready && paddingSlider && !paddingSlider.dragging
+                && paddingSlider.value !== clamped)
+            paddingSlider.value = clamped
+    }
+
+    onOutlineWidthChanged: {
+        const clamped = Math.max(minOutlineWidth,
+                                 Math.min(maxOutlineWidth, Math.round(outlineWidth)))
+        if (outlineWidth !== clamped) {
+            outlineWidth = clamped
+            return
+        }
+        if (_ready && outlineWidthSlider && !outlineWidthSlider.dragging
+                && outlineWidthSlider.value !== clamped)
+            outlineWidthSlider.value = clamped
     }
 
     /*! Maps a 0–8 grid index (row-major) to Qt alignment flags. */
@@ -155,8 +262,15 @@ NekoDialog {
         }
         _resolved = true
         _attempted = false
-        root.textRequested(text.trim(), effectiveAnchorX, effectiveAnchorY,
-                           Math.round(fontSize), textColor, alignment)
+        const content = text.trim()
+        const roundedSize = Math.round(fontSize)
+        root.styledTextRequested(content, effectiveAnchorX, effectiveAnchorY,
+                                 fontFamily, fontWeight, roundedSize, textColor, alignment,
+                                 outlineColor, effectiveOutlineWidth, lineHeight,
+                                 Math.round(textPadding))
+        // Compatibility path for callers that still use the six-argument API.
+        root.textRequested(content, effectiveAnchorX, effectiveAnchorY,
+                           roundedSize, textColor, alignment)
         close()
         return true
     }
@@ -167,15 +281,11 @@ NekoDialog {
         close()
     }
 
+    // Everything lives in one inner layout so the dialog stays compact at
+    // 900×700 while still exposing the full styling surface.
     ColumnLayout {
         Layout.fillWidth: true
-        spacing: Theme.spacingMd
-
-        Text {
-            text: qsTr("Text")
-            color: Theme.textSecondary
-            font.pixelSize: Theme.fontSmall
-        }
+        spacing: Theme.spacingSm
 
         Item {
             Layout.fillWidth: true
@@ -232,38 +342,245 @@ NekoDialog {
             spacing: Theme.spacingSm
 
             Text {
-                text: qsTr("Font size")
+                text: qsTr("Font")
                 color: Theme.textSecondary
                 font.pixelSize: Theme.fontSmall
             }
 
-            Item { Layout.fillWidth: true }
-
-            Text {
-                objectName: "text-dialog-font-size-value"
-                text: Math.round(root.fontSize) + " px"
-                color: Theme.textPrimary
+            ComboBox {
+                id: fontFamilyBox
+                objectName: "text-dialog-font-family"
+                Layout.fillWidth: true
+                Layout.preferredHeight: Theme.controlHeight
+                model: root.fontFamilyModel
+                currentIndex: root.fontFamilyIndex
+                enabled: !root.busy
                 font.pixelSize: Theme.fontSmall
-                font.weight: Theme.fontWeightMedium
+                Accessible.role: Accessible.ComboBox
+                Accessible.name: qsTr("Font family")
+                Accessible.description: qsTr("Typeface used to render the text")
+
+                onActivated: function(index) {
+                    root.fontFamily = root.fontFamilyAt(index)
+                }
+
+                background: Rectangle {
+                    radius: Theme.radiusSm
+                    color: Theme.background
+                    border.width: fontFamilyBox.activeFocus ? Theme.focusRingWidth
+                                                           : Theme.borderWidth
+                    border.color: fontFamilyBox.activeFocus ? Theme.accent : Theme.border
+                }
+
+                contentItem: Text {
+                    leftPadding: Theme.spacingSm
+                    rightPadding: Theme.spacingSm
+                    text: fontFamilyBox.displayText
+                    color: fontFamilyBox.enabled ? Theme.textPrimary : Theme.textTertiary
+                    font.pixelSize: Theme.fontSmall
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+
+                indicator: NekoIcon {
+                    x: fontFamilyBox.width - width - Theme.spacingSm
+                    y: (fontFamilyBox.height - height) / 2
+                    width: Theme.iconSizeSm
+                    height: Theme.iconSizeSm
+                    name: "chevronDown"
+                    color: fontFamilyBox.enabled ? Theme.textSecondary : Theme.textTertiary
+                }
+            }
+
+            NekoToggle {
+                objectName: "text-dialog-bold"
+                text: qsTr("Bold")
+                accessibleName: qsTr("Bold")
+                checked: root.bold
+                enabled: !root.busy
+                onToggled: root.bold = checked
             }
         }
 
-        NekoSlider {
-            id: fontSizeSlider
-            objectName: "text-dialog-font-size"
+        Text {
+            objectName: "text-dialog-font-fallback-note"
             Layout.fillWidth: true
-            from: root.minFontSize
-            to: root.maxFontSize
-            stepSize: 1
-            defaultValue: 32
-            enabled: !root.busy
-            accessibleName: qsTr("Font size")
-            onPreview: function(value) { root.fontSize = Math.round(value) }
-            onFinish: function(value) { root.fontSize = Math.round(value) }
+            text: qsTr("Missing glyphs fall back to system fonts — install Noto Sans CJK (or a WenQuanYi family) on Linux for Chinese, Japanese and Korean text.")
+            color: Theme.textTertiary
+            font.pixelSize: Theme.fontCaption
+            lineHeight: Theme.lineHeightNormal
+            wrapMode: Text.WordWrap
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingLg
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacingXs
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: qsTr("Size")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        objectName: "text-dialog-font-size-value"
+                        text: Math.round(root.fontSize) + " px"
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Theme.fontWeightMedium
+                    }
+                }
+
+                NekoSlider {
+                    id: fontSizeSlider
+                    objectName: "text-dialog-font-size"
+                    Layout.fillWidth: true
+                    from: root.minFontSize
+                    to: root.maxFontSize
+                    stepSize: 1
+                    defaultValue: 32
+                    enabled: !root.busy
+                    accessibleName: qsTr("Font size")
+                    onPreview: function(value) { root.fontSize = Math.round(value) }
+                    onFinish: function(value) { root.fontSize = Math.round(value) }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacingXs
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: qsTr("Line height")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        objectName: "text-dialog-line-height-value"
+                        text: root.lineHeight.toFixed(2) + "×"
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Theme.fontWeightMedium
+                    }
+                }
+
+                NekoSlider {
+                    id: lineHeightSlider
+                    objectName: "text-dialog-line-height"
+                    Layout.fillWidth: true
+                    from: root.minLineHeight
+                    to: root.maxLineHeight
+                    stepSize: 0.05
+                    decimals: 2
+                    defaultValue: 1.0
+                    enabled: !root.busy
+                    accessibleName: qsTr("Line height")
+                    onPreview: function(value) { root.lineHeight = value }
+                    onFinish: function(value) { root.lineHeight = value }
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingLg
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacingXs
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: qsTr("Padding")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        objectName: "text-dialog-padding-value"
+                        text: Math.round(root.textPadding) + " px"
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Theme.fontWeightMedium
+                    }
+                }
+
+                NekoSlider {
+                    id: paddingSlider
+                    objectName: "text-dialog-padding"
+                    Layout.fillWidth: true
+                    from: root.minPadding
+                    to: root.maxPadding
+                    stepSize: 1
+                    defaultValue: 4
+                    enabled: !root.busy
+                    accessibleName: qsTr("Text padding")
+                    onPreview: function(value) { root.textPadding = Math.round(value) }
+                    onFinish: function(value) { root.textPadding = Math.round(value) }
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: Theme.spacingXs
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: qsTr("Outline width")
+                        color: Theme.textSecondary
+                        font.pixelSize: Theme.fontSmall
+                    }
+
+                    Item { Layout.fillWidth: true }
+
+                    Text {
+                        objectName: "text-dialog-outline-width-value"
+                        text: Math.round(root.effectiveOutlineWidth) + " px"
+                        color: Theme.textPrimary
+                        font.pixelSize: Theme.fontSmall
+                        font.weight: Theme.fontWeightMedium
+                    }
+                }
+
+                NekoSlider {
+                    id: outlineWidthSlider
+                    objectName: "text-dialog-outline-width"
+                    Layout.fillWidth: true
+                    from: root.minOutlineWidth
+                    to: root.maxOutlineWidth
+                    stepSize: 1
+                    defaultValue: 2
+                    enabled: !root.busy && root.outlineEnabled
+                    accessibleName: qsTr("Outline width")
+                    onPreview: function(value) { root.outlineWidth = Math.round(value) }
+                    onFinish: function(value) { root.outlineWidth = Math.round(value) }
+                }
+            }
         }
 
         Text {
-            text: qsTr("Colour")
+            text: qsTr("Text colour")
             color: Theme.textSecondary
             font.pixelSize: Theme.fontSmall
         }
@@ -327,6 +644,59 @@ NekoDialog {
             }
 
             Item { Layout.fillWidth: true }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacingSm
+
+            NekoToggle {
+                id: outlineToggle
+                objectName: "text-dialog-outline"
+                text: qsTr("Outline")
+                accessibleName: qsTr("Text outline")
+                checked: root.outlineEnabled
+                enabled: !root.busy
+                onToggled: root.outlineEnabled = checked
+            }
+
+            Item { Layout.fillWidth: true }
+
+            NekoSwatch {
+                objectName: "text-dialog-outline-color-white"
+                swatchColor: root.whiteColor
+                selected: Qt.colorEqual(root.outlineColor, root.whiteColor)
+                enabled: !root.busy && root.outlineEnabled
+                accessibleName: qsTr("White outline")
+                onClicked: root.outlineColor = root.whiteColor
+            }
+
+            NekoSwatch {
+                objectName: "text-dialog-outline-color-black"
+                swatchColor: root.blackColor
+                selected: Qt.colorEqual(root.outlineColor, root.blackColor)
+                enabled: !root.busy && root.outlineEnabled
+                accessibleName: qsTr("Black outline")
+                onClicked: root.outlineColor = root.blackColor
+            }
+
+            NekoSwatch {
+                objectName: "text-dialog-outline-color-peach"
+                swatchColor: root.peachColor
+                selected: Qt.colorEqual(root.outlineColor, root.peachColor)
+                enabled: !root.busy && root.outlineEnabled
+                accessibleName: qsTr("Peach outline")
+                onClicked: root.outlineColor = root.peachColor
+            }
+
+            NekoSwatch {
+                objectName: "text-dialog-outline-color-red"
+                swatchColor: root.redColor
+                selected: Qt.colorEqual(root.outlineColor, root.redColor)
+                enabled: !root.busy && root.outlineEnabled
+                accessibleName: qsTr("Red outline")
+                onClicked: root.outlineColor = root.redColor
+            }
         }
 
         RowLayout {
