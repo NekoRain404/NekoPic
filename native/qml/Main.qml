@@ -129,8 +129,8 @@ ApplicationWindow {
     Action { id: settingsAction; text: qsTr("Preferences…"); shortcut: "Ctrl+,"; onTriggered: window.openSettings() }
     Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
     Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
-    Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: editor.undo() }
-    Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: editor.redo() }
+    Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: { editor.undo(); window.showStatus(qsTr("Undone")) } }
+    Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: { editor.redo(); window.showStatus(qsTr("Redone")) } }
     Action { id: rotateRightAction; text: qsTr("Rotate clockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateClockwise() }
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }

@@ -149,6 +149,7 @@ Item {
         enabled: root.enabled
         acceptedButtons: Qt.LeftButton
         hoverEnabled: true
+        cursorShape: Qt.CrossCursor
         onPositionChanged: function(mouse) {
             root.cursor = root.pointAt(mouse.x, mouse.y)
             preview.requestPaint()
