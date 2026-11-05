@@ -47,7 +47,11 @@ bool gradeEqual(const NekoPic::Adjustments::GradeZoneAdjustment &a,
 
 DocumentController::DocumentController(QObject *parent) : QObject(parent) {}
 DocumentController::~DocumentController() = default;
-QString DocumentController::fileName() const { return path_.isEmpty() ? tr("Untitled") : QFileInfo(path_).fileName(); }
+QString DocumentController::fileName() const
+{
+    if (recovered_) return tr("Recovered session");
+    return path_.isEmpty() ? tr("Untitled") : QFileInfo(path_).fileName();
+}
 QUrl DocumentController::imageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/current?revision=%1").arg(revision_)) : QUrl(); }
 QUrl DocumentController::baseImageUrl() const { return hasImage() ? QUrl(QStringLiteral("image://document/base?revision=%1").arg(revision_)) : QUrl(); }
 bool DocumentController::busy() const { return busy_; }
@@ -98,6 +102,11 @@ int DocumentController::imageWidth() const { return image_.width(); }
 int DocumentController::imageHeight() const { return image_.height(); }
 bool DocumentController::dirty() const { return hasImage() && currentState_ != savedState_; }
 bool DocumentController::hasPath() const { return !path_.isEmpty(); }
+bool DocumentController::recovered() const { return recovered_; }
+QString DocumentController::sourcePath() const
+{
+    return recovered_ ? sourcePath_ : path_;
+}
 bool DocumentController::canUndo() const { return history_.canUndo(); }
 bool DocumentController::canRedo() const { return history_.canRedo(); }
 QStringList DocumentController::readableImagePatterns() const
@@ -499,6 +508,8 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
             parameters_ = {};
             objects_.clear();
             path_ = path;
+            sourcePath_.clear();
+            recovered_ = false;
             history_.clear();
             invalidateAdjustedBaseCache();
             currentState_ = savedState_ = ++nextState_;
@@ -509,6 +520,30 @@ void DocumentController::openImageDiscardingChanges(const QUrl &url)
         setBusy(false);
     });
     watcher->setFuture(QtConcurrent::run([path] { return NekoPic::ImageIO::load(path); }));
+}
+
+bool DocumentController::restoreRecovery(const QImage &image, const QString &sourcePath)
+{
+    if (busy_ || image.isNull()) return false;
+    image_ = image;
+    baseImage_ = image;
+    parameters_ = {};
+    objects_.clear();
+    // Leave path_ empty: Save must go through Save As so the original file is
+    // never overwritten by recovered (flattened) pixels.
+    path_.clear();
+    sourcePath_ = sourcePath;
+    recovered_ = true;
+    history_.clear();
+    invalidateAdjustedBaseCache();
+    // A recovered document is dirty by definition, even though there is no
+    // saved state in this session to compare against.
+    currentState_ = ++nextState_;
+    savedState_ = currentState_ - 1;
+    ++revision_;
+    setError({});
+    emit documentChanged();
+    return true;
 }
 
 void DocumentController::saveImage()
@@ -557,6 +592,8 @@ void DocumentController::saveAs(const QUrl &url, const QString &format)
         if (!result.success) setError(result.error);
         else {
             path_ = path;
+            sourcePath_.clear();
+            recovered_ = false;
             savedState_ = currentState_;
             emit documentChanged();
             emit imageSaved();

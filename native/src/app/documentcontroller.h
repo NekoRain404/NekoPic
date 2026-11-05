@@ -36,6 +36,8 @@ class DocumentController final : public QObject {
     Q_PROPERTY(int imageHeight READ imageHeight NOTIFY documentChanged)
     Q_PROPERTY(bool dirty READ dirty NOTIFY documentChanged)
     Q_PROPERTY(bool hasPath READ hasPath NOTIFY documentChanged)
+    Q_PROPERTY(bool recovered READ recovered NOTIFY documentChanged)
+    Q_PROPERTY(QString sourcePath READ sourcePath NOTIFY documentChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
     Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
@@ -66,6 +68,14 @@ public:
     int imageHeight() const;
     bool dirty() const;
     bool hasPath() const;
+    /*! True while this document came from a crash-recovery snapshot. */
+    bool recovered() const;
+    /*!
+        Original file path of a recovered document (empty otherwise). A
+        recovered document has no save destination and never overwrites the
+        original until the user saves through Save As.
+    */
+    QString sourcePath() const;
     bool canUndo() const;
     bool canRedo() const;
     QStringList readableImagePatterns() const;
@@ -80,6 +90,13 @@ public:
 
     Q_INVOKABLE void openImage(const QUrl &url);
     Q_INVOKABLE void openImageDiscardingChanges(const QUrl &url);
+    /*!
+        Adopts a crash-recovery snapshot as a dirty document. The document is
+        named "Recovered session", keeps no save path (so Save routes through
+        Save As and the original file is untouched) and starts a fresh history.
+        Returns false while busy or when the image is null.
+    */
+    bool restoreRecovery(const QImage &image, const QString &sourcePath = QString());
     Q_INVOKABLE void saveImage();
     Q_INVOKABLE void saveAs(const QUrl &url, const QString &format);
     Q_INVOKABLE void clearError();
@@ -247,6 +264,9 @@ private:
     NekoPic::Adjustments::Parameters pendingParameters_;
     NekoPic::Document::ObjectLayer objects_;
     QString path_;
+    // Original file behind a recovered session; never used as a save target.
+    QString sourcePath_;
+    bool recovered_ = false;
     QString error_;
     bool busy_ = false;
     bool adjusting_ = false;

@@ -18,6 +18,20 @@ TestCase {
         return null
     }
     QtObject {
+        id: recovery
+        property bool hasRecovery: false
+        property string sourceName: ""
+        property string sourcePath: ""
+        property string capturedAtText: ""
+        property string imageSizeText: ""
+        property bool flattened: true
+        property int restoreCalls: 0
+        property int discardCalls: 0
+        signal recoveryChanged()
+        function restoreRecovery() { ++restoreCalls; return true }
+        function discardRecovery() { ++discardCalls }
+    }
+    QtObject {
         id: editor
         property string fileName: ""
         property url imageUrl: ""
@@ -129,6 +143,42 @@ TestCase {
         window.darkTheme = false
         verify(!window.darkTheme)
         window.destroy()
+    }
+    function test_recoveryDialogOffersRestoreAndDiscard() {
+        recovery.hasRecovery = true
+        recovery.sourceName = "recovered.png"
+        recovery.sourcePath = "/photos/recovered.png"
+        recovery.capturedAtText = "2026-11-05 08:30"
+        recovery.imageSizeText = "640 × 480 px"
+        const window = createWindow()
+        try {
+            const dialog = findChild(window, "recoveryDialog")
+            verify(dialog !== null)
+            tryVerify(function() { return dialog.opened }, 3000)
+            compare(dialog.sourceName, "recovered.png")
+            compare(findChild(dialog, "recovery-source").text, "recovered.png")
+            compare(findChild(dialog, "recovery-image-size").text, "640 × 480 px")
+
+            const restore = findChild(dialog, "recovery-restore")
+            verify(restore !== null)
+            mouseClick(restore)
+            tryVerify(function() { return recovery.restoreCalls === 1 }, 3000)
+            tryVerify(function() { return !dialog.opened }, 3000)
+
+            // Reopen to exercise the discard path; the integrator maps it to
+            // RecoveryStore.discardRecovery().
+            dialog.open()
+            tryVerify(function() { return dialog.opened }, 3000)
+            const discard = findChild(dialog, "recovery-discard")
+            verify(discard !== null)
+            mouseClick(discard)
+            tryVerify(function() { return recovery.discardCalls === 1 }, 3000)
+        } finally {
+            recovery.hasRecovery = false
+            recovery.restoreCalls = 0
+            recovery.discardCalls = 0
+            window.destroy()
+        }
     }
     function test_sharedForegroundColourReachesAllDrawingTools() {
         const window = createWindow()

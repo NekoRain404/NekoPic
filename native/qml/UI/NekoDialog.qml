@@ -19,6 +19,9 @@ Popup {
     property string acceptText: ""
     property string rejectText: ""
     property string accessibleName: ""
+    /*! Optional objectNames for tests and automation. */
+    property string acceptObjectName: ""
+    property string rejectObjectName: ""
     property bool showCloseButton: true
 
     signal accepted()
@@ -137,6 +140,7 @@ Popup {
 
             NekoButton {
                 visible: root.rejectText.length > 0
+                objectName: root.rejectObjectName
                 text: root.rejectText
                 variant: "ghost"
                 onClicked: {
@@ -147,6 +151,7 @@ Popup {
 
             NekoButton {
                 visible: root.acceptText.length > 0
+                objectName: root.acceptObjectName
                 text: root.acceptText
                 variant: "primary"
                 onClicked: {
