@@ -113,6 +113,25 @@ private slots:
         QCOMPARE(qRound(controller.adjustmentValues().value(QStringLiteral("highlights")).toDouble()), 0);
     }
 
+    void autoEnhanceCommitsOneEditAndUndoes()
+    {
+        QTemporaryDir dir;
+        QImage flat(64, 48, QImage::Format_RGBA8888);
+        flat.fill(QColor(150, 150, 150));
+        QVERIFY(flat.save(dir.filePath(QStringLiteral("flat.png"))));
+        DocumentController controller;
+        controller.openImage(QUrl::fromLocalFile(dir.filePath(QStringLiteral("flat.png"))));
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        const auto before = controller.image();
+        controller.autoEnhance();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QVERIFY(controller.image() != before);
+        QVERIFY(controller.canUndo());
+        controller.undo();
+        QTRY_VERIFY_WITH_TIMEOUT(!controller.busy(), 5000);
+        QCOMPARE(controller.image(), before);
+    }
+
     void exposesHistogramBins()
     {
         QTemporaryDir dir;

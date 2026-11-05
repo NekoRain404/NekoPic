@@ -98,6 +98,7 @@ public:
     Q_INVOKABLE void previewAdjustment(const QString &key, double value);
     Q_INVOKABLE void finishAdjustment(const QString &key, double value);
     Q_INVOKABLE void resetAdjustments();
+    Q_INVOKABLE void autoEnhance();
     Q_INVOKABLE void selectFilter(const QString &preset);
     Q_INVOKABLE void beginFilterIntensity();
     Q_INVOKABLE void previewFilterIntensity(double value);

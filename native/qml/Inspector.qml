@@ -74,6 +74,7 @@ Rectangle {
     signal adjustmentPreview(string key, real value)
     signal adjustmentFinished(string key, real value)
     signal adjustmentReset()
+    signal autoEnhanceRequested()
     signal filterSelected(string preset)
     signal filterIntensityStarted()
     signal filterIntensityPreview(real value)
@@ -332,6 +333,15 @@ Rectangle {
                     Layout.topMargin: 16
                     Layout.bottomMargin: 18
                     spacing: Theme.spacingLg
+
+                    NekoButton {
+                        objectName: "adjustment-auto"
+                        Layout.fillWidth: true
+                        text: qsTr("Auto enhance")
+                        variant: "secondary"
+                        enabled: root.adjustmentsEnabled
+                        onClicked: root.autoEnhanceRequested()
+                    }
 
                     Section {
                         title: qsTr("明暗")

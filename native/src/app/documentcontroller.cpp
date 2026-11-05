@@ -1,5 +1,6 @@
 #include "documentcontroller.h"
 #include "core/adjustments.h"
+#include "core/autoenhance.h"
 #include "core/histogram.h"
 #include "io/formatregistry.h"
 #include "platform/clipboard.h"
@@ -186,6 +187,36 @@ void DocumentController::resetAdjustments()
     pendingParameters_.filterPreset = parameters_.filterPreset;
     pendingParameters_.filterIntensity = parameters_.filterIntensity;
     adjustmentKey_ = "reset";
+    adjusting_ = true;
+    adjustmentFinishing_ = true;
+    setError({});
+    setBusy(true);
+    emit adjustingChanged();
+    emit adjustmentPreviewChanged();
+    ++adjustmentSequence_;
+    startAdjustmentWorker();
+}
+
+void DocumentController::autoEnhance()
+{
+    if (busy_ || !hasImage()) return;
+    const auto suggestion = NekoPic::AutoEnhance::suggest(
+        NekoPic::Histogram::compute(baseImage_, 500000));
+    if (suggestion.isNoOp()) return;
+
+    adjustmentSource_ = image_;
+    pendingParameters_ = parameters_;
+    NekoPic::Adjustments::setParameter(pendingParameters_, QStringLiteral("exposure"),
+                                       suggestion.exposure);
+    NekoPic::Adjustments::setParameter(pendingParameters_, QStringLiteral("contrast"),
+                                       suggestion.contrast);
+    NekoPic::Adjustments::setParameter(pendingParameters_, QStringLiteral("saturation"),
+                                       suggestion.saturation);
+    NekoPic::Adjustments::setParameter(pendingParameters_, QStringLiteral("blacks"),
+                                       suggestion.blacks);
+    NekoPic::Adjustments::setParameter(pendingParameters_, QStringLiteral("whites"),
+                                       suggestion.whites);
+    adjustmentKey_ = "auto";
     adjusting_ = true;
     adjustmentFinishing_ = true;
     setError({});

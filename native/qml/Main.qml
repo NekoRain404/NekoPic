@@ -540,6 +540,7 @@ ApplicationWindow {
                 onAdjustmentPreview: function(key, value) { editor.previewAdjustment(key, value) }
                 onAdjustmentFinished: function(key, value) { editor.finishAdjustment(key, value) }
                 onAdjustmentReset: editor.resetAdjustments()
+                onAutoEnhanceRequested: editor.autoEnhance()
                 filtersEnabled: editor.hasImage && !editor.busy
                 filterIntensityEnabled: editor.hasImage && (!editor.busy || editor.filterIntensityInteractive)
                 filterPreset: editor.filterPreset

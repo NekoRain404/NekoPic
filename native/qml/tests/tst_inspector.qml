@@ -20,6 +20,7 @@ TestCase {
     SignalSpy { id: preview; target: inspector; signalName: "adjustmentPreview" }
     SignalSpy { id: finished; target: inspector; signalName: "adjustmentFinished" }
     SignalSpy { id: reset; target: inspector; signalName: "adjustmentReset" }
+    SignalSpy { id: autoEnhance; target: inspector; signalName: "autoEnhanceRequested" }
     SignalSpy { id: filterSelected; target: inspector; signalName: "filterSelected" }
     SignalSpy { id: filterStarted; target: inspector; signalName: "filterIntensityStarted" }
     SignalSpy { id: filterPreview; target: inspector; signalName: "filterIntensityPreview" }
@@ -120,6 +121,14 @@ TestCase {
         inspector.adjustmentsEnabled = false
         verify(!findChild(inspector, "adjustment-exposure").enabled)
         verify(!findChild(inspector, "adjustment-reset").enabled)
+    }
+
+    function test_autoEnhanceCommand() {
+        inspector.adjustmentsEnabled = true
+        const button = findChild(inspector, "adjustment-auto")
+        verify(button !== null)
+        mouseClick(button)
+        compare(autoEnhance.count, 1)
     }
 
     function test_resetCommand() {
