@@ -9,6 +9,7 @@
 #include <QQmlContext>
 #include <QQuickImageProvider>
 #include <QQuickWindow>
+#include <QTextStream>
 #include <QTimer>
 
 #include <memory>
@@ -34,6 +35,21 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationVersion(QStringLiteral(NEKOPIC_VERSION));
+
+    const auto earlyArguments = app.arguments();
+    if (earlyArguments.contains(QStringLiteral("--version"))) {
+        QTextStream(stdout) << "NekoPic " << QCoreApplication::applicationVersion() << "\n";
+        return 0;
+    }
+    if (earlyArguments.contains(QStringLiteral("--help"))) {
+        QTextStream(stdout)
+            << "Usage: nekopic [image] [--screenshot <file>]\n"
+               "  image               open an image on start\n"
+               "  --screenshot <file> render the window to a PNG and exit\n"
+               "  --version           print the version\n"
+               "  --help              show this help\n";
+        return 0;
+    }
     DocumentController editor;
     FilterPreviews filterPreviews(editor);
     NekoPic::Render::RenderCapabilities renderCapabilities;
