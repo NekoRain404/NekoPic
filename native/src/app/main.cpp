@@ -22,8 +22,15 @@ public:
         : QQuickImageProvider(QQuickImageProvider::Image), controller_(controller) {}
     QImage requestImage(const QString &id, QSize *size, const QSize &) override
     {
-        auto image = id.startsWith(QLatin1String("base")) ? controller_.baseImage()
-                                                          : controller_.image();
+        QImage image;
+        if (id.startsWith(QLatin1String("movebase")))
+            image = controller_.objectMoveBaseImage();
+        else if (id.startsWith(QLatin1String("moveobject")))
+            image = controller_.objectMoveObjectImage();
+        else if (id.startsWith(QLatin1String("base")))
+            image = controller_.baseImage();
+        else
+            image = controller_.image();
         if (size) *size = image.size();
         return image;
     }

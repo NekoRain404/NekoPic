@@ -2,6 +2,7 @@
 
 #include <QColor>
 #include <QImage>
+#include <QMutex>
 #include <QObject>
 #include <QStringList>
 #include <QUrl>
@@ -40,6 +41,15 @@ class DocumentController final : public QObject {
     Q_PROPERTY(QString sourcePath READ sourcePath NOTIFY documentChanged)
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY documentChanged)
     Q_PROPERTY(bool canRedo READ canRedo NOTIFY documentChanged)
+    // Live object-drag preview: two crops around the selection. `base` has the
+    // selected objects removed (unselected objects stay); `object` contains
+    // only the selected objects. QML translates the object crop while the
+    // pointer moves, so dragging is GPU-composited and the committed document
+    // is still rendered once on release.
+    Q_PROPERTY(QUrl objectMoveBaseUrl READ objectMoveBaseUrl NOTIFY objectMovePreviewChanged)
+    Q_PROPERTY(QUrl objectMoveObjectUrl READ objectMoveObjectUrl NOTIFY objectMovePreviewChanged)
+    Q_PROPERTY(QRectF objectMoveBounds READ objectMoveBounds NOTIFY objectMovePreviewChanged)
+    Q_PROPERTY(bool objectMovePreviewReady READ objectMovePreviewReady NOTIFY objectMovePreviewChanged)
     Q_PROPERTY(QStringList readableImagePatterns READ readableImagePatterns CONSTANT)
     Q_PROPERTY(QVariantList writableFormats READ writableFormats CONSTANT)
     Q_PROPERTY(int exportQuality READ exportQuality WRITE setExportQuality NOTIFY exportOptionsChanged)
@@ -87,6 +97,15 @@ public:
     QImage image() const;
     QImage baseImage() const;
     NekoPic::Adjustments::Parameters adjustmentParameters() const;
+
+    // Live-drag crops (see the Q_PROPERTY block above). The provider reads
+    // these under the preview mutex; QML only needs the URLs and bounds.
+    QImage objectMoveBaseImage() const;
+    QImage objectMoveObjectImage() const;
+    QUrl objectMoveBaseUrl() const;
+    QUrl objectMoveObjectUrl() const;
+    QRectF objectMoveBounds() const;
+    bool objectMovePreviewReady() const;
 
     Q_INVOKABLE void openImage(const QUrl &url);
     Q_INVOKABLE void openImageDiscardingChanges(const QUrl &url);
@@ -177,6 +196,12 @@ public:
     // object is targeted, when the delta is zero/non-finite, or while busy.
     Q_INVOKABLE bool removeObjects(const QVariantList &ids);
     Q_INVOKABLE bool moveObjects(const QVariantList &ids, qreal dx, qreal dy);
+    // Starts a live-drag preview for `ids`; the drag itself only translates the
+    // QML object crop. Release should call moveObjects() once and then
+    // clearObjectMovePreview() after the commit. False while busy, for an
+    // empty/invalid selection, or when no adjusted base can be prepared.
+    Q_INVOKABLE bool beginObjectMovePreview(const QVariantList &ids);
+    Q_INVOKABLE void clearObjectMovePreview();
     // Aligns every selected object to the image edge or centre selected by the
     // matching Qt alignment flag (AlignLeft/HCenter/Right and/or
     // AlignTop/VCenter/Bottom). One undo step; false for no flags, no valid
@@ -202,6 +227,7 @@ signals:
     void imageCopied();
     void imageSaved();
     void exportOptionsChanged();
+    void objectMovePreviewChanged();
 
 private:
     enum class Transform { RotateClockwise, RotateCounterClockwise, FlipHorizontal, FlipVertical };
@@ -284,6 +310,15 @@ private:
     NekoPic::Adjustments::Parameters adjustedBaseCacheParameters_;
     qint64 adjustedBaseCacheSourceKey_ = 0;
     bool adjustedBaseCacheValid_ = false;
+    // Live object-drag crops, guarded because the QML image provider may read
+    // them from the scene-graph thread.
+    QList<quint64> movePreviewIds_;
+    QImage movePreviewBaseCrop_;
+    QImage movePreviewObjectCrop_;
+    QRectF movePreviewBounds_;
+    quint64 movePreviewRevision_ = 0;
+    bool movePreviewReady_ = false;
+    mutable QMutex movePreviewMutex_;
     double adjustmentValue_ = 0.0;
     quint64 adjustmentSequence_ = 0;
     quint64 revision_ = 0;

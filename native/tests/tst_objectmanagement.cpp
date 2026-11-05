@@ -65,8 +65,21 @@ quint64 addStroke(DocumentController &controller)
     return lastObjectId(controller);
 }
 
-QVariantMap summaryFor(const DocumentController &controller, quint64 id)
+bool hasInk(const QImage &image)
 {
+    if (image.isNull())
+        return false;
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            const QColor color = image.pixelColor(x, y);
+            if (color.alpha() > 0 && color.lightness() < 200)
+                return true;
+        }
+    }
+    return false;
+}
+
+QVariantMap summaryFor(const DocumentController &controller, quint64 id){
     const QVariantList summaries = controller.objectSummaries();
     for (const QVariant &value : summaries) {
         const QVariantMap summary = value.toMap();
@@ -100,6 +113,7 @@ private slots:
     void visibilityAndLockRoundTrip();
     void zOrderCommandsMoveOneStepOrToEnds();
     void groupMoveIsOneUndoStep();
+    void objectMovePreviewSplitsBaseAndSelectedObjects();
     void groupRemoveIsOneUndoStep();
     void alignMovesToImageEdgesAndCentre();
     void invalidInputsAreSafeNoOps();
@@ -300,6 +314,47 @@ void ObjectManagementTest::groupMoveIsOneUndoStep()
     QVERIFY(!controller.moveObjects(QVariantList{999999}, 5.0, 5.0));
     QVERIFY(!controller.moveObjects(ids, std::numeric_limits<qreal>::infinity(), 0.0));
     QVERIFY(!controller.busy());
+}
+
+void ObjectManagementTest::objectMovePreviewSplitsBaseAndSelectedObjects()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QVERIFY(whiteImage().save(dir.filePath(QStringLiteral("source.png"))));
+    DocumentController controller;
+    QVERIFY(openSource(controller, dir.filePath(QStringLiteral("source.png"))));
+
+    const quint64 text = addText(controller, QStringLiteral("Move me"), 40, 40);
+    QVERIFY(text != 0);
+    const QRectF before = controller.objectBounds(text);
+    const bool couldUndo = controller.canUndo();
+
+    QVariantList ids;
+    ids << QVariant::fromValue<qulonglong>(text);
+    QVERIFY(controller.beginObjectMovePreview(ids));
+    QTRY_VERIFY_WITH_TIMEOUT(controller.objectMovePreviewReady(), 5000);
+    QVERIFY(!controller.objectMoveBaseUrl().isEmpty());
+    QVERIFY(!controller.objectMoveObjectUrl().isEmpty());
+    QVERIFY(!controller.objectMoveBounds().isEmpty());
+
+    const QImage base = controller.objectMoveBaseImage();
+    const QImage selected = controller.objectMoveObjectImage();
+    QVERIFY(!base.isNull());
+    QVERIFY(!selected.isNull());
+    QCOMPARE(base.size(), selected.size());
+    QCOMPARE(base.size(), controller.objectMoveBounds().size().toSize());
+    // The base crop has the selected text removed; the moving crop has it.
+    QVERIFY(!hasInk(base));
+    QVERIFY(hasInk(selected));
+
+    // Previewing never mutates the document or creates history.
+    QCOMPARE(controller.objectBounds(text), before);
+    QCOMPARE(controller.canUndo(), couldUndo);
+
+    controller.clearObjectMovePreview();
+    QVERIFY(!controller.objectMovePreviewReady());
+    QVERIFY(controller.objectMoveBaseUrl().isEmpty());
+    QVERIFY(controller.objectMoveObjectUrl().isEmpty());
 }
 
 void ObjectManagementTest::groupRemoveIsOneUndoStep()

@@ -54,6 +54,7 @@ target_link_libraries(nekopic_render PUBLIC nekopic_core Qt6::Quick)
 add_library(nekopic_app STATIC
     src/app/documentcontroller.cpp src/app/documentcontroller.h
     src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_blur.cpp
+    src/app/documentcontroller_movepreview.cpp
     src/app/documentcontroller_draw.cpp
     src/app/documentcontroller_geometry.cpp
     src/app/documentcontroller_resize.cpp

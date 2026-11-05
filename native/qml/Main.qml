@@ -85,6 +85,9 @@ ApplicationWindow {
     /*! Objects currently in the document, refreshed from documentChanged. */
     property int objectCount: 0
     property bool _syncingForeground: false
+    // True from drag start until the asynchronous object move commits, so the
+    // live crop survives exactly until the new document image is available.
+    property bool _awaitingMovePreview: false
     function refreshObjectCount() {
         if (typeof editor === "undefined" || editor === null) {
             objectCount = 0
@@ -687,6 +690,11 @@ ApplicationWindow {
         target: editor
         function onErrorChanged() { if (editor.errorMessage.length > 0) errorDialog.open() }
         function onBusyChanged() {
+            if (!editor.busy && window._awaitingMovePreview) {
+                window._awaitingMovePreview = false
+                editor.clearObjectMovePreview()
+                canvas.clearMovePreview()
+            }
             if (editor.busy || window.pendingTextAnchor.x < 0) return
             const anchor = window.pendingTextAnchor
             window.pendingTextAnchor = Qt.point(-1, -1)
@@ -1017,6 +1025,10 @@ ApplicationWindow {
                 busy: editor.busy
                 toolHint: window.activeToolHint
                 selectionActive: window.activeTool === "select"
+                movePreviewReady: editor.objectMovePreviewReady
+                movePreviewBaseUrl: editor.objectMoveBaseUrl
+                movePreviewObjectUrl: editor.objectMoveObjectUrl
+                movePreviewBounds: editor.objectMoveBounds
                 shapeActive: window.activeTool === "shapes" && shapePanel.shapeKind !== "polygon"
                 polygonActive: window.activeTool === "shapes" && shapePanel.shapeKind === "polygon"
                 brushActive: window.activeTool === "brush"
@@ -1050,7 +1062,32 @@ ApplicationWindow {
                 }
                 objectAt: function(x, y) { return editor.objectAt(x, y) }
                 objectBounds: function(id) { return editor.objectBounds(id) }
-                onMoveObjectsRequested: function(ids, dx, dy) { editor.moveObjects(ids, dx, dy) }
+                onMoveObjectsRequested: function(ids, dx, dy) {
+                    const moved = editor.moveObjects(ids, dx, dy)
+                    if (!moved) {
+                        window._awaitingMovePreview = false
+                        editor.clearObjectMovePreview()
+                        canvas.clearMovePreview()
+                    }
+                }
+                onMoveStarted: function(ids) {
+                    window._awaitingMovePreview = true
+                    editor.beginObjectMovePreview(ids)
+                }
+                onMovePreview: function(ids, dx, dy) {
+                    // The object crop offset is bound inside EditorCanvas to
+                    // SelectionOverlay.movePreviewOffset; no controller work
+                    // happens per pointer event.
+                }
+                onMoveFinished: function(ids, dx, dy) {
+                    // The commit is already in flight via moveObjectsRequested;
+                    // keep the crop until busyChanged reports completion.
+                }
+                onMoveCancelled: function() {
+                    window._awaitingMovePreview = false
+                    editor.clearObjectMovePreview()
+                    canvas.clearMovePreview()
+                }
                 onRemoveObjectsRequested: function(ids) { editor.removeObjects(ids) }
                 onObjectDoubleClicked: function(id) {
                     const info = editor.textInfo(id)

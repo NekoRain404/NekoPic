@@ -133,6 +133,10 @@ Item {
     signal removeRequested(var id)
     signal moveObjectsRequested(var ids, real dx, real dy)
     signal removeObjectsRequested(var ids)
+    signal moveStarted(var ids)
+    signal movePreview(var ids, real dx, real dy)
+    signal moveFinished(var ids, real dx, real dy)
+    signal moveCancelled()
     signal selectionChanged(var id)
     signal doubleClicked(var id)
     signal cancelled()
@@ -173,6 +177,17 @@ Item {
     readonly property rect previewBounds: _computePreviewBounds()
     /*! Ghost offset in document pixels. */
     readonly property point previewDelta: _dragDelta
+    /*!
+        True when the controller has produced the base/object crops for a live
+        pixel drag. When false, the dashed ghost remains the fallback.
+    */
+    property bool movePreviewReady: false
+    /*! Document-pixel offset of the live object crop, including the settle
+        window after release while the controller commits. */
+    readonly property point movePreviewOffset: _dragging ? _dragDelta : _settledDelta
+    /*! True while a live crop should be drawn (drag or pending commit). */
+    readonly property bool movePreviewActive: _dragging
+            || _settledDelta.x !== 0 || _settledDelta.y !== 0
     /*! True when the pointer currently hovers a selectable object. */
     readonly property bool hoveringObject: _hoverObject
     /*! True when the pointer currently hovers the shared selection box. */
@@ -192,6 +207,9 @@ Item {
     property point _pressImage: Qt.point(0, 0)
     property point _dragDelta: Qt.point(0, 0)
     property rect _dragStartBounds: Qt.rect(0, 0, 0, 0)
+    // Kept after release until the controller's committed bounds arrive, so
+    // the crop and selection box do not snap back for a frame.
+    property point _settledDelta: Qt.point(0, 0)
 
     Accessible.role: Accessible.Pane
     Accessible.name: qsTr("Object selection")
@@ -330,7 +348,12 @@ Item {
         const b = _lastRawBounds
         if (!(b.width > 0) || !(b.height > 0))
             return _emptyRect()
-        return Qt.rect(b.x * scaleX, b.y * scaleY,
+        // Once the live object crop is available, the box must follow the
+        // pixels; before that (and after release until the commit lands) the
+        // ghost/settled offset keeps it at the visual target.
+        const dx = _dragging ? (movePreviewReady ? _dragDelta.x : 0) : _settledDelta.x
+        const dy = _dragging ? (movePreviewReady ? _dragDelta.y : 0) : _settledDelta.y
+        return Qt.rect((b.x + dx) * scaleX, (b.y + dy) * scaleY,
                        b.width * scaleX, b.height * scaleY)
     }
 
@@ -351,10 +374,27 @@ Item {
         _refreshBounds()
     }
 
+    /*! Ends the live-drag/settle overlay after the controller has committed
+        (or cancelled) the move. Safe to call at any time. */
+    function clearMovePreview() {
+        if (_settledDelta.x === 0 && _settledDelta.y === 0) {
+            _refreshBounds()
+            return
+        }
+        _settledDelta = Qt.point(0, 0)
+        _refreshBounds()
+        preview.requestPaint()
+    }
+
     function _refreshBounds() {
         const next = _unionRawBounds(_selectedIds)
         if (_rectEquals(next, _lastRawBounds))
             return
+        // The live crop is only needed while the committed bounds are still
+        // the old ones. Once the controller reports the new bounds, drop the
+        // temporary offset so the box is not shifted twice.
+        if (_settledDelta.x !== 0 || _settledDelta.y !== 0)
+            _settledDelta = Qt.point(0, 0)
         _lastRawBounds = next
         _boundsRevision++
     }
@@ -378,6 +418,7 @@ Item {
             return
         }
         _cancelDrag()
+        _settledDelta = Qt.point(0, 0)
         _selectedIds = next
         _lastRawBounds = _unionRawBounds(next)
         _boundsRevision++
@@ -464,9 +505,11 @@ Item {
             _dragging = false
             return false
         }
+        _settledDelta = Qt.point(0, 0)
         _dragStartBounds = b
         _dragDelta = Qt.point(0, 0)
         _dragging = true
+        root.moveStarted(_selectedIds.slice())
         preview.requestPaint()
         return true
     }
@@ -487,6 +530,7 @@ Item {
         if (d.x === _dragDelta.x && d.y === _dragDelta.y)
             return
         _dragDelta = d
+        root.movePreview(_selectedIds.slice(), d.x, d.y)
         preview.requestPaint()
     }
 
@@ -503,14 +547,18 @@ Item {
         const dx = _dragDelta.x
         const dy = _dragDelta.y
         const moved = _dragging && ids.length > 0 && (dx !== 0 || dy !== 0)
-        _cancelDrag()
-        if (!moved)
+        if (!moved) {
+            _cancelDrag()
+            root.moveCancelled()
             return
+        }
+        // Keep the live crop and selection box at the target until the
+        // controller's committed bounds arrive (Main calls clearMovePreview()).
+        _settledDelta = Qt.point(dx, dy)
+        _cancelDrag()
         _emitMove(ids, dx, dy)
-        // The controller commits asynchronously; refresh now (in case the
-        // model updated synchronously) and let the poll timer pick up a
-        // worker-backed commit shortly afterwards.
-        _refreshBounds()
+        root.moveFinished(ids, dx, dy)
+        preview.requestPaint()
     }
 
     function _updateHover(imageX, imageY) {
@@ -604,6 +652,7 @@ Item {
             return false
         const ids = _selectedIds.slice()
         _cancelDrag()
+        _settledDelta = Qt.point(0, 0)
         clearSelection()
         if (ids.length === 1)
             root.removeRequested(ids[0])
@@ -614,7 +663,11 @@ Item {
     function _cancel() {
         if (!usable)
             return
+        const wasMoving = _dragging || _settledDelta.x !== 0 || _settledDelta.y !== 0
         _cancelDrag()
+        _settledDelta = Qt.point(0, 0)
+        if (wasMoving)
+            root.moveCancelled()
         clearSelection()
         root.cancelled()
     }
@@ -637,8 +690,13 @@ Item {
     onActiveChanged: {
         if (active)
             forceActiveFocus(Qt.OtherFocusReason)
-        else
+        else {
+            const wasMoving = _dragging || _settledDelta.x !== 0 || _settledDelta.y !== 0
             _cancelDrag()
+            _settledDelta = Qt.point(0, 0)
+            if (wasMoving)
+                root.moveCancelled()
+        }
         _clearHover()
         preview.requestPaint()
     }
@@ -657,6 +715,7 @@ Item {
     onVisibleRectChanged: preview.requestPaint()
     onObjectAtChanged: _clearHover()
     onObjectBoundsChanged: _refreshBounds()
+    onMovePreviewReadyChanged: preview.requestPaint()
     onImageWidthChanged: _refreshBounds()
     onImageHeightChanged: _refreshBounds()
     onViewScaleChanged: _refreshBounds()
@@ -748,8 +807,9 @@ Item {
             c.lineWidth = 1
             c.strokeRect(left, top, boxWidth, boxHeight)
 
-            // Dashed ghost follows the pointer during a move gesture.
-            if (root.dragging) {
+            // Dashed ghost is the fallback until the live object crop is
+            // ready; afterwards the box itself follows the moving pixels.
+            if (root.dragging && !root.movePreviewReady) {
                 const g = root.previewBounds
                 if (g.width > 0 && g.height > 0) {
                     const gl = Math.round(g.x) + 0.5

@@ -40,6 +40,13 @@ Item {
     property bool textActive: false
     property bool selectionActive: false
     readonly property var selectionIds: selectionOverlay.selectedIds
+    // Live object-drag crops from DocumentController (QML translates the
+    // object crop while the pointer moves; the document commits on release).
+    property bool movePreviewReady: false
+    property url movePreviewBaseUrl
+    property url movePreviewObjectUrl
+    property rect movePreviewBounds: Qt.rect(0, 0, 0, 0)
+    readonly property bool movePreviewActive: selectionOverlay.movePreviewActive
     property bool compareActive: false
     property bool panActive: false
     // Temporary Space-held pan override supplied by the window.
@@ -79,8 +86,13 @@ Item {
     signal removeObjectRequested(var id)
     signal moveObjectsRequested(var ids, real dx, real dy)
     signal removeObjectsRequested(var ids)
+    signal moveStarted(var ids)
+    signal movePreview(var ids, real dx, real dy)
+    signal moveFinished(var ids, real dx, real dy)
+    signal moveCancelled()
     function setSelectionIds(ids) { selectionOverlay.setSelectionIds(ids) }
     function clearSelection() { selectionOverlay.clearSelection() }
+    function clearMovePreview() { selectionOverlay.clearMovePreview() }
     /*! Drops any in-progress gesture/preview without emitting commits. */
     function cancelPendingGesture() {
         if (cropOverlay) cropOverlay.resetSelection()
@@ -284,6 +296,39 @@ Item {
                         onColorPicked: function(value) { root.colorPicked(value) }
                         onCancelled: root.eyedropperCancelled()
                     }
+                    // Live object drag: the base crop covers the old object
+                    // pixels (keeping unselected objects), and the object crop
+                    // follows the pointer at 60 Hz without re-rendering the
+                    // document. Both are document-resolution crops scaled by
+                    // the current zoom.
+                    Image {
+                        objectName: "movePreviewBase"
+                        visible: root.movePreviewActive && root.movePreviewReady
+                                 && root.movePreviewBounds.width > 0
+                        source: root.movePreviewBaseUrl
+                        x: root.movePreviewBounds.x * root.zoom
+                        y: root.movePreviewBounds.y * root.zoom
+                        width: root.movePreviewBounds.width * root.zoom
+                        height: root.movePreviewBounds.height * root.zoom
+                        fillMode: Image.Stretch
+                        smooth: true
+                        cache: false
+                    }
+                    Image {
+                        objectName: "movePreviewObject"
+                        visible: root.movePreviewActive && root.movePreviewReady
+                                 && root.movePreviewBounds.width > 0
+                        source: root.movePreviewObjectUrl
+                        x: (root.movePreviewBounds.x
+                            + selectionOverlay.movePreviewOffset.x) * root.zoom
+                        y: (root.movePreviewBounds.y
+                            + selectionOverlay.movePreviewOffset.y) * root.zoom
+                        width: root.movePreviewBounds.width * root.zoom
+                        height: root.movePreviewBounds.height * root.zoom
+                        fillMode: Image.Stretch
+                        smooth: true
+                        cache: false
+                    }
                 }
                 AdjustmentPreview {
                     objectName: "adjustmentPreview"
@@ -368,10 +413,15 @@ Item {
                                          view.width, view.height)
                     objectAt: root.objectAt
                     objectBounds: root.objectBounds
+                    movePreviewReady: root.movePreviewReady
                     onMoveRequested: function(id, dx, dy) { root.moveObjectRequested(id, dx, dy) }
                     onRemoveRequested: function(id) { root.removeObjectRequested(id) }
                     onMoveObjectsRequested: function(ids, dx, dy) { root.moveObjectsRequested(ids, dx, dy) }
                     onRemoveObjectsRequested: function(ids) { root.removeObjectsRequested(ids) }
+                    onMoveStarted: function(ids) { root.moveStarted(ids) }
+                    onMovePreview: function(ids, dx, dy) { root.movePreview(ids, dx, dy) }
+                    onMoveFinished: function(ids, dx, dy) { root.moveFinished(ids, dx, dy) }
+                    onMoveCancelled: root.moveCancelled()
                     onDoubleClicked: function(id) { root.objectDoubleClicked(id) }
                 }
                 ScrollBar.horizontal: ScrollBar { }

@@ -98,6 +98,8 @@ TestCase {
         overlay.imageHeight = 500
         overlay.viewScale = 0.25
         overlay.visibleRect = Qt.rect(0, 0, overlay.width, overlay.height)
+        overlay.movePreviewReady = false
+        overlay.clearMovePreview()
         overlay.clearSelection()
         overlay.active = true
         overlay.forceActiveFocus()
@@ -270,6 +272,30 @@ TestCase {
         compare(overlay.previewDelta, Qt.point(0, 0))
         // Selection survives the move.
         compare(overlay.selectedId, 7)
+    }
+
+    function test_livePreviewMovesBoxAndKeepsSettleOffset() {
+        overlay.movePreviewReady = true
+        overlay.selectAt(200, 100)
+        compare(overlay.selectedId, 7)
+
+        mousePress(overlay, 50, 25)
+        mouseMove(overlay, 70, 35)
+        // With the live crop available, the solid box itself follows the
+        // pointer instead of leaving a ghost at the target.
+        compare(overlay.movePreviewOffset, Qt.point(80, 40))
+        compare(overlay.selectedBounds, Qt.rect(45, 22.5, 50, 25))
+
+        mouseRelease(overlay, 70, 35)
+        compare(moves.count, 1)
+        // The crop and box stay at the target until the controller commits.
+        compare(overlay.movePreviewActive, true)
+        compare(overlay.selectedBounds, Qt.rect(45, 22.5, 50, 25))
+
+        overlay.clearMovePreview()
+        compare(overlay.movePreviewActive, false)
+        compare(overlay.selectedBounds, Qt.rect(25, 12.5, 50, 25))
+        overlay.movePreviewReady = false
     }
 
     function test_dragFromUnselectedObjectSelectsAndMoves() {
