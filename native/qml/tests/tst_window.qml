@@ -66,7 +66,13 @@ TestCase {
         property var readableImagePatterns: ["*.png", "*.PNG"]
         signal errorChanged()
         signal imageSaved()
-        function openImage(url) {}
+        property int openCalls: 0
+        property var lastOpenUrl
+        property int openDiscardingCalls: 0
+        property int autoEnhanceCalls: 0
+        function openImage(url) { ++openCalls; lastOpenUrl = url }
+        function openImageDiscardingChanges(url) { ++openDiscardingCalls; lastOpenUrl = url }
+        function autoEnhance() { ++autoEnhanceCalls }
         function saveImage() {}
         function saveAs(url, format) {}
         function clearError() {}
@@ -384,5 +390,420 @@ TestCase {
         editor.hasImage = false
         editor.imageWidth = 0; editor.imageHeight = 0
         window.destroy()
+    }
+
+    function keyEvent(key, autoRepeat) {
+        return { key: key, modifiers: Qt.NoModifier,
+                 isAutoRepeat: autoRepeat === true, accepted: false }
+    }
+    function createWindow() {
+        const component = Qt.createComponent("../Main.qml")
+        compare(component.status, Component.Ready, component.errorString())
+        const window = component.createObject(null)
+        verify(window !== null, component.errorString())
+        return window
+    }
+    function resetEditor() {
+        editor.hasImage = false
+        editor.imageWidth = 0
+        editor.imageHeight = 0
+        editor.dirty = false
+        editor.busy = false
+        editor.errorMessage = ""
+        editor.fileName = ""
+    }
+
+    function test_spacePanTemporarilyPansAndRestoresTool() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const view = findChild(canvas, "canvasView")
+            verify(canvas !== null && view !== null)
+            editor.hasImage = true
+            editor.imageWidth = 1200
+            editor.imageHeight = 800
+            wait(0)
+            window.activeTool = "brush"
+            compare(window.activeTool, "brush")
+            canvas.fitting = false
+            canvas.zoom = 2
+            wait(0)
+            view.contentX = 200
+            view.contentY = 150
+
+            const press = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(press)
+            verify(press.accepted)
+            verify(window.spacePanHeld)
+            verify(window.spacePanActive)
+            verify(canvas.effectivePanActive)
+            verify(!canvas.panActive)
+            compare(window.activeTool, "brush")
+            verify(window.transientStatus.length > 0)
+
+            mousePress(canvas, 300, 200)
+            mouseMove(canvas, 260, 160)
+            mouseRelease(canvas, 260, 160)
+            verify(view.contentX > 200 || view.contentY > 150,
+                   "left-drag must pan while Space is held")
+
+            // Auto-repeat must not toggle pan off.
+            const repeat = keyEvent(Qt.Key_Space, true)
+            window.handleCanvasKeyPress(repeat)
+            verify(window.spacePanActive)
+            verify(repeat.accepted)
+
+            const release = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyRelease(release)
+            verify(release.accepted)
+            verify(!window.spacePanHeld)
+            verify(!window.spacePanActive)
+            verify(!canvas.effectivePanActive)
+            compare(window.activeTool, "brush")
+            verify(window.transientStatus.length > 0)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_spacePanIgnoredWithoutImageOrWhileBusy() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            editor.hasImage = false
+            wait(0)
+            const noImage = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(noImage)
+            verify(!window.spacePanHeld)
+
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            editor.busy = true
+            wait(0)
+            const busyPress = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(busyPress)
+            verify(!window.spacePanHeld)
+            verify(!canvas.effectivePanActive)
+            verify(!busyPress.accepted)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_compareHoldShowsBaseAndIgnoresAutoRepeat() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const picture = findChild(canvas, "canvasPicture")
+            verify(picture !== null)
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            canvas.baseImageUrl = "file:///tmp/base-hold.png"
+            canvas.imageUrl = "file:///tmp/current-hold.png"
+            wait(0)
+            verify(picture.source.toString().indexOf("current-hold.png") >= 0)
+
+            const press = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyPress(press)
+            verify(press.accepted)
+            verify(window.compareHeld)
+            verify(canvas.compareActive)
+            verify(picture.source.toString().indexOf("base-hold.png") >= 0)
+            verify(window.transientStatus.length > 0)
+
+            const repeat = keyEvent(Qt.Key_M, true)
+            window.handleCanvasKeyPress(repeat)
+            verify(canvas.compareActive)
+            verify(repeat.accepted)
+
+            const release = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyRelease(release)
+            verify(release.accepted)
+            verify(!window.compareHeld)
+            verify(!canvas.compareActive)
+            verify(picture.source.toString().indexOf("current-hold.png") >= 0)
+            verify(window.transientStatus.length > 0)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_escapeExitsEveryToolAndClearsSelection() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const shapePanel = findChild(window, "shapePanel")
+            editor.hasImage = true
+            editor.imageWidth = 1000
+            editor.imageHeight = 500
+            wait(0)
+            const tools = ["select", "brush", "text", "shapes", "mosaic", "eye",
+                           "crop", "pan", "filters"]
+            for (let i = 0; i < tools.length; ++i) {
+                window.activeTool = tools[i]
+                compare(window.activeTool, tools[i])
+                const event = keyEvent(Qt.Key_Escape, false)
+                window.handleCanvasKeyPress(event)
+                compare(window.activeTool, "adjust", "Esc must leave " + tools[i])
+                verify(event.accepted)
+            }
+            // Polygon shares the Shapes tool but has its own overlay.
+            shapePanel.shapeKind = "polygon"
+            window.activeTool = "shapes"
+            let event = keyEvent(Qt.Key_Escape, false)
+            window.handleCanvasKeyPress(event)
+            compare(window.activeTool, "adjust")
+            verify(event.accepted)
+            shapePanel.shapeKind = "rectangle"
+
+            window.activeTool = "select"
+            canvas.setSelectionIds([7, 9])
+            compare(canvas.selectionIds.length, 2)
+            event = keyEvent(Qt.Key_Escape, false)
+            window.handleCanvasKeyPress(event)
+            compare(window.activeTool, "adjust")
+            compare(canvas.selectionIds.length, 0)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_toolSwitchKeepsOverlaysExclusiveAndHintsPresent() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const shapePanel = findChild(window, "shapePanel")
+            editor.hasImage = true
+            editor.imageWidth = 1000
+            editor.imageHeight = 500
+            wait(0)
+            const tools = ["select", "brush", "text", "shapes", "mosaic", "eye", "crop"]
+            for (let i = 0; i < tools.length; ++i) {
+                window.activeTool = tools[i]
+                const active = [canvas.cropActive, canvas.mosaicActive, canvas.textActive,
+                                canvas.brushActive, canvas.shapeActive, canvas.polygonActive,
+                                canvas.selectionActive, canvas.eyedropperActive]
+                let count = 0
+                for (let j = 0; j < active.length; ++j) if (active[j]) ++count
+                compare(count, 1, "exactly one overlay for " + tools[i])
+                verify(window.activeToolHint.length > 0)
+                compare(canvas.toolHint, window.activeToolHint)
+            }
+            window.activeTool = "adjust"
+            compare(window.activeToolHint, "")
+            window.activeTool = "filters"
+            compare(window.activeToolHint, "")
+            window.activeTool = "shapes"
+            const rectangleHint = window.activeToolHint
+            shapePanel.shapeKind = "polygon"
+            wait(0)
+            verify(window.activeToolHint !== rectangleHint)
+            shapePanel.shapeKind = "rectangle"
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_busyStateGatesActionsAndShowsBusyFeedback() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const status = findChild(window, "statusMessage")
+            const panArea = findChild(canvas, "panMouseArea")
+            const tool = visualChild(window.contentItem, "tool-brush")
+            verify(status !== null && panArea !== null && tool !== null)
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            editor.busy = true
+            wait(0)
+            verify(!tool.enabled)
+            verify(canvas.busy)
+            compare(panArea.cursorShape, Qt.BusyCursor)
+            compare(status.text, qsTr("Working…"))
+
+            const space = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(space)
+            verify(!window.spacePanHeld)
+
+            editor.openCalls = 0
+            verify(!window.requestOpen("file:///tmp/blocked.png"))
+            compare(editor.openCalls, 0)
+
+            editor.busy = false
+            wait(0)
+            verify(tool.enabled)
+            verify(!canvas.busy)
+            compare(panArea.cursorShape, Qt.ArrowCursor)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_modalAndTextFieldSuppressCanvasKeys() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            window.activeTool = "brush"
+            const dialog = findChild(window, "settingsDialog")
+            verify(dialog !== null)
+            dialog.open()
+            tryVerify(function() { return dialog.opened && window.blockingModal }, 1500)
+
+            const space = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(space)
+            verify(!window.spacePanHeld)
+            const m = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyPress(m)
+            verify(!canvas.compareActive)
+            const esc = keyEvent(Qt.Key_Escape, false)
+            window.handleCanvasKeyPress(esc)
+            compare(window.activeTool, "brush")
+            dialog.close()
+            tryVerify(function() { return !dialog.opened }, 1500)
+
+            // The Brush panel hex field is the only non-modal text field.
+            const field = findChild(window, "brush-hex-field")
+            verify(field !== null)
+            field.forceActiveFocus()
+            tryVerify(function() { return window.textInputFocused }, 1500)
+            const space2 = keyEvent(Qt.Key_Space, false)
+            window.handleCanvasKeyPress(space2)
+            verify(!window.spacePanHeld)
+            const m2 = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyPress(m2)
+            verify(!canvas.compareActive)
+
+            // Moving focus into a field while the key is still held must not
+            // leave a stuck compare/pan override behind.
+            const keyScope = findChild(window, "keyScope")
+            keyScope.forceActiveFocus()
+            tryVerify(function() { return !window.textInputFocused }, 1500)
+            const held = keyEvent(Qt.Key_M, false)
+            window.handleCanvasKeyPress(held)
+            verify(canvas.compareActive)
+            field.forceActiveFocus()
+            tryVerify(function() { return window.textInputFocused && !canvas.compareActive }, 1500)
+            verify(!window.compareHeld)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_sharedOpenPathConfirmsDiscardAndShowsErrors() {
+        const window = createWindow()
+        try {
+            const dialog = findChild(window, "discardDialog")
+            const errorDialog = findChild(window, "errorDialog")
+            verify(dialog !== null && errorDialog !== null)
+
+            editor.hasImage = true
+            editor.dirty = false
+            editor.openCalls = 0
+            verify(window.requestOpen("file:///tmp/clean.png"))
+            compare(editor.openCalls, 1)
+
+            editor.dirty = true
+            verify(window.requestOpen("file:///tmp/pending.png"))
+            compare(editor.openCalls, 1)
+            verify(dialog.opened)
+            compare(window.pendingImage.toString(), "file:///tmp/pending.png")
+            dialog.discarded()
+            compare(editor.openDiscardingCalls, 1)
+            editor.dirty = false
+
+            // A failed load must not clear the current document and must surface
+            // the controller error through the shared dialog.
+            editor.errorMessage = "Could not open image"
+            editor.errorChanged()
+            tryVerify(function() { return errorDialog.opened }, 1500)
+            verify(editor.hasImage)
+            errorDialog.close()
+            tryVerify(function() { return !errorDialog.opened }, 1500)
+
+            const recentMenu = findChild(window, "recentMenu")
+            verify(recentMenu !== null)
+            verify(!recentMenu.enabled, "recent menu is disabled when empty")
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function test_statusMessagesForToolsFiltersAndAutoEnhance() {
+        const window = createWindow()
+        try {
+            const inspector = findChild(window, "inspector")
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            window.activeTool = "brush"
+            compare(window.transientStatus, qsTr("Brush"))
+            inspector.filterSelected("mono")
+            verify(window.transientStatus.indexOf("mono") >= 0)
+            editor.autoEnhanceCalls = 0
+            inspector.autoEnhanceRequested()
+            compare(editor.autoEnhanceCalls, 1)
+            compare(window.transientStatus, qsTr("Auto enhance"))
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
+    }
+
+    function isDescendantOf(item, ancestor) {
+        while (item !== null && item !== undefined) {
+            if (item === ancestor) return true
+            item = item.parent
+        }
+        return false
+    }
+    function test_keyboardScopeStaysInFocusChain() {
+        const window = createWindow()
+        try {
+            const canvas = findChild(window, "editorCanvas")
+            const keyScope = findChild(window, "keyScope")
+            verify(keyScope !== null)
+            verify(!keyScope.activeFocusOnTab, "container must not join the Tab order")
+            editor.hasImage = true
+            editor.imageWidth = 800
+            editor.imageHeight = 600
+            wait(0)
+            // With no tool focused, the window's active focus is the scope itself.
+            tryVerify(function() { return window.activeFocusItem === keyScope }, 1500)
+
+            // Tool overlays take focus, but remain descendants of the scope, so
+            // unhandled Space/M/Escape events still bubble to it.
+            const tools = ["select", "brush", "text", "shapes", "mosaic", "eye", "crop"]
+            for (let i = 0; i < tools.length; ++i) {
+                window.activeTool = tools[i]
+                tryVerify(function() {
+                    return window.activeFocusItem !== null
+                        && isDescendantOf(window.activeFocusItem, keyScope)
+                }, 1500)
+            }
+            window.activeTool = "adjust"
+            tryVerify(function() { return window.activeFocusItem === keyScope }, 1500)
+        } finally {
+            resetEditor()
+            window.destroy()
+        }
     }
 }
