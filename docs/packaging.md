@@ -162,7 +162,7 @@ sha256sum -c SHA256SUMS
 
 ```text
 artifacts/appimage/NekoPic-0.1.0-x86_64.AppImage   76 MB
-sha256  d6a16fa84e43f227e1a24bd07d3c4d28b45c05460f55bd08058266c75b55992e
+sha256  5402ac0ccbe618bf5d7f11a19e6cc80c3c38506679a620f8a1eb3ae6a2f1378c
 ```
 
 AppImage 的 `AppRun` 默认在存在 `DISPLAY` 时使用 xcb（XWayland），以避免部分
