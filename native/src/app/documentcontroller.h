@@ -110,6 +110,10 @@ public:
     Q_INVOKABLE quint64 objectAt(qreal x, qreal y) const;
     Q_INVOKABLE QRectF objectBounds(quint64 id) const;
     Q_INVOKABLE QVariantList objectIds() const;
+    Q_INVOKABLE void addBrushStroke(const QVariantList &points, double diameter, const QColor &color);
+    Q_INVOKABLE void addShape(const QString &kind, const QRectF &rect,
+                              const QColor &fillColor, const QColor &strokeColor,
+                              double strokeWidth, double cornerRadius);
 
 signals:
     void documentChanged();
