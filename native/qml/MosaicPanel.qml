@@ -12,13 +12,24 @@ Rectangle {
     property bool brushMode: true
     property real brushDiameter: 24
     property int blockSize: 12
+    property string effect: "mosaic"
+    property int blurRadius: 12
     implicitWidth: 292
     color: theme.panel
 
     ColumnLayout {
         anchors.fill: parent; anchors.margins: 23; spacing: 18
-        Label { text: qsTr("PIXELATE"); font.pixelSize: 9; font.weight: Font.DemiBold; color: root.theme.muted }
-        Label { text: qsTr("Mosaic"); font.pixelSize: 19; font.weight: Font.DemiBold; color: root.theme.text }
+        Label { text: qsTr("REDACTION"); font.pixelSize: 9; font.weight: Font.DemiBold; color: root.theme.muted }
+        Label { text: root.effect === "blur" ? qsTr("Blur") : qsTr("Mosaic"); font.pixelSize: 19; font.weight: Font.DemiBold; color: root.theme.text }
+        NekoSegmentedControl {
+            id: effectTabs
+            objectName: "mosaic-effect"
+            Layout.fillWidth: true
+            model: [qsTr("Mosaic"), qsTr("Blur")]
+            accessibleName: qsTr("Redaction effect")
+            Component.onCompleted: currentIndex = root.effect === "blur" ? 1 : 0
+            onActivated: function(index) { root.effect = index === 1 ? "blur" : "mosaic" }
+        }
         RowLayout {
             Layout.fillWidth: true; spacing: 3
             Repeater {
@@ -55,6 +66,7 @@ Rectangle {
             }
             RowLayout {
                 Layout.fillWidth: true; Layout.topMargin: 10
+                visible: root.effect === "mosaic"
                 Label { text: qsTr("Block size"); color: root.theme.muted; font.pixelSize: 11 }
                 Item { Layout.fillWidth: true }
                 Label { text: root.blockSize + " px"; color: root.theme.text; font.pixelSize: 10 }
@@ -63,17 +75,40 @@ Rectangle {
                 id: blockSlider
                 objectName: "mosaic-block-size"
                 Layout.fillWidth: true
+                visible: root.effect === "mosaic"
                 from: 2; to: 128; stepSize: 1; defaultValue: 12
                 accessibleName: qsTr("Block size")
                 onPreview: function(value) { root.blockSize = Math.round(value) }
                 Component.onCompleted: value = root.blockSize
                 Connections { target: root; function onBlockSizeChanged() { if (!blockSlider.dragging) blockSlider.value = root.blockSize } }
             }
+            RowLayout {
+                Layout.fillWidth: true; Layout.topMargin: 10
+                visible: root.effect === "blur"
+                Label { text: qsTr("Blur amount"); color: root.theme.muted; font.pixelSize: 11 }
+                Item { Layout.fillWidth: true }
+                Label { text: root.blurRadius + " px"; color: root.theme.text; font.pixelSize: 10 }
+            }
+            NekoSlider {
+                id: blurSlider
+                objectName: "mosaic-blur-radius"
+                Layout.fillWidth: true
+                visible: root.effect === "blur"
+                from: 1; to: 128; stepSize: 1; defaultValue: 12
+                accessibleName: qsTr("Blur amount")
+                onPreview: function(value) { root.blurRadius = Math.round(value) }
+                Component.onCompleted: value = root.blurRadius
+                Connections { target: root; function onBlurRadiusChanged() { if (!blurSlider.dragging) blurSlider.value = root.blurRadius } }
+            }
         }
         Label {
             Layout.fillWidth: true
-            text: root.brushMode ? qsTr("Paint over an area to pixelate it.") : qsTr("Drag a rectangle to pixelate an area.")
             wrapMode: Text.WordWrap; color: root.theme.muted; font.pixelSize: 11
+            text: root.effect === "blur"
+                  ? (root.brushMode ? qsTr("Paint over an area to blur it.")
+                                    : qsTr("Drag a rectangle to blur an area."))
+                  : (root.brushMode ? qsTr("Paint over an area to pixelate it.")
+                                    : qsTr("Drag a rectangle to pixelate an area."))
         }
         Label {
             Layout.fillWidth: true

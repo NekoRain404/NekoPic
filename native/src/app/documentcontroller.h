@@ -100,6 +100,8 @@ public:
     Q_INVOKABLE void finishFilterIntensity(double value);
     Q_INVOKABLE void mosaicRectangle(const QRectF &area, int blockSize);
     Q_INVOKABLE void mosaicStroke(const QVariantList &points, double diameter, int blockSize);
+    Q_INVOKABLE void blurRectangle(const QRectF &area, int radius);
+    Q_INVOKABLE void blurStroke(const QVariantList &points, int radius);
     Q_INVOKABLE void addText(const QString &text, qreal x, qreal y, qreal fontSize,
                              const QColor &color, int alignment);
     Q_INVOKABLE bool removeObject(quint64 id);
@@ -155,7 +157,8 @@ private:
     void startAdjustmentWorker();
     void endAdjustment(const QImage &result, bool failed);
     void queueFilterIntensity(double value, bool finish);
-    void startMosaic(std::function<QImage(const QImage &)> operation);
+    void startPixelEdit(std::function<QImage(const QImage &)> operation,
+                        const QString &failureMessage);
     QImage image_;
     QImage baseImage_;
     NekoPic::Adjustments::Parameters parameters_;

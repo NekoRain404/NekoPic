@@ -50,7 +50,8 @@ target_link_libraries(nekopic_render PUBLIC nekopic_core Qt6::Quick)
 # --- app: document controller and QML bridge -----------------------------
 add_library(nekopic_app STATIC
     src/app/documentcontroller.cpp src/app/documentcontroller.h
-    src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_geometry.cpp
+    src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_blur.cpp
+    src/app/documentcontroller_geometry.cpp
     src/app/documentcontroller_resize.cpp
     src/app/filterpreviews.cpp src/app/filterpreviews.h
     src/app/languagemanager.cpp src/app/languagemanager.h)
@@ -127,6 +128,7 @@ if(BUILD_TESTING)
     nekopic_add_test(filterpreviews tests/tst_filterpreviews.cpp nekopic_app)
     nekopic_add_test(previewcontract tests/tst_previewcontract.cpp nekopic_app)
     nekopic_add_test(objectqueries tests/tst_objectqueries.cpp nekopic_app)
+    nekopic_add_test(blurcontroller tests/tst_blurcontroller.cpp nekopic_app)
     nekopic_add_test(languagemanager tests/tst_languagemanager.cpp nekopic_app)
     nekopic_add_test(recentfiles tests/tst_recentfiles.cpp nekopic_platform)
     nekopic_add_test(exportformats tests/tst_exportformats.cpp nekopic_app)

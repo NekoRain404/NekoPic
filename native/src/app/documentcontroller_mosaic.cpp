@@ -27,9 +27,9 @@ void DocumentController::mosaicRectangle(const QRectF &area, int blockSize)
     const auto clipped = area.normalized().intersected(QRectF(baseImage_.rect()));
     if (clipped.isEmpty()) return;
     const auto rectangle = clipped.toAlignedRect().intersected(baseImage_.rect());
-    startMosaic([rectangle, blockSize](const QImage &base) {
+    startPixelEdit([rectangle, blockSize](const QImage &base) {
         return NekoPic::Mosaic::pixelateRect(base, rectangle, blockSize);
-    });
+    }, tr("Could not apply mosaic to the image."));
 }
 
 void DocumentController::mosaicStroke(const QVariantList &points, double diameter, int blockSize)
@@ -46,12 +46,13 @@ void DocumentController::mosaicStroke(const QVariantList &points, double diamete
         if (!validCoordinate(point.x()) || !validCoordinate(point.y())) return;
         stroke.points.append(point);
     }
-    startMosaic([stroke = std::move(stroke), blockSize](const QImage &base) {
+    startPixelEdit([stroke = std::move(stroke), blockSize](const QImage &base) {
         return NekoPic::Mosaic::pixelateStroke(base, stroke, blockSize);
-    });
+    }, tr("Could not apply mosaic to the image."));
 }
 
-void DocumentController::startMosaic(std::function<QImage(const QImage &)> operation)
+void DocumentController::startPixelEdit(std::function<QImage(const QImage &)> operation,
+                                        const QString &failureMessage)
 {
     const auto base = baseImage_;
     if (qint64(base.width()) * base.height() > 64 * 1024 * 1024
@@ -61,15 +62,15 @@ void DocumentController::startMosaic(std::function<QImage(const QImage &)> opera
     setError({});
     setBusy(true);
     auto *watcher = new QFutureWatcher<EditResult>(this);
-    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher] {
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, failureMessage] {
         try {
             auto result = watcher->result();
             if (result.image.isNull() || result.base.isNull())
-                setError(tr("Could not apply mosaic to the image."));
+                setError(failureMessage);
             else if (result.base.cacheKey() != baseImage_.cacheKey())
                 commitEdit(std::move(result));
         } catch (...) {
-            setError(tr("Could not apply mosaic to the image."));
+            setError(failureMessage);
         }
         watcher->deleteLater();
         setBusy(false);

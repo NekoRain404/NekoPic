@@ -39,6 +39,11 @@ TestCase {
         property var mosaicPoints: []
         property real mosaicDiameter: 0
         property int mosaicBlockSize: 0
+        property int blurCalls: 0
+        property int blurStrokeCalls: 0
+        property rect blurArea
+        property int blurRadius: 0
+        property var blurPoints: []
         property int cropCalls: 0
         property string textCall: ""
         property rect cropArea
@@ -61,6 +66,12 @@ TestCase {
         function finishFilterIntensity(value) { filterCall = "finish:" + value }
         function mosaicRectangle(area, blockSize) {
             ++mosaicCalls; mosaicArea = area; mosaicBlockSize = blockSize
+        }
+        function blurRectangle(area, radius) {
+            ++blurCalls; blurArea = area; blurRadius = radius
+        }
+        function blurStroke(points, radius) {
+            ++blurStrokeCalls; blurPoints = points; blurRadius = radius
         }
         function mosaicStroke(points, diameter, blockSize) {
             ++mosaicCalls; mosaicPoints = points; mosaicDiameter = diameter; mosaicBlockSize = blockSize
@@ -155,6 +166,32 @@ TestCase {
         editor.hasImage = false
         window.destroy()
     }
+    function test_mosaicPanelRoutesBlurEffect() {
+        const component = Qt.createComponent("../Main.qml")
+        const window = component.createObject(null)
+        verify(window !== null, component.errorString())
+        const panel = findChild(window, "mosaicPanel")
+        const canvas = findChild(window, "editorCanvas")
+        verify(panel !== null && canvas !== null)
+        editor.hasImage = true
+        editor.imageWidth = 1000; editor.imageHeight = 500
+        editor.blurCalls = 0; editor.blurStrokeCalls = 0; editor.mosaicCalls = 0
+        panel.effect = "blur"
+        panel.blurRadius = 21
+        canvas.mosaicRectangleCommitted(Qt.rect(10, 20, 100, 60))
+        compare(editor.blurCalls, 1)
+        compare(editor.mosaicCalls, 0)
+        compare(editor.blurArea, Qt.rect(10, 20, 100, 60))
+        compare(editor.blurRadius, 21)
+        canvas.mosaicStrokeCommitted([Qt.point(30, 40), Qt.point(50, 60)])
+        compare(editor.blurStrokeCalls, 1)
+        compare(editor.blurPoints.length, 2)
+        compare(editor.blurRadius, 21)
+        panel.effect = "mosaic"
+        editor.hasImage = false
+        window.destroy()
+    }
+
     function test_textToolCreatesTextThroughDialog() {
         editor.hasImage = true
         editor.imageWidth = 800

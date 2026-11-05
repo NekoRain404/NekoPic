@@ -21,7 +21,22 @@ TestCase {
         panel.brushMode = true
         panel.brushDiameter = 24
         panel.blockSize = 12
+        panel.effect = "mosaic"
+        panel.blurRadius = 12
     }
+    function test_blurEffectExposesRadius() {
+        panel.effect = "blur"
+        wait(0)
+        const radius = findChild(panel, "mosaic-blur-radius")
+        verify(radius !== null)
+        verify(radius.visible)
+        radius.forceActiveFocus()
+        keyClick(Qt.Key_Right)
+        compare(panel.blurRadius, 13)
+        const block = findChild(panel, "mosaic-block-size")
+        verify(!block.visible)
+    }
+
     function test_modeAndImagePixelParameters() {
         mouseClick(findChild(panel, "mosaic-mode-rectangle"))
         verify(!panel.brushMode)

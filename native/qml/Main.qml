@@ -478,8 +478,14 @@ ApplicationWindow {
                 mosaicBrushMode: mosaicPanel.brushMode
                 mosaicBrushDiameter: mosaicPanel.brushDiameter
                 inputEnabled: !editor.busy
-                onMosaicRectangleCommitted: function(area) { editor.mosaicRectangle(area, mosaicPanel.blockSize) }
-                onMosaicStrokeCommitted: function(points) { editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize) }
+                onMosaicRectangleCommitted: function(area) {
+                    if (mosaicPanel.effect === "blur") editor.blurRectangle(area, mosaicPanel.blurRadius)
+                    else editor.mosaicRectangle(area, mosaicPanel.blockSize)
+                }
+                onMosaicStrokeCommitted: function(points) {
+                    if (mosaicPanel.effect === "blur") editor.blurStroke(points, mosaicPanel.blurRadius)
+                    else editor.mosaicStroke(points, mosaicPanel.brushDiameter, mosaicPanel.blockSize)
+                }
                 recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
                 onRecentRequested: function(url) { editor.openImage(url) }
                 onOpenRequested: openDialog.open()
