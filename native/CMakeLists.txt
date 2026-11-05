@@ -50,6 +50,7 @@ target_link_libraries(nekopic_render PUBLIC nekopic_core Qt6::Quick)
 add_library(nekopic_app STATIC
     src/app/documentcontroller.cpp src/app/documentcontroller.h
     src/app/documentcontroller_mosaic.cpp src/app/documentcontroller_geometry.cpp
+    src/app/documentcontroller_resize.cpp
     src/app/filterpreviews.cpp src/app/filterpreviews.h
     src/app/languagemanager.cpp src/app/languagemanager.h)
 target_include_directories(nekopic_app PUBLIC src)
@@ -107,6 +108,7 @@ if(BUILD_TESTING)
     nekopic_add_test(formatregistry tests/tst_formatregistry.cpp nekopic_io)
     nekopic_add_test(documentcontroller tests/documentcontroller_test.cpp nekopic_app)
     nekopic_add_test(crop tests/tst_crop.cpp nekopic_app)
+    nekopic_add_test(resize tests/tst_resize.cpp nekopic_app)
     nekopic_add_test(filterpreviews tests/tst_filterpreviews.cpp nekopic_app)
     nekopic_add_test(previewcontract tests/tst_previewcontract.cpp nekopic_app)
     nekopic_add_test(languagemanager tests/tst_languagemanager.cpp nekopic_app)

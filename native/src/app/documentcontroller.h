@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QColor>
 #include <QImage>
 #include <QObject>
 #include <QStringList>
@@ -73,6 +74,8 @@ public:
     Q_INVOKABLE void flipHorizontal();
     Q_INVOKABLE void flipVertical();
     Q_INVOKABLE void cropImage(const QRectF &area);
+    Q_INVOKABLE void resizeImage(int width, int height);
+    Q_INVOKABLE void resizeCanvas(int width, int height, int anchor, const QColor &background);
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
     Q_INVOKABLE void beginAdjustment(const QString &key);
