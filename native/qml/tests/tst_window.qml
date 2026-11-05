@@ -66,6 +66,10 @@ TestCase {
         function addText(text, x, y, fontSize, color, alignment) {
             textCall = text + ":" + x + ":" + y + ":" + fontSize + ":" + alignment
         }
+        function addTextStyled(text, x, y, fontFamily, fontWeight, fontSize, color, alignment,
+                               outlineColor, outlineWidth, lineHeight, padding) {
+            textCall = text + ":" + x + ":" + y + ":" + fontSize + ":" + alignment
+        }
         function beginAdjustment(key) { adjustmentCall = "begin:" + key }
         function previewAdjustment(key, value) { adjustmentCall = "preview:" + key + ":" + value }
         function finishAdjustment(key, value) { adjustmentCall = "finish:" + key + ":" + value }

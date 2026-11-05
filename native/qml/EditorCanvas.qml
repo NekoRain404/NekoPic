@@ -33,6 +33,13 @@ Item {
     property bool textActive: false
     property bool selectionActive: false
     property bool compareActive: false
+    property bool shapeActive: false
+    property string shapeKind: "rectangle"
+    property color shapeFillColor: "#ffffff"
+    property color shapeStrokeColor: "#000000"
+    property real shapeStrokeWidth: 3
+    property real shapeCornerRadius: 0
+    property bool shapeFilled: true
     property var objectAt: null
     property var objectBounds: null
     property var colorSampler: null
@@ -46,6 +53,8 @@ Item {
     signal textCancelled()
     signal moveObjectRequested(var id, real dx, real dy)
     signal removeObjectRequested(var id)
+    signal shapeCommitted(string kind, rect area)
+    signal shapeCancelled()
     function resetCropSelection() { cropOverlay.resetSelection() }
     signal openRequested()
     signal recentRequested(url url)
@@ -238,6 +247,24 @@ Item {
                     brightness: root.previewBrightness
                     contrast: root.previewContrast
                     saturation: root.previewSaturation
+                }
+                ShapeOverlay {
+                    objectName: "shapeOverlay"
+                    anchors.fill: parent
+                    active: root.shapeActive && root.hasImage
+                    inputEnabled: root.inputEnabled
+                    imageWidth: root.imageWidth; imageHeight: root.imageHeight
+                    viewScale: root.zoom
+                    visibleRect: Qt.rect(view.contentX - picture.x, view.contentY - picture.y,
+                                         view.width, view.height)
+                    shapeKind: root.shapeKind
+                    fillColor: root.shapeFillColor
+                    strokeColor: root.shapeStrokeColor
+                    strokeWidth: root.shapeStrokeWidth
+                    cornerRadius: root.shapeCornerRadius
+                    filled: root.shapeFilled
+                    onShapeCommitted: function(kind, area) { root.shapeCommitted(kind, area) }
+                    onCancelled: root.shapeCancelled()
                 }
                 SelectionOverlay {
                     objectName: "selectionOverlay"
