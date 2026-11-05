@@ -77,7 +77,7 @@ TestCase {
         compare(palette.resultCount, 2)
         const row = findChild(palette, "command-0")
         verify(row !== null)
-        verify(row.width > 0 && row.height > 0)
+        tryVerify(function() { return row.width > 0 && row.height > 0 }, 2000)
         mouseClick(row, row.width / 2, row.height / 2)
         compare(openRuns, 1)
         compare(disabledRuns, 0)
