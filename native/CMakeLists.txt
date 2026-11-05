@@ -82,6 +82,11 @@ list(FILTER NEKOPIC_QMLJS EXCLUDE REGEX "^qml/tests/")
 file(GLOB_RECURSE NEKOPIC_QMLDIR CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "qml/**/qmldir")
 qt_add_resources(nekopic qml_resources PREFIX "/" FILES ${NEKOPIC_QML} ${NEKOPIC_QMLJS} ${NEKOPIC_QMLDIR})
 
+# Window icon for X11/AppImage; Wayland also uses the installed desktop entry.
+set(NEKOPIC_ICON_PNG "${CMAKE_CURRENT_SOURCE_DIR}/../packaging/icons/hicolor/256x256/apps/nekopic.png")
+set_source_files_properties("${NEKOPIC_ICON_PNG}" PROPERTIES QT_RESOURCE_ALIAS "nekopic.png")
+qt_add_resources(nekopic app_icon PREFIX "/icons" FILES "${NEKOPIC_ICON_PNG}")
+
 # --- shaders (compiled to .qsb for ShaderEffect) -------------------------
 file(GLOB_RECURSE NEKOPIC_SHADERS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "shaders/*.frag")
 if(NEKOPIC_SHADERS)

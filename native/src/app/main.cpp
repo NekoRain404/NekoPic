@@ -8,6 +8,7 @@
 #include "render/rendercapabilities.h"
 
 #include <QGuiApplication>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickImageProvider>
@@ -44,6 +45,7 @@ private:
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/nekopic.png")));
     QCoreApplication::setOrganizationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationVersion(QStringLiteral(NEKOPIC_VERSION));
