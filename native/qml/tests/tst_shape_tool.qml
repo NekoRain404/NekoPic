@@ -86,6 +86,12 @@ TestCase {
         overlay.active = true
         overlay.forceActiveFocus()
 
+        panelLoader.width = 292
+        panelLoader.height = 640
+        const scroller = findChild(panel, "shape-scroll")
+        if (scroller !== null)
+            scroller.contentY = 0
+
         commits.clear()
         cancels.clear()
         canvasPan.presses = 0
@@ -114,6 +120,28 @@ TestCase {
     }
 
     // ── Coordinate mapping ──────────────────────────────────────────────────
+
+    function test_panelScrollsCleanlyAtCompactHeight() {
+        panelLoader.height = 320
+        waitForRendering(panel)
+        const scroller = findChild(panel, "shape-scroll")
+        verify(scroller !== null)
+        verify(scroller.contentHeight > scroller.height,
+               "shape panel should scroll at compact height")
+        compare(scroller.contentWidth, scroller.width)
+
+        const stroke = findChild(panel, "shape-stroke-width")
+        const reset = findChild(panel, "shape-stroke-width-value")
+        verify(stroke.width <= scroller.width)
+        verify(reset.width <= scroller.width)
+
+        scroller.contentY = Math.max(0, scroller.contentHeight - scroller.height)
+        waitForRendering(panel)
+        const lineButton = findChild(panel, "shape-type-line")
+        lineButton.forceActiveFocus()
+        keyClick(Qt.Key_Space)
+        compare(panel.shapeKind, "line")
+    }
 
     function test_focusRingOnlyForKeyboardFocus() {
         overlay.active = true

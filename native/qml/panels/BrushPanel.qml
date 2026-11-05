@@ -128,10 +128,24 @@ Item {
         color: root.theme.panel
     }
 
-    ColumnLayout {
-        id: content
+    Flickable {
+        id: scroller
+        objectName: "brush-scroll"
         anchors.fill: parent
         anchors.margins: Theme.spacing2xl
+        contentWidth: width
+        contentHeight: content.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: NekoScrollBar {
+            objectName: "brush-scrollbar"
+            policy: ScrollBar.AsNeeded
+            accessibleName: qsTr("Brush settings scroll")
+        }
+
+    ColumnLayout {
+        id: content
+        width: scroller.width
         spacing: Theme.spacingLg
 
         Text {
@@ -303,5 +317,6 @@ Item {
         }
 
         Item { Layout.fillHeight: true }
+    }
     }
 }
