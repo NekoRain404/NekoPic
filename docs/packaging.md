@@ -161,9 +161,14 @@ sha256sum -c SHA256SUMS
 本机实测产物（2026-11-05）：
 
 ```text
-artifacts/appimage/NekoPic-0.1.0-x86_64.AppImage   66 MB
-sha256  c798ffadefb8a216d6816e0a4503c94632eaa32518ce009ddc61fb8bf980ae28
+artifacts/appimage/NekoPic-0.1.0-x86_64.AppImage   76 MB
+sha256  9860eef8f6678699c2c239f5b5a9f45dcd6c74b17e11e0c220a91dae93c074f2
 ```
+
+AppImage 的 `AppRun` 默认在存在 `DISPLAY` 时使用 xcb（XWayland），以避免部分
+Qt 6.12 Wayland 客户端在 bundled 依赖下不提交首帧；需要原生 Wayland 时设置
+`NEKOPIC_APPIMAGE_PLATFORM=wayland`。包内仍包含 wayland/xcb/offscreen 平台插件和
+QML 模块。
 AppImage 的
 `AppRun` 模板位于 `packaging/appimage/AppRun`，负责设置 `LD_LIBRARY_PATH`、
 `QT_PLUGIN_PATH`、`QML2_IMPORT_PATH` 等路径。

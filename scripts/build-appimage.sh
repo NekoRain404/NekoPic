@@ -216,6 +216,16 @@ linuxdeploy --appdir "${appdir}" \
     --icon-file "${appdir}/nekopic.png" \
     --plugin qt
 
+# The Qt plugin does not always copy the Wayland graphics integration
+# plugins (EGL/shm), but the Wayland platform plugin needs them to map a
+# window. Copy the host plugin directory when present.
+qt_plugins="$("$QMAKE" -query QT_INSTALL_PLUGINS 2>/dev/null || true)"
+if [ -n "$qt_plugins" ] && [ -d "$qt_plugins/wayland-graphics-integration-client" ]; then
+    mkdir -p "$appdir/usr/plugins/wayland-graphics-integration-client"
+    cp -a "$qt_plugins/wayland-graphics-integration-client/." \
+        "$appdir/usr/plugins/wayland-graphics-integration-client/"
+fi
+
 # Use our AppRun template even if linuxdeploy generated its own.
 install -m755 "${repo_root}/packaging/appimage/AppRun" "${appdir}/AppRun"
 

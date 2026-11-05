@@ -25,4 +25,13 @@ export QML2_IMPORT_PATH="$APPDIR/usr/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
 export QML_IMPORT_PATH="$QML2_IMPORT_PATH"
 export XDG_DATA_DIRS="$APPDIR/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 
+# Some Qt 6.12 Wayland deployments fail to attach the first buffer when the
+# client libraries are bundled by linuxdeploy. XWayland is present on virtually
+# every Wayland desktop, so use xcb by default for the portable AppImage; set
+# NEKOPIC_APPIMAGE_PLATFORM=wayland to force the native backend.
+if [ -z "${QT_QPA_PLATFORM:-}" ] && [ -n "${DISPLAY:-}" ] \
+        && [ "${NEKOPIC_APPIMAGE_PLATFORM:-xcb}" = "xcb" ]; then
+    export QT_QPA_PLATFORM=xcb
+fi
+
 exec "$APPDIR/usr/bin/nekopic" "$@"
