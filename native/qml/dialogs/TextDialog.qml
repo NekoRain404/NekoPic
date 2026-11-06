@@ -451,7 +451,7 @@ NekoDialog {
                 font.pixelSize: Theme.fontSmall
             }
 
-            ComboBox {
+            NekoComboBox {
                 id: fontFamilyBox
                 objectName: "text-dialog-font-family"
                 Layout.fillWidth: true
@@ -459,40 +459,11 @@ NekoDialog {
                 model: root.fontFamilyModel
                 currentIndex: root.fontFamilyIndex
                 enabled: !root.busy
-                font.pixelSize: Theme.fontSmall
-                Accessible.role: Accessible.ComboBox
-                Accessible.name: qsTr("Font family")
-                Accessible.description: qsTr("Typeface used to render the text")
+                accessibleName: qsTr("Font family")
+                accessibleDescription: qsTr("Typeface used to render the text")
 
                 onActivated: function(index) {
                     root.fontFamily = root.fontFamilyAt(index)
-                }
-
-                background: Rectangle {
-                    radius: Theme.radiusSm
-                    color: Theme.background
-                    border.width: fontFamilyBox.activeFocus ? Theme.focusRingWidth
-                                                           : Theme.borderWidth
-                    border.color: fontFamilyBox.activeFocus ? Theme.accent : Theme.border
-                }
-
-                contentItem: Text {
-                    leftPadding: Theme.spacingSm
-                    rightPadding: Theme.spacingSm
-                    text: fontFamilyBox.displayText
-                    color: fontFamilyBox.enabled ? Theme.textPrimary : Theme.textTertiary
-                    font.pixelSize: Theme.fontSmall
-                    verticalAlignment: Text.AlignVCenter
-                    elide: Text.ElideRight
-                }
-
-                indicator: NekoIcon {
-                    x: fontFamilyBox.width - width - Theme.spacingSm
-                    y: (fontFamilyBox.height - height) / 2
-                    width: Theme.iconSizeSm
-                    height: Theme.iconSizeSm
-                    name: "chevronDown"
-                    color: fontFamilyBox.enabled ? Theme.textSecondary : Theme.textTertiary
                 }
             }
 

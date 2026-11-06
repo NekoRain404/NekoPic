@@ -594,6 +594,7 @@ ApplicationWindow {
         followSystemTheme: window.followSystemTheme
         darkTheme: window.darkTheme
         reduceMotion: window.reduceMotion
+        hasImage: editor.hasImage
         recentEntries: typeof recentFiles !== "undefined" ? recentFiles.entries : []
         busy: editor.busy
         availableLocales: typeof language !== "undefined" ? language.availableLocales : []
@@ -606,6 +607,12 @@ ApplicationWindow {
         }
         onRecentRequested: function(url) { window.requestOpen(url) }
         onClearRecentRequested: if (typeof recentFiles !== "undefined") recentFiles.clear()
+        onToolRequested: function(tool) { window.activeTool = tool }
+        onAutoEnhanceRequested: {
+            editor.autoEnhance()
+            window.showStatus(qsTr("Auto enhance"))
+        }
+        onAboutRequested: dialogs.openAboutDialog()
     }
 
     DropTarget {

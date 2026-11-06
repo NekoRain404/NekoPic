@@ -2508,6 +2508,10 @@
         <source>Local editing</source>
         <translation>本地编辑</translation>
     </message>
+    <message>
+        <source>Theme</source>
+        <translation>主题</translation>
+    </message>
 </context>
 <context>
     <name>MosaicPanel</name>

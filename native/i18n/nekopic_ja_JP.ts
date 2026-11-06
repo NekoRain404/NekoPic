@@ -2508,6 +2508,10 @@
         <source>Local editing</source>
         <translation>ローカル編集</translation>
     </message>
+    <message>
+        <source>Theme</source>
+        <translation>テーマ</translation>
+    </message>
 </context>
 <context>
     <name>MosaicPanel</name>
