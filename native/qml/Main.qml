@@ -31,6 +31,8 @@ ApplicationWindow {
     property url pendingExportUrl
     property url lastFolder: ""
     property string activeTool: "adjust"
+    // Launch/screenshot hook: which settings category to open.
+    property string settingsCategory: ""
     // Every tool keeps the same right-hand function area so switching tools
     // never reflows the canvas.
     readonly property int toolPanelWidth: window.width < 1100 ? 260 : 292
@@ -236,18 +238,31 @@ ApplicationWindow {
             if (compareHeld) { endCompareHold(); event.accepted = true }
         }
     }
+    /*!
+        Effective portable shortcut for a settings action key. The helper reads
+        settings.shortcuts directly so every calling Action binding refreshes
+        when shortcutsChanged() is emitted.
+    */
+    function shortcutFor(key, fallback) {
+        if (typeof settings === "undefined" || settings === null)
+            return fallback
+        const overrides = settings.shortcuts
+        const value = overrides ? overrides[key] : undefined
+        return value !== undefined && String(value).length > 0 ? value : fallback
+    }
+    function applyThemeMode(mode) {
+        const variants = ["midnight", "warm", "graphite", "contrast",
+                          "nordic", "sakura", "forest", "solarized"]
+        const lightVariants = ["light", "warm", "nordic", "sakura"]
+        window.themeVariant = variants.indexOf(mode) >= 0 ? mode : ""
+        window.followSystemTheme = mode === "system"
+        window.darkTheme = mode === "system" ? window.systemDark
+                                             : lightVariants.indexOf(mode) < 0
+    }
     function applySettings() {
         if (typeof settings === "undefined") return
         const mode = settings.themeMode
-        const variants = ["midnight", "warm", "graphite", "contrast"]
-        window.themeVariant = variants.indexOf(mode) >= 0 ? mode : ""
-        window.followSystemTheme = mode === "system"
-        if (mode === "system")
-            window.darkTheme = window.systemDark
-        else if (window.themeVariant.length > 0)
-            window.darkTheme = mode !== "warm"
-        else
-            window.darkTheme = mode === "dark"
+        applyThemeMode(mode)
         window.reduceMotion = settings.reduceMotion
         editor.exportQuality = settings.exportQuality
         editor.jpegBackground = settings.jpegBackground
@@ -274,7 +289,7 @@ ApplicationWindow {
         dialogs.showRecovery()
     }
     function openSettings() {
-        dialogs.openSettings()
+        dialogs.openSettings(window.settingsCategory)
     }
     Component.onCompleted: {
         applySettings()
@@ -386,6 +401,12 @@ ApplicationWindow {
     Binding { target: Theme; property: "dark"; value: window.followSystemTheme ? window.systemDark : window.darkTheme }
     Binding { target: Theme; property: "themeId"; value: window.themeVariant }
     Binding { target: Theme; property: "reduceMotion"; value: window.reduceMotion }
+    Binding {
+        target: Theme
+        property: "fontScale"
+        value: typeof settings !== "undefined" && settings !== null
+               ? settings.uiFontScale / 100 : 1.0
+    }
     color: theme.background
     palette.window: theme.panel
     palette.windowText: theme.text
@@ -410,14 +431,14 @@ ApplicationWindow {
         readonly property color accentInk: Theme.accentInk
     }
 
-    Action { id: openAction; text: qsTr("Open image…"); shortcut: StandardKey.Open; enabled: !editor.busy; onTriggered: dialogs.openOpenDialog() }
-    Action { id: saveAction; text: qsTr("Save"); shortcut: StandardKey.Save; enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
-    Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: StandardKey.SaveAs; enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openSaveDialog() }
-    Action { id: settingsAction; text: qsTr("Preferences…"); shortcut: "Ctrl+,"; onTriggered: window.openSettings() }
-    Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: "Ctrl+K"; onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
-    Action { id: copyAction; text: qsTr("Copy image"); shortcut: "Ctrl+Shift+C"; enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
-    Action { id: undoAction; text: qsTr("Undo"); shortcut: StandardKey.Undo; enabled: editor.canUndo && !editor.busy; onTriggered: { editor.undo(); window.showStatus(qsTr("Undone")) } }
-    Action { id: redoAction; text: qsTr("Redo"); shortcut: StandardKey.Redo; enabled: editor.canRedo && !editor.busy; onTriggered: { editor.redo(); window.showStatus(qsTr("Redone")) } }
+    Action { id: openAction; text: qsTr("Open image…"); shortcut: window.shortcutFor("open", "Ctrl+O"); enabled: !editor.busy; onTriggered: dialogs.openOpenDialog() }
+    Action { id: saveAction; text: qsTr("Save"); shortcut: window.shortcutFor("save", "Ctrl+S"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.saveImage() }
+    Action { id: saveAsAction; text: qsTr("Save as…"); shortcut: window.shortcutFor("saveAs", "Ctrl+Shift+S"); enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openSaveDialog() }
+    Action { id: settingsAction; text: qsTr("Preferences…"); shortcut: window.shortcutFor("settings", "Ctrl+,"); onTriggered: window.openSettings() }
+    Action { id: commandPaletteAction; text: qsTr("Command palette…"); shortcut: window.shortcutFor("commandPalette", "Ctrl+K"); onTriggered: commandPalette.opened ? commandPalette.close() : commandPalette.open() }
+    Action { id: copyAction; text: qsTr("Copy image"); shortcut: window.shortcutFor("copy", "Ctrl+Shift+C"); enabled: editor.hasImage && !editor.busy; onTriggered: { editor.copyImageToClipboard(); window.showStatus(qsTr("Copied to clipboard")) } }
+    Action { id: undoAction; text: qsTr("Undo"); shortcut: window.shortcutFor("undo", "Ctrl+Z"); enabled: editor.canUndo && !editor.busy; onTriggered: { editor.undo(); window.showStatus(qsTr("Undone")) } }
+    Action { id: redoAction; text: qsTr("Redo"); shortcut: window.shortcutFor("redo", "Ctrl+Shift+Z"); enabled: editor.canRedo && !editor.busy; onTriggered: { editor.redo(); window.showStatus(qsTr("Redone")) } }
     Action { id: rotateRightAction; text: qsTr("Rotate clockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateClockwise() }
     Action { id: rotateLeftAction; text: qsTr("Rotate counterclockwise"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.rotateCounterClockwise() }
     Action { id: flipHorizontalAction; text: qsTr("Flip horizontally"); enabled: editor.hasImage && !editor.busy; onTriggered: editor.flipHorizontal() }
@@ -425,17 +446,17 @@ ApplicationWindow {
     Action { id: resizeImageAction; text: qsTr("Resize image…"); enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openResizeDialog() }
     Action { id: canvasSizeAction; text: qsTr("Canvas size…"); enabled: editor.hasImage && !editor.busy; onTriggered: dialogs.openCanvasSizeDialog() }
     Action { id: shortcutsAction; text: qsTr("Keyboard shortcuts"); shortcut: "F1"; onTriggered: dialogs.openShortcutsDialog() }
-    Action { id: brushAction; text: qsTr("Brush"); shortcut: "B"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "brush" }
-    Action { id: shapeAction; text: qsTr("Shapes"); shortcut: "U"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "shapes" }
-    Action { id: panAction; text: qsTr("Pan"); shortcut: "H"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "pan" }
-    Action { id: selectAction; text: qsTr("Select"); shortcut: "V"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "select" }
-    Action { id: textAction; text: qsTr("Add text"); shortcut: "T"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
-    Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: "I"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "eye" }
-    Action { id: cropAction; text: qsTr("Crop"); shortcut: "C"; enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "crop" }
-    Action { id: zoomInAction; text: qsTr("Zoom in"); shortcut: "Ctrl+="; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1.2) }
-    Action { id: zoomOutAction; text: qsTr("Zoom out"); shortcut: "Ctrl+-"; enabled: editor.hasImage; onTriggered: canvas.changeZoom(1 / 1.2) }
-    Action { id: fitAction; text: qsTr("Fit to window"); shortcut: "Ctrl+0"; enabled: editor.hasImage; onTriggered: canvas.fitImage() }
-    Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: "Ctrl+1"; enabled: editor.hasImage; onTriggered: canvas.actualSize() }
+    Action { id: brushAction; text: qsTr("Brush"); shortcut: window.shortcutFor("brush", "B"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "brush" }
+    Action { id: shapeAction; text: qsTr("Shapes"); shortcut: window.shortcutFor("shape", "U"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "shapes" }
+    Action { id: panAction; text: qsTr("Pan"); shortcut: window.shortcutFor("pan", "H"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "pan" }
+    Action { id: selectAction; text: qsTr("Select"); shortcut: window.shortcutFor("select", "V"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "select" }
+    Action { id: textAction; text: qsTr("Add text"); shortcut: window.shortcutFor("text", "T"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "text" }
+    Action { id: eyedropperAction; text: qsTr("Eyedropper"); shortcut: window.shortcutFor("eyedropper", "I"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "eye" }
+    Action { id: cropAction; text: qsTr("Crop"); shortcut: window.shortcutFor("crop", "C"); enabled: editor.hasImage && !editor.busy && !window.blockingModal; onTriggered: window.activeTool = "crop" }
+    Action { id: zoomInAction; text: qsTr("Zoom in"); shortcut: window.shortcutFor("zoomIn", "Ctrl+="); enabled: editor.hasImage; onTriggered: canvas.changeZoom(1.2) }
+    Action { id: zoomOutAction; text: qsTr("Zoom out"); shortcut: window.shortcutFor("zoomOut", "Ctrl+-"); enabled: editor.hasImage; onTriggered: canvas.changeZoom(1 / 1.2) }
+    Action { id: fitAction; text: qsTr("Fit to window"); shortcut: window.shortcutFor("fit", "Ctrl+0"); enabled: editor.hasImage; onTriggered: canvas.fitImage() }
+    Action { id: actualAction; text: qsTr("Actual size (100%)"); shortcut: window.shortcutFor("actual", "Ctrl+1"); enabled: editor.hasImage; onTriggered: canvas.actualSize() }
     /*! Shared action catalogue for the menu bar, toolbar and command palette. */
     readonly property var actionMap: ({
         open: openAction, save: saveAction, saveAs: saveAsAction,
@@ -491,15 +512,7 @@ ApplicationWindow {
             editor.saveAs(window.exportDestinationUrl(), format)
         }
         onThemeModeChanged: function(value) {
-            const variants = ["midnight", "warm", "graphite", "contrast"]
-            window.themeVariant = variants.indexOf(value) >= 0 ? value : ""
-            window.followSystemTheme = value === "system"
-            if (value === "system")
-                window.darkTheme = window.systemDark
-            else if (window.themeVariant.length > 0)
-                window.darkTheme = value !== "warm"
-            else
-                window.darkTheme = value === "dark"
+            window.applyThemeMode(value)
         }
         onReduceMotionRequested: window.reduceMotion = value
         onStartupToolChanged: window.startupTool = value
@@ -829,7 +842,8 @@ ApplicationWindow {
                 title: window.toolLabel(window.activeTool)
                 hint: window.activeToolHint
                 iconName: window.activeTool
-                shortcut: window.activeTool === "pan" ? "H" : "I"
+                shortcut: window.activeTool === "pan" ? window.shortcutFor("pan", "H")
+                                                       : window.shortcutFor("eyedropper", "I")
                 shortcutLabel: qsTr("Keyboard shortcuts")
             }
         }

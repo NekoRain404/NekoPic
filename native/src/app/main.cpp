@@ -7,6 +7,8 @@
 #include "settingsmanager.h"
 #include "render/rendercapabilities.h"
 
+#include <QFont>
+#include <QFontDatabase>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QQmlApplicationEngine>
@@ -19,6 +21,39 @@
 #include <QVariantMap>
 
 #include <memory>
+
+namespace {
+
+/*!
+    Reads the persisted whole-interface scale before the platform plugin is
+    created. QT_SCALE_FACTOR has to be in the environment at that point; it is
+    deliberately not applied live because re-scaling a running QQuickWindow
+    would move every cached layout and shader geometry.
+*/
+void applyStartupScaleFactor()
+{
+    const QSettings launchSettings(QStringLiteral("NekoPic"), QStringLiteral("NekoPic"));
+    const int percent = launchSettings.value(QStringLiteral("ui/scale"), 100).toInt();
+    if (percent < 80 || percent > 150 || percent == 100)
+        return;
+    const QString factor = QString::number(percent / 100.0, 'g', 4);
+    qputenv("QT_SCALE_FACTOR", factor.toUtf8());
+}
+
+bool uiFontFamilyInstalled(const QString &family)
+{
+    if (family.isEmpty())
+        return false;
+    const auto families = QFontDatabase::families();
+    for (const auto &installed : families) {
+        if (installed.compare(family, Qt::CaseInsensitive) == 0)
+            return true;
+    }
+    return false;
+}
+
+} // namespace
+
 
 class DocumentImageProvider final : public QQuickImageProvider {
 public:
@@ -44,11 +79,15 @@ private:
 
 int main(int argc, char *argv[])
 {
-    QGuiApplication app(argc, argv);
-    app.setWindowIcon(QIcon(QStringLiteral(":/icons/nekopic.png")));
+    // Explicit org/app names are required before QSettings is read for the
+    // startup scale factor, which itself must precede QGuiApplication.
     QCoreApplication::setOrganizationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationName(QStringLiteral("NekoPic"));
     QCoreApplication::setApplicationVersion(QStringLiteral(NEKOPIC_VERSION));
+    applyStartupScaleFactor();
+
+    QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/nekopic.png")));
     // Keep the Wayland app_id / X11 WM_CLASS tied to the installed desktop
     // entry so the launcher icon, StartupWMClass and task grouping match.
     QGuiApplication::setDesktopFileName(QStringLiteral("nekopic"));
@@ -63,6 +102,11 @@ int main(int argc, char *argv[])
             << "Usage: nekopic [image] [--language <locale>] [--screenshot <file>]\n"
                "  image               open an image on start\n"
                "  --language <locale> start in en, zh_CN, ja_JP or de_DE\n"
+               "  --settings          open the settings page on start\n"
+               "  --settings-page <id> open settings at appearance, editing, export,\n"
+               "                       language, recovery, shortcuts or about\n"
+               "  --theme <mode>      visual QA override; e.g. dark, light, nordic\n"
+               "  --reduce-motion     disable animations for screenshots\n"
                "  --screenshot <file> render the window to a PNG and exit\n"
                "  --version           print the version\n"
                "  --help              show this help\n";
@@ -74,6 +118,20 @@ int main(int argc, char *argv[])
     NekoPic::Render::RenderCapabilities renderCapabilities;
     NekoPic::Platform::RecentFiles recentFiles;
     SettingsManager settings;
+    // System default is captured once and restored when the override is
+    // cleared, so switching back to "System default" does not drift.
+    const QFont systemUiFont = QGuiApplication::font();
+    const auto applyUiFont = [&settings, systemUiFont]() {
+        const QString family = settings.uiFontFamily();
+        if (family.isEmpty() || !uiFontFamilyInstalled(family)) {
+            QGuiApplication::setFont(systemUiFont);
+            return;
+        }
+        QGuiApplication::setFont(QFont(family, systemUiFont.pointSize()));
+    };
+    applyUiFont();
+    QObject::connect(&settings, &SettingsManager::uiFontFamilyChanged,
+                     &app, applyUiFont);
     QQmlApplicationEngine engine;
     LanguageManager language(engine);
     engine.rootContext()->setContextProperty(QStringLiteral("editor"), &editor);
@@ -105,6 +163,9 @@ int main(int argc, char *argv[])
     QString screenshotPath;
     QString startTool;
     QString languageOverride;
+    QString settingsCategory;
+    QString themeOverride;
+    bool reduceMotionOverride = false;
     bool openSettingsOnStart = false;
     for (int index = 1; index < arguments.size(); ++index) {
         const auto argument = arguments.at(index);
@@ -116,12 +177,25 @@ int main(int argc, char *argv[])
             languageOverride = arguments.at(++index);
             continue;
         }
+        if (argument == QLatin1String("--theme") && index + 1 < arguments.size()) {
+            themeOverride = arguments.at(++index);
+            continue;
+        }
+        if (argument == QLatin1String("--reduce-motion")) {
+            reduceMotionOverride = true;
+            continue;
+        }
         if (argument == QLatin1String("--tool") && index + 1 < arguments.size()) {
             startTool = arguments.at(++index);
             continue;
         }
         if (argument == QLatin1String("--settings")) {
             openSettingsOnStart = true;
+            continue;
+        }
+        if (argument == QLatin1String("--settings-page") && index + 1 < arguments.size()) {
+            openSettingsOnStart = true;
+            settingsCategory = arguments.at(++index);
             continue;
         }
         if (argument.startsWith(QLatin1String("--"))) continue;
@@ -133,6 +207,13 @@ int main(int argc, char *argv[])
         window->setProperty("startupTool", startTool);
         window->setProperty("activeTool", startTool);
     }
+    if (!settingsCategory.isEmpty() && window)
+        window->setProperty("settingsCategory", settingsCategory);
+    if (!themeOverride.isEmpty() && window)
+        QMetaObject::invokeMethod(window, "applyThemeMode",
+                                  Q_ARG(QVariant, QVariant(themeOverride)));
+    if (reduceMotionOverride && window)
+        window->setProperty("reduceMotion", true);
     if (!languageOverride.isEmpty()) {
         // Launch-time override for screenshot/i18n QA: switch for this run but
         // keep the user's persisted language choice untouched.
@@ -154,7 +235,11 @@ int main(int argc, char *argv[])
             auto *poll = new QTimer(&app);
             auto attempts = std::make_shared<int>(0);
             QObject::connect(poll, &QTimer::timeout, &app, [&, window, poll, attempts, screenshotPath] {
-                if (editor.busy() && ++(*attempts) < 40) return;
+                // Wait for the first frame(s) so modal surfaces finish their
+                // open transition and centres before the grab.
+                ++(*attempts);
+                if (*attempts < 5) return;
+                if (editor.busy() && *attempts < 80) return;
                 poll->stop();
                 window->grabWindow().save(screenshotPath);
                 QCoreApplication::quit();

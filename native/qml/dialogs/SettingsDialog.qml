@@ -40,6 +40,18 @@ NekoDialog {
     property alias showCheckerboard: editingPage.showCheckerboard
     property alias recoveryEnabled: recoveryPage.recoveryEnabled
     property string startupTool: "adjust"
+    /*! Empty selects the system UI font. */
+    property string uiFontFamily: ""
+    /*! UI text scale in percent (80–140). */
+    property int uiFontScale: 100
+    /*! Whole-interface scale in percent (80–150); applies on next launch. */
+    property int uiScale: 100
+    /*! Scale active at launch, used for the "restart to apply" note. */
+    property int appliedUiScale: 100
+    /*! Action key → portable sequence overrides supplied by SettingsManager. */
+    property var shortcuts: ({})
+    /*! SettingsManager instance used by the shortcut capture control. */
+    property var shortcutService: null
 
     // Kept in sync with LanguageManager::kLocales. Main.qml binds this to
     // language.availableLocales so the manager stays the single source of
@@ -66,6 +78,7 @@ NekoDialog {
     readonly property var categories: [
         { id: "appearance", label: qsTr("Appearance") },
         { id: "editing", label: qsTr("Editing") },
+        { id: "shortcuts", label: qsTr("Shortcuts") },
         { id: "export", label: qsTr("Export") },
         { id: "language", label: qsTr("Language") },
         { id: "recovery", label: qsTr("Recovery & Safety") },
@@ -89,13 +102,19 @@ NekoDialog {
     signal settingChanged(string key, var value)
     /*! Emitted in addition to settingChanged("locale", id). */
     signal localeSelected(string id)
+    /*! A shortcut override was requested; the integrator persists it. */
+    signal shortcutChangeRequested(string key, string sequence)
+    /*! The user asked to reset one action to its built-in shortcut. */
+    signal shortcutResetRequested(string key)
+    /*! The user asked to restore every built-in shortcut. */
+    signal shortcutsResetRequested()
     /*! The integrator shows the keyboard-shortcuts reference. */
     signal shortcutsRequested()
     /*! The integrator discards the existing crash-recovery snapshot. */
     signal recoveryDiscardRequested()
 
     // ── Internal state ─────────────────────────────────────────────────────
-    readonly property var _themeModes: ["system", "light", "dark", "midnight", "warm", "graphite", "contrast"]
+    readonly property var _themeModes: ["system", "light", "dark", "midnight", "warm", "graphite", "contrast", "nordic", "sakura", "forest", "solarized"]
     readonly property var _startupToolIds: [
         "adjust", "filters", "select", "pan", "brush",
         "text", "shapes", "mosaic", "eye", "crop"
@@ -206,6 +225,36 @@ NekoDialog {
         root.settingChanged("startupTool", id)
     }
 
+    function _setUiFontFamily(family) {
+        if (root.busy)
+            return
+        const value = family !== undefined && family !== null ? String(family) : ""
+        if (root.uiFontFamily === value)
+            return
+        root.uiFontFamily = value
+        root.settingChanged("uiFontFamily", value)
+    }
+
+    function _setUiFontScale(value) {
+        if (root.busy)
+            return
+        const clamped = Math.max(80, Math.min(140, Math.round(value)))
+        if (root.uiFontScale === clamped)
+            return
+        root.uiFontScale = clamped
+        root.settingChanged("uiFontScale", clamped)
+    }
+
+    function _setUiScale(value) {
+        if (root.busy)
+            return
+        const clamped = Math.max(80, Math.min(150, Math.round(value)))
+        if (root.uiScale === clamped)
+            return
+        root.uiScale = clamped
+        root.settingChanged("uiScale", clamped)
+    }
+
     function _activateCategory(id) {
         if (!root._hasCategory(id) || root.currentCategory === id)
             return
@@ -234,6 +283,9 @@ NekoDialog {
         root.recoveryEnabled = true
         root.startupTool = "adjust"
         root.localeId = "zh_CN"
+        root.uiFontFamily = ""
+        root.uiFontScale = 100
+        root.uiScale = 100
 
         root.settingChanged("themeMode", "dark")
         root.settingChanged("reduceMotion", false)
@@ -244,6 +296,10 @@ NekoDialog {
         root.settingChanged("showCheckerboard", true)
         root.settingChanged("recoveryEnabled", true)
         root.settingChanged("startupTool", "adjust")
+        root.settingChanged("uiFontFamily", "")
+        root.settingChanged("uiFontScale", 100)
+        root.settingChanged("uiScale", 100)
+        root.shortcutsResetRequested()
         root.localeSelected("zh_CN")
         root.settingChanged("locale", "zh_CN")
     }
@@ -283,6 +339,18 @@ NekoDialog {
     onStartupToolChanged: {
         if (!root._hasStartupTool(root.startupTool))
             root.startupTool = "adjust"
+    }
+
+    onUiFontScaleChanged: {
+        const clamped = Math.max(80, Math.min(140, Math.round(root.uiFontScale)))
+        if (root.uiFontScale !== clamped)
+            root.uiFontScale = clamped
+    }
+
+    onUiScaleChanged: {
+        const clamped = Math.max(80, Math.min(150, Math.round(root.uiScale)))
+        if (root.uiScale !== clamped)
+            root.uiScale = clamped
     }
 
     onCurrentCategoryChanged: {
@@ -450,6 +518,10 @@ NekoDialog {
                     localeId: root.localeId
                     busy: root.busy
                     themeMode: root.themeMode
+                    uiFontFamily: root.uiFontFamily
+                    uiFontScale: root.uiFontScale
+                    uiScale: root.uiScale
+                    appliedUiScale: root.appliedUiScale
 
                     onThemeSelected: function(mode) {
                         if (root.busy || root.themeMode === mode)
@@ -459,6 +531,15 @@ NekoDialog {
                     }
                     onReduceMotionToggled: function(checked) {
                         root._commit("reduceMotion", checked)
+                    }
+                    onUiFontFamilySelected: function(family) {
+                        root._setUiFontFamily(family)
+                    }
+                    onUiFontScaleSelected: function(percent) {
+                        root._setUiFontScale(percent)
+                    }
+                    onUiScaleSelected: function(percent) {
+                        root._setUiScale(percent)
                     }
                 }
 
@@ -479,6 +560,22 @@ NekoDialog {
                     onStartupToolSelected: function(id) {
                         root._selectStartupTool(id)
                     }
+                }
+
+                ShortcutsPage {
+                    id: shortcutsPage
+                    visible: root.currentCategory === "shortcuts"
+                    busy: root.busy
+                    shortcuts: root.shortcuts
+                    shortcutService: root.shortcutService
+
+                    onShortcutChangeRequested: function(key, sequence) {
+                        root.shortcutChangeRequested(key, sequence)
+                    }
+                    onShortcutResetRequested: function(key) {
+                        root.shortcutResetRequested(key)
+                    }
+                    onShortcutsResetRequested: root.shortcutsResetRequested()
                 }
 
                 ExportPage {

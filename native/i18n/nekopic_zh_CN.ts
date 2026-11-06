@@ -5,7 +5,7 @@
     <name>AboutPage</name>
     <message>
         <location filename="../qml/settings/AboutPage.qml" line="25"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="155"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="163"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
@@ -21,7 +21,7 @@
     </message>
     <message>
         <location filename="../qml/settings/AboutPage.qml" line="82"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="540"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="675"/>
         <source>Reads %1 formats · writes %2 formats</source>
         <translation>可读取 %1 种格式 · 可写入 %2 种格式</translation>
     </message>
@@ -52,69 +52,131 @@
 <context>
     <name>AppearancePage</name>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="51"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="150"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="433"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="441"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="75"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="156"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="568"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="576"/>
         <source>Appearance</source>
         <translation>外观</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="62"/>
-        <location filename="../qml/settings/AppearancePage.qml" line="81"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="86"/>
         <source>Theme</source>
         <translation>主题</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="69"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="93"/>
         <source>Follow the system, or pick light, dark and four curated palettes.</source>
         <translation>跟随系统，或选择浅色、深色与四套精选调色板。</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="83"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>System</source>
         <translation>系统</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="84"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="85"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="86"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Midnight</source>
         <translation>午夜</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="87"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Warm paper</source>
         <translation>暖纸</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="88"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Graphite</source>
         <translation>石墨</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="89"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Contrast</source>
         <translation>对比度</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="104"/>
-        <location filename="../qml/settings/AppearancePage.qml" line="112"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Nordic</source>
+        <translation>北欧</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Sakura</source>
+        <translation>樱花</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Forest</source>
+        <translation>森林</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Solarized</source>
+        <translation>日光</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="139"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="147"/>
         <source>Reduce motion</source>
         <translation>减少动效</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="105"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="140"/>
         <source>Turn off interface animations and transitions.</source>
         <translation>关闭界面动画和过渡效果。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="155"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="157"/>
+        <source>Typography &amp; interface</source>
+        <translation>字体与界面</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="161"/>
+        <source>UI font family</source>
+        <translation>界面字体</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="162"/>
+        <source>Use an installed family for interface text; System default follows the desktop.</source>
+        <translation>选择已安装的界面字体；“系统默认”跟随桌面设置。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="173"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="190"/>
+        <source>UI text size</source>
+        <translation>界面文字大小</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="174"/>
+        <source>Scales labels, controls and dialogue text without changing the window layout.</source>
+        <translation>缩放标签、控件和对话框文字，不改变窗口布局。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="207"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="224"/>
+        <source>Interface scale</source>
+        <translation>界面缩放</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="208"/>
+        <source>Scales the whole window on the next launch; requires restarting NekoPic.</source>
+        <translation>下次启动时缩放整个窗口；需要重启 NekoPic。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="244"/>
+        <source>Restart NekoPic to apply the interface scale.</source>
+        <translation>重启 NekoPic 以应用界面缩放。</translation>
     </message>
 </context>
 <context>
@@ -742,7 +804,7 @@
     <name>EditingPage</name>
     <message>
         <location filename="../qml/settings/EditingPage.qml" line="34"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="151"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="158"/>
         <source>Editing</source>
         <translation>编辑</translation>
     </message>
@@ -793,13 +855,13 @@
     </message>
     <message>
         <location filename="../qml/EditorCanvas.qml" line="180"/>
-        <location filename="../qml/Main.qml" line="166"/>
+        <location filename="../qml/Main.qml" line="164"/>
         <source>WORKSPACE</source>
         <translation>工作区</translation>
     </message>
     <message>
         <location filename="../qml/EditorCanvas.qml" line="180"/>
-        <location filename="../qml/Main.qml" line="159"/>
+        <location filename="../qml/Main.qml" line="157"/>
         <source>ORIGINAL</source>
         <translation>原图</translation>
     </message>
@@ -973,7 +1035,7 @@
     <name>ExportPage</name>
     <message>
         <location filename="../qml/settings/ExportPage.qml" line="47"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="152"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="160"/>
         <source>Export</source>
         <translation>导出</translation>
     </message>
@@ -990,8 +1052,8 @@
     </message>
     <message>
         <location filename="../qml/settings/ExportPage.qml" line="79"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="343"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="356"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="478"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="491"/>
         <source>Codec default</source>
         <translation>编码器默认</translation>
     </message>
@@ -1029,6 +1091,54 @@
         <location filename="../qml/settings/ExportPage.qml" line="174"/>
         <source>Warm grey background</source>
         <translation>暖灰色背景</translation>
+    </message>
+</context>
+<context>
+    <name>EyedropperPanel</name>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="23"/>
+        <source>Move the pointer over the image to sample a colour.</source>
+        <translation>将指针移到图像上以取色。</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="98"/>
+        <source>Colour information</source>
+        <translation>颜色信息</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="126"/>
+        <source>No sample yet</source>
+        <translation>尚未取样</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="138"/>
+        <source>HEX</source>
+        <translation>HEX</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="139"/>
+        <source>RGB</source>
+        <translation>RGB</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="140"/>
+        <source>HSL</source>
+        <translation>HSL</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="141"/>
+        <source>Position</source>
+        <translation>位置</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="174"/>
+        <source>Copy HEX</source>
+        <translation>复制 HEX</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="186"/>
+        <source>Hover or drag to update · click to set the shared foreground colour</source>
+        <translation>悬停或拖动以更新 · 点击以设置共享前景色</translation>
     </message>
 </context>
 <context>
@@ -1192,6 +1302,29 @@
         <location filename="../qml/filters/FiltersPanel.qml" line="331"/>
         <source>No looks match. Try another category or search.</source>
         <translation>没有匹配的风格。请尝试其他分类或搜索。</translation>
+    </message>
+</context>
+<context>
+    <name>FontFamilyPicker</name>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="26"/>
+        <source>System default</source>
+        <translation>系统默认</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="51"/>
+        <source>UI font family</source>
+        <translation>界面字体</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="83"/>
+        <source>Search fonts…</source>
+        <translation>搜索字体…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="158"/>
+        <source>Fonts are listed from the operating system.</source>
+        <translation>字体列表来自操作系统。</translation>
     </message>
 </context>
 <context>
@@ -1948,7 +2081,7 @@
     <name>LanguagePage</name>
     <message>
         <location filename="../qml/settings/LanguagePage.qml" line="28"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="153"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="161"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
@@ -2084,427 +2217,426 @@
 <context>
     <name>Main</name>
     <message>
-        <location filename="../qml/Main.qml" line="441"/>
+        <location filename="../qml/Main.qml" line="434"/>
         <source>Open image…</source>
         <translation>打开图片…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="442"/>
+        <location filename="../qml/Main.qml" line="435"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="443"/>
+        <location filename="../qml/Main.qml" line="436"/>
         <source>Save as…</source>
         <translation>另存为…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="449"/>
+        <location filename="../qml/Main.qml" line="442"/>
         <source>Rotate clockwise</source>
         <translation>顺时针旋转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="450"/>
+        <location filename="../qml/Main.qml" line="443"/>
         <source>Rotate counterclockwise</source>
         <translation>逆时针旋转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="451"/>
+        <location filename="../qml/Main.qml" line="444"/>
         <source>Flip horizontally</source>
         <translation>水平翻转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="452"/>
+        <location filename="../qml/Main.qml" line="445"/>
         <source>Flip vertically</source>
         <translation>垂直翻转</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="465"/>
+        <location filename="../qml/Main.qml" line="458"/>
         <source>Fit to window</source>
         <translation>适应窗口</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="466"/>
+        <location filename="../qml/Main.qml" line="459"/>
         <source>Actual size (100%)</source>
         <translation>实际大小 (100%)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="468"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="127"/>
         <source>Open image</source>
         <translation>打开图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="471"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="131"/>
         <source>Images</source>
         <translation>图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="471"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="133"/>
         <source>All files (*)</source>
         <translation>所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="478"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="139"/>
         <source>Save image as</source>
         <translation>图片另存为</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="527"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="185"/>
         <source>Unable to complete operation</source>
         <translation>无法完成操作</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="549"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="219"/>
         <source>Your unsaved changes will be lost.</source>
         <translation>未保存的修改将会丢失。</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="795"/>
-        <location filename="../qml/Main.qml" line="1245"/>
-        <location filename="../qml/Main.qml" line="1247"/>
-        <location filename="../qml/Main.qml" line="1249"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="78"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="33"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="36"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="39"/>
         <source>File</source>
         <translation>文件</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="823"/>
-        <location filename="../qml/Main.qml" line="1251"/>
-        <location filename="../qml/Main.qml" line="1253"/>
-        <location filename="../qml/Main.qml" line="1255"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="106"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="42"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="45"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="48"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="447"/>
+        <location filename="../qml/Main.qml" line="440"/>
         <source>Undo</source>
         <translation>撤销</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="441"/>
         <source>Redo</source>
         <translation>重做</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="824"/>
-        <location filename="../qml/Main.qml" line="1257"/>
-        <location filename="../qml/Main.qml" line="1259"/>
-        <location filename="../qml/Main.qml" line="1261"/>
-        <location filename="../qml/Main.qml" line="1263"/>
-        <location filename="../qml/Main.qml" line="1265"/>
-        <location filename="../qml/Main.qml" line="1281"/>
-        <location filename="../qml/Main.qml" line="1283"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="114"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="51"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="54"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="57"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="60"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="63"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="87"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="90"/>
         <source>Image</source>
         <translation>图像</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="85"/>
-        <location filename="../qml/Main.qml" line="462"/>
+        <location filename="../qml/Main.qml" line="83"/>
+        <location filename="../qml/Main.qml" line="455"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="444"/>
+        <location filename="../qml/Main.qml" line="437"/>
         <source>Preferences…</source>
         <translation>偏好设置…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="445"/>
+        <location filename="../qml/Main.qml" line="438"/>
         <source>Command palette…</source>
         <translation>命令面板…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="446"/>
+        <location filename="../qml/Main.qml" line="439"/>
         <source>Copy image</source>
         <translation>复制图像</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="446"/>
-        <location filename="../qml/Main.qml" line="1256"/>
+        <location filename="../qml/Main.qml" line="439"/>
         <source>Copied to clipboard</source>
         <translation>已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="447"/>
+        <location filename="../qml/Main.qml" line="440"/>
         <source>Undone</source>
         <translation>已撤销</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="441"/>
         <source>Redone</source>
         <translation>已重做</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="453"/>
+        <location filename="../qml/Main.qml" line="446"/>
         <source>Resize image…</source>
         <translation>调整图片尺寸…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="454"/>
+        <location filename="../qml/Main.qml" line="447"/>
         <source>Canvas size…</source>
         <translation>画布尺寸…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="455"/>
-        <location filename="../qml/Main.qml" line="1219"/>
+        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="847"/>
         <source>Keyboard shortcuts</source>
         <translation>键盘快捷键</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="460"/>
+        <location filename="../qml/Main.qml" line="453"/>
         <source>Add text</source>
         <translation>添加文字</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="84"/>
-        <location filename="../qml/Main.qml" line="461"/>
+        <location filename="../qml/Main.qml" line="82"/>
+        <location filename="../qml/Main.qml" line="454"/>
         <source>Eyedropper</source>
         <translation>吸管</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="56"/>
-        <location filename="../qml/Main.qml" line="66"/>
+        <location filename="../qml/Main.qml" line="54"/>
+        <location filename="../qml/Main.qml" line="64"/>
         <source>拖动画布</source>
         <translation>拖动画布</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="58"/>
+        <location filename="../qml/Main.qml" line="56"/>
         <source>点选对象 · Shift 多选 · Delete 删除</source>
         <translation>点选对象 · Shift 多选 · Delete 删除</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="59"/>
+        <location filename="../qml/Main.qml" line="57"/>
         <source>拖动绘制 · 一笔一次撤销</source>
         <translation>拖动绘制 · 一笔一次撤销</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="60"/>
+        <location filename="../qml/Main.qml" line="58"/>
         <source>点击画布放置文字</source>
         <translation>点击画布放置文字</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="62"/>
+        <location filename="../qml/Main.qml" line="60"/>
         <source>点击顶点 · Enter 闭合</source>
         <translation>点击顶点 · Enter 闭合</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="63"/>
+        <location filename="../qml/Main.qml" line="61"/>
         <source>拖动绘制 · Shift 约束比例/角度</source>
         <translation>拖动绘制 · Shift 约束比例/角度</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="64"/>
+        <location filename="../qml/Main.qml" line="62"/>
         <source>拖动选择区域</source>
         <translation>拖动选择区域</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="65"/>
+        <location filename="../qml/Main.qml" line="63"/>
         <source>拖动边缘 · Enter 应用 / Esc 取消</source>
         <translation>拖动边缘 · Enter 应用 / Esc 取消</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="67"/>
+        <location filename="../qml/Main.qml" line="65"/>
         <source>点击取色 · Esc 取消</source>
         <translation>点击取色 · Esc 取消</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="463"/>
+        <location filename="../qml/Main.qml" line="456"/>
         <source>Zoom in</source>
         <translation>放大</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="464"/>
+        <location filename="../qml/Main.qml" line="457"/>
         <source>Zoom out</source>
         <translation>缩小</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="521"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="177"/>
         <source>Foreground colour</source>
         <translation>前景色</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="534"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="201"/>
         <source>Save changes before continuing?</source>
         <translation>继续前保存更改？</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="556"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="231"/>
         <source>About NekoPic</source>
         <translation>关于 NekoPic</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="557"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="232"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="572"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="247"/>
         <source>A local-first desktop photo editor. Your photos stay on this device.</source>
         <translation>本地优先的桌面照片编辑器。照片始终保留在本机。</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="753"/>
+        <location filename="../qml/Main.qml" line="574"/>
         <source>Text placed — drag to move</source>
         <translation>文字已放置 — 拖动可移动</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="765"/>
+        <location filename="../qml/Main.qml" line="586"/>
         <source>Image saved</source>
         <translation>图像已保存</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="799"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="82"/>
         <source>Open recent</source>
         <translation>打开最近</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="813"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="95"/>
         <source>Clear recent files</source>
         <translation>清除最近文件</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="826"/>
-        <location filename="../qml/Main.qml" line="1289"/>
-        <location filename="../qml/Main.qml" line="1291"/>
-        <location filename="../qml/Main.qml" line="1293"/>
-        <location filename="../qml/Main.qml" line="1295"/>
-        <location filename="../qml/Main.qml" line="1297"/>
-        <location filename="../qml/Main.qml" line="1299"/>
-        <location filename="../qml/Main.qml" line="1301"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="132"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="99"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="102"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="105"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="108"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="111"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="113"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="115"/>
         <source>View</source>
         <translation>视图</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="829"/>
-        <location filename="../qml/Main.qml" line="1299"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="141"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="113"/>
         <source>Follow system theme</source>
         <translation>跟随系统主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="830"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="147"/>
         <source>Dark theme</source>
         <translation>深色主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="831"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="154"/>
         <source>Reduce motion</source>
         <translation>减少动效</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="833"/>
-        <location filename="../qml/Main.qml" line="1303"/>
-        <location filename="../qml/Main.qml" line="1306"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="160"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="117"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="120"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="859"/>
+        <location filename="../qml/shell/DropTarget.qml" line="29"/>
         <source>Drop to open image</source>
         <translation>拖放以打开图片</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="76"/>
-        <location filename="../qml/Main.qml" line="459"/>
+        <location filename="../qml/Main.qml" line="74"/>
+        <location filename="../qml/Main.qml" line="452"/>
         <source>Select</source>
         <translation>选择</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="77"/>
-        <location filename="../qml/Main.qml" line="458"/>
+        <location filename="../qml/Main.qml" line="75"/>
+        <location filename="../qml/Main.qml" line="451"/>
         <source>Pan</source>
         <translation>平移</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="78"/>
+        <location filename="../qml/Main.qml" line="76"/>
         <source>Adjust</source>
         <translation>调色</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="79"/>
-        <location filename="../qml/Main.qml" line="1080"/>
-        <location filename="../qml/Main.qml" line="1081"/>
-        <location filename="../qml/Main.qml" line="1112"/>
-        <location filename="../qml/Main.qml" line="1113"/>
+        <location filename="../qml/Main.qml" line="77"/>
+        <location filename="../qml/Main.qml" line="707"/>
+        <location filename="../qml/Main.qml" line="708"/>
+        <location filename="../qml/Main.qml" line="739"/>
+        <location filename="../qml/Main.qml" line="740"/>
         <source>Filters</source>
         <translation>滤镜</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="80"/>
-        <location filename="../qml/Main.qml" line="456"/>
+        <location filename="../qml/Main.qml" line="78"/>
+        <location filename="../qml/Main.qml" line="449"/>
         <source>Brush</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="81"/>
-        <location filename="../qml/Main.qml" line="355"/>
+        <location filename="../qml/Main.qml" line="79"/>
+        <location filename="../qml/Main.qml" line="349"/>
         <source>Text</source>
         <translation>文字</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="82"/>
-        <location filename="../qml/Main.qml" line="457"/>
+        <location filename="../qml/Main.qml" line="80"/>
+        <location filename="../qml/Main.qml" line="450"/>
         <source>Shapes</source>
         <translation>形状</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="83"/>
+        <location filename="../qml/Main.qml" line="81"/>
         <source>Mosaic</source>
         <translation>打码</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1033"/>
+        <location filename="../qml/shell/EditorSurface.qml" line="182"/>
         <source>Picked %1</source>
         <translation>已拾取 %1</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1070"/>
-        <location filename="../qml/Main.qml" line="1265"/>
+        <location filename="../qml/Main.qml" line="697"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="63"/>
         <source>Auto enhance</source>
         <translation>自动增强</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1267"/>
-        <location filename="../qml/Main.qml" line="1269"/>
-        <location filename="../qml/Main.qml" line="1271"/>
-        <location filename="../qml/Main.qml" line="1273"/>
-        <location filename="../qml/Main.qml" line="1275"/>
-        <location filename="../qml/Main.qml" line="1277"/>
-        <location filename="../qml/Main.qml" line="1279"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="66"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="69"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="72"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="75"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="78"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="81"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="84"/>
         <source>Tools</source>
         <translation>工具</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1285"/>
-        <location filename="../qml/Main.qml" line="1287"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="93"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="96"/>
         <source>Help</source>
         <translation>帮助</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1297"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="111"/>
         <source>Toggle dark theme</source>
         <translation>切换深色主题</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1301"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="115"/>
         <source>Toggle reduce motion</source>
         <translation>切换减少动效</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1303"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="117"/>
         <source>Switch to English</source>
         <translation>切换到英文</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1306"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="120"/>
         <source>切换到简体中文</source>
         <translation>切换到简体中文</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1311"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="124"/>
         <source>Recent</source>
         <translation>最近</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="792"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="71"/>
         <source>Local editing</source>
         <translation>本地编辑</translation>
     </message>
@@ -2707,7 +2839,7 @@
     <name>RecoveryPage</name>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="36"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="154"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="162"/>
         <source>Recovery &amp; Safety</source>
         <translation>恢复与安全</translation>
     </message>
@@ -2729,14 +2861,14 @@
     </message>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="86"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="489"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="624"/>
         <location filename="../qml/tests/tst_window.qml" line="523"/>
         <source>Recovery snapshot available</source>
         <translation>发现可恢复的快照</translation>
     </message>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="87"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="519"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="654"/>
         <source>No recovery snapshot available</source>
         <translation>当前没有恢复快照</translation>
     </message>
@@ -2884,111 +3016,117 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="67"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="141"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="79"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="145"/>
         <source>Appearance</source>
         <translation>外观</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="68"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="80"/>
         <source>Editing</source>
         <translation>编辑</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="69"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="81"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="146"/>
+        <source>Shortcuts</source>
+        <translation>快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="82"/>
         <source>Export</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="70"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="83"/>
         <source>Language</source>
         <translation>语言</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="71"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="142"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="442"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="84"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="147"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="577"/>
         <source>Recovery &amp; Safety</source>
         <translation>恢复与安全</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="72"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="85"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="76"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="89"/>
         <source>Adjust</source>
         <translation>调色</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="77"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="90"/>
         <source>Filters</source>
         <translation>滤镜</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="78"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="91"/>
         <source>Select</source>
         <translation>选择</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="79"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="92"/>
         <source>Pan</source>
         <translation>平移</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="80"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="93"/>
         <source>Brush</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="81"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="94"/>
         <source>Text</source>
         <translation>文字</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="82"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="95"/>
         <source>Shapes</source>
         <translation>形状</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="83"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="96"/>
         <source>Mosaic</source>
         <translation>打码</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="84"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="97"/>
         <source>Eyedropper</source>
         <translation>吸管</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="85"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="98"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="122"/>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="126"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="141"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="145"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="123"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="142"/>
         <source>Changes apply immediately and are saved automatically.</source>
         <translation>更改会立即应用并自动保存。</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="124"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="143"/>
         <source>Done</source>
         <translation>完成</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="319"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="387"/>
         <source>Settings categories</source>
         <translation>设置分类</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="439"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="507"/>
         <source>Settings content scroll</source>
         <translation>设置内容滚动</translation>
     </message>
@@ -3288,6 +3426,191 @@
         <location filename="../qml/dialogs/ShortcutsDialog.qml" line="176"/>
         <source>Done</source>
         <translation>完成</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutsPage</name>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="38"/>
+        <source>File</source>
+        <translation>文件</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="40"/>
+        <source>Open image…</source>
+        <translation>打开图片…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="41"/>
+        <source>Save</source>
+        <translation>保存</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="42"/>
+        <source>Save as…</source>
+        <translation>另存为…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="47"/>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="360"/>
+        <source>Edit</source>
+        <translation>编辑</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="49"/>
+        <source>Undo</source>
+        <translation>撤销</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="50"/>
+        <source>Redo</source>
+        <translation>重做</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="51"/>
+        <source>Copy image</source>
+        <translation>复制图像</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="56"/>
+        <source>View</source>
+        <translation>视图</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="58"/>
+        <source>Zoom in</source>
+        <translation>放大</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="59"/>
+        <source>Zoom out</source>
+        <translation>缩小</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="60"/>
+        <source>Fit to window</source>
+        <translation>适应窗口</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="61"/>
+        <source>Actual size (100%)</source>
+        <translation>实际大小 (100%)</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="62"/>
+        <source>Command palette…</source>
+        <translation>命令面板…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="67"/>
+        <source>Tools</source>
+        <translation>工具</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="69"/>
+        <source>Brush</source>
+        <translation>画笔</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="70"/>
+        <source>Shapes</source>
+        <translation>形状</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="71"/>
+        <source>Pan</source>
+        <translation>平移</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="72"/>
+        <source>Select</source>
+        <translation>选择</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="73"/>
+        <source>Add text</source>
+        <translation>添加文字</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="74"/>
+        <source>Eyedropper</source>
+        <translation>吸管</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="75"/>
+        <source>Crop</source>
+        <translation>裁剪</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="80"/>
+        <source>Help</source>
+        <translation>帮助</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="82"/>
+        <source>Preferences…</source>
+        <translation>偏好设置…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="243"/>
+        <source>%1 is already assigned to another action.</source>
+        <translation>%1 已分配给其他操作。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="285"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="159"/>
+        <source>Shortcuts</source>
+        <translation>快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="292"/>
+        <source>Select Edit, then press a key combination. Changes apply immediately and are saved automatically.</source>
+        <translation>点击“编辑”，然后按下按键组合。更改会立即生效并自动保存。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="363"/>
+        <source>Edit shortcut for %1</source>
+        <translation>编辑 %1 的快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="370"/>
+        <source>Reset</source>
+        <translation>重置</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="374"/>
+        <source>Reset shortcut for %1</source>
+        <translation>重置 %1 的快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="399"/>
+        <source>All shortcuts use their built-in keys.</source>
+        <translation>所有快捷键均使用内置按键。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="400"/>
+        <source>%1 custom shortcut(s).</source>
+        <translation>自定义快捷键：%1 个。</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="408"/>
+        <source>Reset all</source>
+        <translation>全部重置</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="411"/>
+        <source>Reset all shortcuts</source>
+        <translation>重置所有快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="463"/>
+        <source>Press a shortcut</source>
+        <translation>按下快捷键</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="481"/>
+        <source>Delete clears the custom shortcut · Esc cancels</source>
+        <translation>按 Delete 清除自定义快捷键 · 按 Esc 取消</translation>
     </message>
 </context>
 <context>
@@ -3849,39 +4172,59 @@
 <context>
     <name>Theme</name>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="145"/>
+        <location filename="../qml/UI/Theme.qml" line="189"/>
         <source>System</source>
         <translation>系统</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="146"/>
+        <location filename="../qml/UI/Theme.qml" line="190"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="147"/>
+        <location filename="../qml/UI/Theme.qml" line="191"/>
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="148"/>
+        <location filename="../qml/UI/Theme.qml" line="192"/>
         <source>Midnight</source>
         <translation>午夜</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="149"/>
+        <location filename="../qml/UI/Theme.qml" line="193"/>
         <source>Warm paper</source>
         <translation>暖纸</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="150"/>
+        <location filename="../qml/UI/Theme.qml" line="194"/>
         <source>Graphite</source>
         <translation>石墨</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="151"/>
+        <location filename="../qml/UI/Theme.qml" line="195"/>
         <source>High contrast</source>
         <translation>高对比</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="196"/>
+        <source>Nordic</source>
+        <translation>北欧</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="197"/>
+        <source>Sakura</source>
+        <translation>樱花</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="198"/>
+        <source>Forest</source>
+        <translation>森林</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="199"/>
+        <source>Solarized</source>
+        <translation>日光</translation>
     </message>
 </context>
 <context>
@@ -4026,17 +4369,17 @@
         <translation>前景色</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="989"/>
+        <location filename="../qml/tests/tst_window.qml" line="993"/>
         <source>Working…</source>
         <translation>正在处理…</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="1114"/>
+        <location filename="../qml/tests/tst_window.qml" line="1118"/>
         <source>Brush</source>
         <translation>画笔</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="1120"/>
+        <location filename="../qml/tests/tst_window.qml" line="1124"/>
         <source>Auto enhance</source>
         <translation>自动增强</translation>
     </message>

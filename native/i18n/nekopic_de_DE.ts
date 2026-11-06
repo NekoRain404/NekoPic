@@ -5,7 +5,7 @@
     <name>AboutPage</name>
     <message>
         <location filename="../qml/settings/AboutPage.qml" line="25"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="155"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="163"/>
         <source>About</source>
         <translation>Über</translation>
     </message>
@@ -21,7 +21,7 @@
     </message>
     <message>
         <location filename="../qml/settings/AboutPage.qml" line="82"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="540"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="675"/>
         <source>Reads %1 formats · writes %2 formats</source>
         <translation>Liest %1 Formate · schreibt %2 Formate</translation>
     </message>
@@ -52,69 +52,131 @@
 <context>
     <name>AppearancePage</name>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="51"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="150"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="433"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="441"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="75"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="156"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="568"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="576"/>
         <source>Appearance</source>
         <translation>Darstellung</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="62"/>
-        <location filename="../qml/settings/AppearancePage.qml" line="81"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="86"/>
         <source>Theme</source>
         <translation>Design</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="69"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="93"/>
         <source>Follow the system, or pick light, dark and four curated palettes.</source>
         <translation>Dem System folgen oder Hell, Dunkel und vier ausgewählte Paletten wählen.</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="83"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>System</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="84"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Light</source>
         <translation>Hell</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="85"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Dark</source>
         <translation>Dunkel</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="86"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="38"/>
         <source>Midnight</source>
         <translation>Mitternacht</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="87"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Warm paper</source>
         <translation>Warmes Papier</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="88"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Graphite</source>
         <translation>Graphit</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="89"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="39"/>
         <source>Contrast</source>
         <translation>Kontrast</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="104"/>
-        <location filename="../qml/settings/AppearancePage.qml" line="112"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Nordic</source>
+        <translation>Nordisch</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Sakura</source>
+        <translation>Sakura</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Forest</source>
+        <translation>Wald</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="40"/>
+        <source>Solarized</source>
+        <translation>Solarisiert</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="139"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="147"/>
         <source>Reduce motion</source>
         <translation>Bewegung reduzieren</translation>
     </message>
     <message>
-        <location filename="../qml/settings/AppearancePage.qml" line="105"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="140"/>
         <source>Turn off interface animations and transitions.</source>
         <translation>Animationen und Übergänge der Oberfläche deaktivieren.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="155"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="157"/>
+        <source>Typography &amp; interface</source>
+        <translation>Schrift &amp; Oberfläche</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="161"/>
+        <source>UI font family</source>
+        <translation>UI-Schriftart</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="162"/>
+        <source>Use an installed family for interface text; System default follows the desktop.</source>
+        <translation>Installierte Schriftart für die Oberfläche verwenden; „Systemstandard“ folgt dem Desktop.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="173"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="190"/>
+        <source>UI text size</source>
+        <translation>UI-Textgröße</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="174"/>
+        <source>Scales labels, controls and dialogue text without changing the window layout.</source>
+        <translation>Skaliert Beschriftungen, Steuerelemente und Dialogtext, ohne das Fensterlayout zu ändern.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="207"/>
+        <location filename="../qml/settings/AppearancePage.qml" line="224"/>
+        <source>Interface scale</source>
+        <translation>Oberflächenskalierung</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="208"/>
+        <source>Scales the whole window on the next launch; requires restarting NekoPic.</source>
+        <translation>Skaliert das gesamte Fenster beim nächsten Start; NekoPic muss neu gestartet werden.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/AppearancePage.qml" line="244"/>
+        <source>Restart NekoPic to apply the interface scale.</source>
+        <translation>NekoPic neu starten, um die Oberflächenskalierung anzuwenden.</translation>
     </message>
 </context>
 <context>
@@ -742,7 +804,7 @@
     <name>EditingPage</name>
     <message>
         <location filename="../qml/settings/EditingPage.qml" line="34"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="151"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="158"/>
         <source>Editing</source>
         <translation>Bearbeitung</translation>
     </message>
@@ -793,13 +855,13 @@
     </message>
     <message>
         <location filename="../qml/EditorCanvas.qml" line="180"/>
-        <location filename="../qml/Main.qml" line="166"/>
+        <location filename="../qml/Main.qml" line="164"/>
         <source>WORKSPACE</source>
         <translation>ARBEITSBEREICH</translation>
     </message>
     <message>
         <location filename="../qml/EditorCanvas.qml" line="180"/>
-        <location filename="../qml/Main.qml" line="159"/>
+        <location filename="../qml/Main.qml" line="157"/>
         <source>ORIGINAL</source>
         <translation>ORIGINAL</translation>
     </message>
@@ -973,7 +1035,7 @@
     <name>ExportPage</name>
     <message>
         <location filename="../qml/settings/ExportPage.qml" line="47"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="152"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="160"/>
         <source>Export</source>
         <translation>Exportieren</translation>
     </message>
@@ -990,8 +1052,8 @@
     </message>
     <message>
         <location filename="../qml/settings/ExportPage.qml" line="79"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="343"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="356"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="478"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="491"/>
         <source>Codec default</source>
         <translation>Codec-Standard</translation>
     </message>
@@ -1029,6 +1091,54 @@
         <location filename="../qml/settings/ExportPage.qml" line="174"/>
         <source>Warm grey background</source>
         <translation>Warmgrauer Hintergrund</translation>
+    </message>
+</context>
+<context>
+    <name>EyedropperPanel</name>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="23"/>
+        <source>Move the pointer over the image to sample a colour.</source>
+        <translation>Bewegen Sie den Zeiger über das Bild, um eine Farbe zu messen.</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="98"/>
+        <source>Colour information</source>
+        <translation>Farbinformationen</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="126"/>
+        <source>No sample yet</source>
+        <translation>Noch kein Messwert</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="138"/>
+        <source>HEX</source>
+        <translation>HEX</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="139"/>
+        <source>RGB</source>
+        <translation>RGB</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="140"/>
+        <source>HSL</source>
+        <translation>HSL</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="141"/>
+        <source>Position</source>
+        <translation>Position</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="174"/>
+        <source>Copy HEX</source>
+        <translation>HEX kopieren</translation>
+    </message>
+    <message>
+        <location filename="../qml/panels/EyedropperPanel.qml" line="186"/>
+        <source>Hover or drag to update · click to set the shared foreground colour</source>
+        <translation>Zum Aktualisieren schweben oder ziehen · Klicken legt die gemeinsame Vordergrundfarbe fest</translation>
     </message>
 </context>
 <context>
@@ -1193,6 +1303,29 @@
         <location filename="../qml/filters/FiltersPanel.qml" line="331"/>
         <source>No looks match. Try another category or search.</source>
         <translation>Keine Looks gefunden. Versuchen Sie eine andere Kategorie oder Suche.</translation>
+    </message>
+</context>
+<context>
+    <name>FontFamilyPicker</name>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="26"/>
+        <source>System default</source>
+        <translation>Systemstandard</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="51"/>
+        <source>UI font family</source>
+        <translation>UI-Schriftart</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="83"/>
+        <source>Search fonts…</source>
+        <translation>Schriften suchen…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/FontFamilyPicker.qml" line="158"/>
+        <source>Fonts are listed from the operating system.</source>
+        <translation>Die Schriften stammen vom Betriebssystem.</translation>
     </message>
 </context>
 <context>
@@ -1949,7 +2082,7 @@
     <name>LanguagePage</name>
     <message>
         <location filename="../qml/settings/LanguagePage.qml" line="28"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="153"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="161"/>
         <source>Language</source>
         <translation>Sprache</translation>
     </message>
@@ -2085,427 +2218,426 @@
 <context>
     <name>Main</name>
     <message>
-        <location filename="../qml/Main.qml" line="441"/>
+        <location filename="../qml/Main.qml" line="434"/>
         <source>Open image…</source>
         <translation>Bild öffnen…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="442"/>
+        <location filename="../qml/Main.qml" line="435"/>
         <source>Save</source>
         <translation>Speichern</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="443"/>
+        <location filename="../qml/Main.qml" line="436"/>
         <source>Save as…</source>
         <translation>Speichern unter…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="449"/>
+        <location filename="../qml/Main.qml" line="442"/>
         <source>Rotate clockwise</source>
         <translation>Im Uhrzeigersinn drehen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="450"/>
+        <location filename="../qml/Main.qml" line="443"/>
         <source>Rotate counterclockwise</source>
         <translation>Gegen den Uhrzeigersinn drehen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="451"/>
+        <location filename="../qml/Main.qml" line="444"/>
         <source>Flip horizontally</source>
         <translation>Horizontal spiegeln</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="452"/>
+        <location filename="../qml/Main.qml" line="445"/>
         <source>Flip vertically</source>
         <translation>Vertikal spiegeln</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="465"/>
+        <location filename="../qml/Main.qml" line="458"/>
         <source>Fit to window</source>
         <translation>An Fenster anpassen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="466"/>
+        <location filename="../qml/Main.qml" line="459"/>
         <source>Actual size (100%)</source>
         <translation>Tatsächliche Größe (100 %)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="468"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="127"/>
         <source>Open image</source>
         <translation>Bild öffnen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="471"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="131"/>
         <source>Images</source>
         <translation>Bilder</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="471"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="133"/>
         <source>All files (*)</source>
         <translation>Alle Dateien (*)</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="478"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="139"/>
         <source>Save image as</source>
         <translation>Bild speichern unter</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="527"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="185"/>
         <source>Unable to complete operation</source>
         <translation>Vorgang konnte nicht abgeschlossen werden</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="549"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="219"/>
         <source>Your unsaved changes will be lost.</source>
         <translation>Ihre nicht gespeicherten Änderungen gehen verloren.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="795"/>
-        <location filename="../qml/Main.qml" line="1245"/>
-        <location filename="../qml/Main.qml" line="1247"/>
-        <location filename="../qml/Main.qml" line="1249"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="78"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="33"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="36"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="39"/>
         <source>File</source>
         <translation>Datei</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="823"/>
-        <location filename="../qml/Main.qml" line="1251"/>
-        <location filename="../qml/Main.qml" line="1253"/>
-        <location filename="../qml/Main.qml" line="1255"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="106"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="42"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="45"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="48"/>
         <source>Edit</source>
         <translation>Bearbeiten</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="447"/>
+        <location filename="../qml/Main.qml" line="440"/>
         <source>Undo</source>
         <translation>Rückgängig</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="441"/>
         <source>Redo</source>
         <translation>Wiederholen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="824"/>
-        <location filename="../qml/Main.qml" line="1257"/>
-        <location filename="../qml/Main.qml" line="1259"/>
-        <location filename="../qml/Main.qml" line="1261"/>
-        <location filename="../qml/Main.qml" line="1263"/>
-        <location filename="../qml/Main.qml" line="1265"/>
-        <location filename="../qml/Main.qml" line="1281"/>
-        <location filename="../qml/Main.qml" line="1283"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="114"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="51"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="54"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="57"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="60"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="63"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="87"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="90"/>
         <source>Image</source>
         <translation>Bild</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="85"/>
-        <location filename="../qml/Main.qml" line="462"/>
+        <location filename="../qml/Main.qml" line="83"/>
+        <location filename="../qml/Main.qml" line="455"/>
         <source>Crop</source>
         <translation>Zuschneiden</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="444"/>
+        <location filename="../qml/Main.qml" line="437"/>
         <source>Preferences…</source>
         <translation>Einstellungen…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="445"/>
+        <location filename="../qml/Main.qml" line="438"/>
         <source>Command palette…</source>
         <translation>Befehlspalette…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="446"/>
+        <location filename="../qml/Main.qml" line="439"/>
         <source>Copy image</source>
         <translation>Bild kopieren</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="446"/>
-        <location filename="../qml/Main.qml" line="1256"/>
+        <location filename="../qml/Main.qml" line="439"/>
         <source>Copied to clipboard</source>
         <translation>In Zwischenablage kopiert</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="447"/>
+        <location filename="../qml/Main.qml" line="440"/>
         <source>Undone</source>
         <translation>Rückgängig gemacht</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="441"/>
         <source>Redone</source>
         <translation>Wiederholt</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="453"/>
+        <location filename="../qml/Main.qml" line="446"/>
         <source>Resize image…</source>
         <translation>Bildgröße ändern…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="454"/>
+        <location filename="../qml/Main.qml" line="447"/>
         <source>Canvas size…</source>
         <translation>Leinwandgröße…</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="455"/>
-        <location filename="../qml/Main.qml" line="1219"/>
+        <location filename="../qml/Main.qml" line="448"/>
+        <location filename="../qml/Main.qml" line="847"/>
         <source>Keyboard shortcuts</source>
         <translation>Tastenkürzel</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="460"/>
+        <location filename="../qml/Main.qml" line="453"/>
         <source>Add text</source>
         <translation>Text hinzufügen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="84"/>
-        <location filename="../qml/Main.qml" line="461"/>
+        <location filename="../qml/Main.qml" line="82"/>
+        <location filename="../qml/Main.qml" line="454"/>
         <source>Eyedropper</source>
         <translation>Pipette</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="56"/>
-        <location filename="../qml/Main.qml" line="66"/>
+        <location filename="../qml/Main.qml" line="54"/>
+        <location filename="../qml/Main.qml" line="64"/>
         <source>拖动画布</source>
         <translation>Leinwand ziehen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="58"/>
+        <location filename="../qml/Main.qml" line="56"/>
         <source>点选对象 · Shift 多选 · Delete 删除</source>
         <translation>Objekt anklicken · Shift für Mehrfachauswahl · Delete zum Löschen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="59"/>
+        <location filename="../qml/Main.qml" line="57"/>
         <source>拖动绘制 · 一笔一次撤销</source>
         <translation>Ziehen zum Malen · ein Strich pro Rückgängig</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="60"/>
+        <location filename="../qml/Main.qml" line="58"/>
         <source>点击画布放置文字</source>
         <translation>Auf die Leinwand klicken, um Text zu platzieren</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="62"/>
+        <location filename="../qml/Main.qml" line="60"/>
         <source>点击顶点 · Enter 闭合</source>
         <translation>Eckpunkte anklicken · Enter zum Schließen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="63"/>
+        <location filename="../qml/Main.qml" line="61"/>
         <source>拖动绘制 · Shift 约束比例/角度</source>
         <translation>Ziehen zum Zeichnen · Shift für Proportionen/Winkel</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="64"/>
+        <location filename="../qml/Main.qml" line="62"/>
         <source>拖动选择区域</source>
         <translation>Bereich durch Ziehen auswählen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="65"/>
+        <location filename="../qml/Main.qml" line="63"/>
         <source>拖动边缘 · Enter 应用 / Esc 取消</source>
         <translation>Kanten ziehen · Enter zum Anwenden / Esc zum Abbrechen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="67"/>
+        <location filename="../qml/Main.qml" line="65"/>
         <source>点击取色 · Esc 取消</source>
         <translation>Zum Aufnehmen klicken · Esc zum Abbrechen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="463"/>
+        <location filename="../qml/Main.qml" line="456"/>
         <source>Zoom in</source>
         <translation>Vergrößern</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="464"/>
+        <location filename="../qml/Main.qml" line="457"/>
         <source>Zoom out</source>
         <translation>Verkleinern</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="521"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="177"/>
         <source>Foreground colour</source>
         <translation>Vordergrundfarbe</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="534"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="201"/>
         <source>Save changes before continuing?</source>
         <translation>Änderungen vor dem Fortfahren speichern?</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="556"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="231"/>
         <source>About NekoPic</source>
         <translation>Über NekoPic</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="557"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="232"/>
         <source>Close</source>
         <translation>Schließen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="572"/>
+        <location filename="../qml/shell/AppDialogs.qml" line="247"/>
         <source>A local-first desktop photo editor. Your photos stay on this device.</source>
         <translation>Ein lokal ausgerichteter Desktop-Fotobearbeiter. Ihre Fotos bleiben auf diesem Gerät.</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="753"/>
+        <location filename="../qml/Main.qml" line="574"/>
         <source>Text placed — drag to move</source>
         <translation>Text platziert – zum Verschieben ziehen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="765"/>
+        <location filename="../qml/Main.qml" line="586"/>
         <source>Image saved</source>
         <translation>Bild gespeichert</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="799"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="82"/>
         <source>Open recent</source>
         <translation>Zuletzt geöffnete öffnen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="813"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="95"/>
         <source>Clear recent files</source>
         <translation>Zuletzt verwendete Dateien löschen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="826"/>
-        <location filename="../qml/Main.qml" line="1289"/>
-        <location filename="../qml/Main.qml" line="1291"/>
-        <location filename="../qml/Main.qml" line="1293"/>
-        <location filename="../qml/Main.qml" line="1295"/>
-        <location filename="../qml/Main.qml" line="1297"/>
-        <location filename="../qml/Main.qml" line="1299"/>
-        <location filename="../qml/Main.qml" line="1301"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="132"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="99"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="102"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="105"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="108"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="111"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="113"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="115"/>
         <source>View</source>
         <translation>Ansicht</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="829"/>
-        <location filename="../qml/Main.qml" line="1299"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="141"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="113"/>
         <source>Follow system theme</source>
         <translation>Systemdesign folgen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="830"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="147"/>
         <source>Dark theme</source>
         <translation>Dunkles Design</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="831"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="154"/>
         <source>Reduce motion</source>
         <translation>Bewegung reduzieren</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="833"/>
-        <location filename="../qml/Main.qml" line="1303"/>
-        <location filename="../qml/Main.qml" line="1306"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="160"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="117"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="120"/>
         <source>Language</source>
         <translation>Sprache</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="859"/>
+        <location filename="../qml/shell/DropTarget.qml" line="29"/>
         <source>Drop to open image</source>
         <translation>Zum Öffnen eines Bildes ablegen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="76"/>
-        <location filename="../qml/Main.qml" line="459"/>
+        <location filename="../qml/Main.qml" line="74"/>
+        <location filename="../qml/Main.qml" line="452"/>
         <source>Select</source>
         <translation>Auswählen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="77"/>
-        <location filename="../qml/Main.qml" line="458"/>
+        <location filename="../qml/Main.qml" line="75"/>
+        <location filename="../qml/Main.qml" line="451"/>
         <source>Pan</source>
         <translation>Verschieben</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="78"/>
+        <location filename="../qml/Main.qml" line="76"/>
         <source>Adjust</source>
         <translation>Anpassen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="79"/>
-        <location filename="../qml/Main.qml" line="1080"/>
-        <location filename="../qml/Main.qml" line="1081"/>
-        <location filename="../qml/Main.qml" line="1112"/>
-        <location filename="../qml/Main.qml" line="1113"/>
+        <location filename="../qml/Main.qml" line="77"/>
+        <location filename="../qml/Main.qml" line="707"/>
+        <location filename="../qml/Main.qml" line="708"/>
+        <location filename="../qml/Main.qml" line="739"/>
+        <location filename="../qml/Main.qml" line="740"/>
         <source>Filters</source>
         <translation>Filter</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="80"/>
-        <location filename="../qml/Main.qml" line="456"/>
+        <location filename="../qml/Main.qml" line="78"/>
+        <location filename="../qml/Main.qml" line="449"/>
         <source>Brush</source>
         <translation>Pinsel</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="81"/>
-        <location filename="../qml/Main.qml" line="355"/>
+        <location filename="../qml/Main.qml" line="79"/>
+        <location filename="../qml/Main.qml" line="349"/>
         <source>Text</source>
         <translation>Text</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="82"/>
-        <location filename="../qml/Main.qml" line="457"/>
+        <location filename="../qml/Main.qml" line="80"/>
+        <location filename="../qml/Main.qml" line="450"/>
         <source>Shapes</source>
         <translation>Formen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="83"/>
+        <location filename="../qml/Main.qml" line="81"/>
         <source>Mosaic</source>
         <translation>Mosaik</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1033"/>
+        <location filename="../qml/shell/EditorSurface.qml" line="182"/>
         <source>Picked %1</source>
         <translation>%1 aufgenommen</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1070"/>
-        <location filename="../qml/Main.qml" line="1265"/>
+        <location filename="../qml/Main.qml" line="697"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="63"/>
         <source>Auto enhance</source>
         <translation>Automatisch verbessern</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1267"/>
-        <location filename="../qml/Main.qml" line="1269"/>
-        <location filename="../qml/Main.qml" line="1271"/>
-        <location filename="../qml/Main.qml" line="1273"/>
-        <location filename="../qml/Main.qml" line="1275"/>
-        <location filename="../qml/Main.qml" line="1277"/>
-        <location filename="../qml/Main.qml" line="1279"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="66"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="69"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="72"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="75"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="78"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="81"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="84"/>
         <source>Tools</source>
         <translation>Werkzeuge</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1285"/>
-        <location filename="../qml/Main.qml" line="1287"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="93"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="96"/>
         <source>Help</source>
         <translation>Hilfe</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1297"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="111"/>
         <source>Toggle dark theme</source>
         <translation>Dunkles Design umschalten</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1301"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="115"/>
         <source>Toggle reduce motion</source>
         <translation>Bewegungsreduzierung umschalten</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1303"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="117"/>
         <source>Switch to English</source>
         <translation>Zu Englisch wechseln</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1306"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="120"/>
         <source>切换到简体中文</source>
         <translation>Zu vereinfachtem Chinesisch wechseln</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="1311"/>
+        <location filename="../qml/shell/CommandCatalog.qml" line="124"/>
         <source>Recent</source>
         <translation>Zuletzt</translation>
     </message>
     <message>
-        <location filename="../qml/Main.qml" line="792"/>
+        <location filename="../qml/shell/AppMenuBar.qml" line="71"/>
         <source>Local editing</source>
         <translation>Lokale Bearbeitung</translation>
     </message>
@@ -2708,7 +2840,7 @@
     <name>RecoveryPage</name>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="36"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="154"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="162"/>
         <source>Recovery &amp; Safety</source>
         <translation>Wiederherstellung &amp; Sicherheit</translation>
     </message>
@@ -2730,14 +2862,14 @@
     </message>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="86"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="489"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="624"/>
         <location filename="../qml/tests/tst_window.qml" line="523"/>
         <source>Recovery snapshot available</source>
         <translation>Wiederherstellungsschnappschuss verfügbar</translation>
     </message>
     <message>
         <location filename="../qml/settings/RecoveryPage.qml" line="87"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="519"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="654"/>
         <source>No recovery snapshot available</source>
         <translation>Kein Wiederherstellungsschnappschuss verfügbar</translation>
     </message>
@@ -2885,111 +3017,117 @@
 <context>
     <name>SettingsDialog</name>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="67"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="141"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="79"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="145"/>
         <source>Appearance</source>
         <translation>Darstellung</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="68"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="80"/>
         <source>Editing</source>
         <translation>Bearbeitung</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="69"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="81"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="146"/>
+        <source>Shortcuts</source>
+        <translation>Tastenkürzel</translation>
+    </message>
+    <message>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="82"/>
         <source>Export</source>
         <translation>Exportieren</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="70"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="83"/>
         <source>Language</source>
         <translation>Sprache</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="71"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="142"/>
-        <location filename="../qml/tests/tst_settings_dialog.qml" line="442"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="84"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="147"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="577"/>
         <source>Recovery &amp; Safety</source>
         <translation>Wiederherstellung &amp; Sicherheit</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="72"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="85"/>
         <source>About</source>
         <translation>Über</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="76"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="89"/>
         <source>Adjust</source>
         <translation>Anpassen</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="77"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="90"/>
         <source>Filters</source>
         <translation>Filter</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="78"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="91"/>
         <source>Select</source>
         <translation>Auswählen</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="79"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="92"/>
         <source>Pan</source>
         <translation>Verschieben</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="80"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="93"/>
         <source>Brush</source>
         <translation>Pinsel</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="81"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="94"/>
         <source>Text</source>
         <translation>Text</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="82"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="95"/>
         <source>Shapes</source>
         <translation>Formen</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="83"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="96"/>
         <source>Mosaic</source>
         <translation>Mosaik</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="84"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="97"/>
         <source>Eyedropper</source>
         <translation>Pipette</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="85"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="98"/>
         <source>Crop</source>
         <translation>Zuschneiden</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="122"/>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="126"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="141"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="145"/>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="123"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="142"/>
         <source>Changes apply immediately and are saved automatically.</source>
         <translation>Änderungen werden sofort übernommen und automatisch gespeichert.</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="124"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="143"/>
         <source>Done</source>
         <translation>Fertig</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="319"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="387"/>
         <source>Settings categories</source>
         <translation>Einstellungskategorien</translation>
     </message>
     <message>
-        <location filename="../qml/dialogs/SettingsDialog.qml" line="439"/>
+        <location filename="../qml/dialogs/SettingsDialog.qml" line="507"/>
         <source>Settings content scroll</source>
         <translation>Einstellungsinhalt scrollen</translation>
     </message>
@@ -3289,6 +3427,191 @@
         <location filename="../qml/dialogs/ShortcutsDialog.qml" line="176"/>
         <source>Done</source>
         <translation>Fertig</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutsPage</name>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="38"/>
+        <source>File</source>
+        <translation>Datei</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="40"/>
+        <source>Open image…</source>
+        <translation>Bild öffnen…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="41"/>
+        <source>Save</source>
+        <translation>Speichern</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="42"/>
+        <source>Save as…</source>
+        <translation>Speichern unter…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="47"/>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="360"/>
+        <source>Edit</source>
+        <translation>Bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="49"/>
+        <source>Undo</source>
+        <translation>Rückgängig</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="50"/>
+        <source>Redo</source>
+        <translation>Wiederholen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="51"/>
+        <source>Copy image</source>
+        <translation>Bild kopieren</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="56"/>
+        <source>View</source>
+        <translation>Ansicht</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="58"/>
+        <source>Zoom in</source>
+        <translation>Vergrößern</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="59"/>
+        <source>Zoom out</source>
+        <translation>Verkleinern</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="60"/>
+        <source>Fit to window</source>
+        <translation>An Fenster anpassen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="61"/>
+        <source>Actual size (100%)</source>
+        <translation>Tatsächliche Größe (100 %)</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="62"/>
+        <source>Command palette…</source>
+        <translation>Befehlspalette…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="67"/>
+        <source>Tools</source>
+        <translation>Werkzeuge</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="69"/>
+        <source>Brush</source>
+        <translation>Pinsel</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="70"/>
+        <source>Shapes</source>
+        <translation>Formen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="71"/>
+        <source>Pan</source>
+        <translation>Verschieben</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="72"/>
+        <source>Select</source>
+        <translation>Auswählen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="73"/>
+        <source>Add text</source>
+        <translation>Text hinzufügen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="74"/>
+        <source>Eyedropper</source>
+        <translation>Pipette</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="75"/>
+        <source>Crop</source>
+        <translation>Zuschneiden</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="80"/>
+        <source>Help</source>
+        <translation>Hilfe</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="82"/>
+        <source>Preferences…</source>
+        <translation>Einstellungen…</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="243"/>
+        <source>%1 is already assigned to another action.</source>
+        <translation>%1 ist bereits einer anderen Aktion zugewiesen.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="285"/>
+        <location filename="../qml/tests/tst_settings_dialog.qml" line="159"/>
+        <source>Shortcuts</source>
+        <translation>Tastenkürzel</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="292"/>
+        <source>Select Edit, then press a key combination. Changes apply immediately and are saved automatically.</source>
+        <translation>„Bearbeiten“ wählen und dann eine Tastenkombination drücken. Änderungen gelten sofort und werden automatisch gespeichert.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="363"/>
+        <source>Edit shortcut for %1</source>
+        <translation>Tastenkürzel für %1 bearbeiten</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="370"/>
+        <source>Reset</source>
+        <translation>Zurücksetzen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="374"/>
+        <source>Reset shortcut for %1</source>
+        <translation>Tastenkürzel für %1 zurücksetzen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="399"/>
+        <source>All shortcuts use their built-in keys.</source>
+        <translation>Alle Tastenkürzel verwenden ihre Standardtasten.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="400"/>
+        <source>%1 custom shortcut(s).</source>
+        <translation>Benutzerdefinierte Tastenkürzel: %1.</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="408"/>
+        <source>Reset all</source>
+        <translation>Alle zurücksetzen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="411"/>
+        <source>Reset all shortcuts</source>
+        <translation>Alle Tastenkürzel zurücksetzen</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="463"/>
+        <source>Press a shortcut</source>
+        <translation>Tastenkombination drücken</translation>
+    </message>
+    <message>
+        <location filename="../qml/settings/ShortcutsPage.qml" line="481"/>
+        <source>Delete clears the custom shortcut · Esc cancels</source>
+        <translation>Delete löscht das benutzerdefinierte Tastenkürzel · Esc bricht ab</translation>
     </message>
 </context>
 <context>
@@ -3850,39 +4173,59 @@
 <context>
     <name>Theme</name>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="145"/>
+        <location filename="../qml/UI/Theme.qml" line="189"/>
         <source>System</source>
         <translation>System</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="146"/>
+        <location filename="../qml/UI/Theme.qml" line="190"/>
         <source>Light</source>
         <translation>Hell</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="147"/>
+        <location filename="../qml/UI/Theme.qml" line="191"/>
         <source>Dark</source>
         <translation>Dunkel</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="148"/>
+        <location filename="../qml/UI/Theme.qml" line="192"/>
         <source>Midnight</source>
         <translation>Mitternacht</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="149"/>
+        <location filename="../qml/UI/Theme.qml" line="193"/>
         <source>Warm paper</source>
         <translation>Warmes Papier</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="150"/>
+        <location filename="../qml/UI/Theme.qml" line="194"/>
         <source>Graphite</source>
         <translation>Graphit</translation>
     </message>
     <message>
-        <location filename="../qml/UI/Theme.qml" line="151"/>
+        <location filename="../qml/UI/Theme.qml" line="195"/>
         <source>High contrast</source>
         <translation>Hoher Kontrast</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="196"/>
+        <source>Nordic</source>
+        <translation>Nordisch</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="197"/>
+        <source>Sakura</source>
+        <translation>Sakura</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="198"/>
+        <source>Forest</source>
+        <translation>Wald</translation>
+    </message>
+    <message>
+        <location filename="../qml/UI/Theme.qml" line="199"/>
+        <source>Solarized</source>
+        <translation>Solarisiert</translation>
     </message>
 </context>
 <context>
@@ -4027,17 +4370,17 @@
         <translation>Vordergrundfarbe</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="989"/>
+        <location filename="../qml/tests/tst_window.qml" line="993"/>
         <source>Working…</source>
         <translation>Wird verarbeitet…</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="1114"/>
+        <location filename="../qml/tests/tst_window.qml" line="1118"/>
         <source>Brush</source>
         <translation>Pinsel</translation>
     </message>
     <message>
-        <location filename="../qml/tests/tst_window.qml" line="1120"/>
+        <location filename="../qml/tests/tst_window.qml" line="1124"/>
         <source>Auto enhance</source>
         <translation>Automatisch verbessern</translation>
     </message>

@@ -112,6 +112,9 @@ TestCase {
         compare(dialog.showCheckerboard, true)
         compare(dialog.recoveryEnabled, true)
         compare(dialog.startupTool, "adjust")
+        compare(dialog.uiFontFamily, "")
+        compare(dialog.uiFontScale, 100)
+        compare(dialog.uiScale, 100)
         compare(dialog.currentCategory, "appearance")
         compare(dialog.localeOptions.length, 4)
         compare(dialog.localeOptions[0].id, "en")
@@ -121,7 +124,7 @@ TestCase {
         compare(dialog.localeOptions[2].nativeName, "日本語")
         compare(dialog.localeOptions[3].nativeName, "Deutsch")
         compare(dialog.startupToolOptions.length, 10)
-        compare(dialog.categories.length, 6)
+        compare(dialog.categories.length, 7)
 
         verify(child(dialog, "settings-page") !== null)
         verify(child(dialog, "settings-nav") !== null)
@@ -131,7 +134,8 @@ TestCase {
                "unexpected width " + dialog.width)
         verify(dialog.height <= 700, "dialog height was " + dialog.height)
 
-        const categoryIds = ["appearance", "editing", "export", "language", "recovery", "about"]
+        const categoryIds = ["appearance", "editing", "shortcuts", "export",
+                             "language", "recovery", "about"]
         for (let i = 0; i < categoryIds.length; ++i) {
             const button = categoryButton(dialog, categoryIds[i])
             verify(button !== null, "missing category button " + categoryIds[i])
@@ -139,16 +143,20 @@ TestCase {
             verify(button.Accessible.name.length > 0)
         }
         compare(categoryButton(dialog, "appearance").text, qsTranslate("SettingsDialog", "Appearance"))
+        compare(categoryButton(dialog, "shortcuts").text, qsTranslate("SettingsDialog", "Shortcuts"))
         compare(categoryButton(dialog, "recovery").text, qsTranslate("SettingsDialog", "Recovery & Safety"))
 
-        const sections = ["appearance", "editing", "export", "language", "recovery", "about"]
+        const sections = ["appearance", "editing", "shortcuts", "export",
+                          "language", "recovery", "about"]
         for (let i = 0; i < sections.length; ++i) {
             const header = child(dialog, "settings-section-" + sections[i])
             verify(header !== null, "missing section " + sections[i])
             verify(header.text.length > 0)
         }
         compare(child(dialog, "settings-section-appearance").text, qsTranslate("AppearancePage", "Appearance"))
+        compare(child(dialog, "settings-section-typography").text, qsTranslate("AppearancePage", "Typography & interface"))
         compare(child(dialog, "settings-section-editing").text, qsTranslate("EditingPage", "Editing"))
+        compare(child(dialog, "settings-section-shortcuts").text, qsTranslate("ShortcutsPage", "Shortcuts"))
         compare(child(dialog, "settings-section-export").text, qsTranslate("ExportPage", "Export"))
         compare(child(dialog, "settings-section-language").text, qsTranslate("LanguagePage", "Language"))
         compare(child(dialog, "settings-section-recovery").text, qsTranslate("RecoveryPage", "Recovery & Safety"))
@@ -158,6 +166,10 @@ TestCase {
             "settings-theme", "settings-reduce-motion", "settings-gpu-preview",
             "settings-checkerboard", "settings-confirm-on-close", "settings-quality",
             "settings-quality-default", "settings-quality-value",
+            "settings-font-family", "settings-font-scale", "settings-font-scale-value",
+            "settings-ui-scale", "settings-ui-scale-value",
+            "settings-shortcut-edit-open", "settings-shortcut-value-open",
+            "settings-shortcuts-reset-all",
             "settings-background-white", "settings-background-black",
             "settings-background-warm-grey", "settings-locale-en", "settings-locale-zh_CN",
             "settings-locale-ja_JP", "settings-locale-de_DE",
@@ -171,8 +183,12 @@ TestCase {
             verify(child(dialog, controls[i]) !== null, "missing control " + controls[i])
 
         const theme = child(dialog, "settings-theme")
-        compare(theme.count, 7)
+        compare(theme.count, 11)
         compare(theme.currentIndex, 2)
+        verify(child(dialog, "settings-theme-nordic") !== null)
+        verify(child(dialog, "settings-theme-sakura") !== null)
+        verify(child(dialog, "settings-theme-forest") !== null)
+        verify(child(dialog, "settings-theme-solarized") !== null)
 
         openDialog(dialog)
         verify(dialog.opened)
@@ -188,7 +204,7 @@ TestCase {
         compare(child(dialog, "settings-panel-appearance").visible, true)
         compare(child(dialog, "settings-panel-editing").visible, false)
 
-        const ids = ["editing", "export", "language", "recovery", "about", "appearance"]
+        const ids = ["editing", "shortcuts", "export", "language", "recovery", "about", "appearance"]
         for (let i = 0; i < ids.length; ++i) {
             const id = ids[i]
             scroller.contentY = 10
@@ -256,6 +272,21 @@ TestCase {
         compare(dialog.themeMode, "graphite")
         compare(spy.count, 5)
         compare(spy.signalArguments[4][1], "graphite")
+
+        theme.activate(7)
+        compare(dialog.themeMode, "nordic")
+        compare(spy.count, 6)
+        compare(spy.signalArguments[5][1], "nordic")
+        theme.activate(8)
+        compare(dialog.themeMode, "sakura")
+        compare(spy.count, 7)
+        theme.activate(9)
+        compare(dialog.themeMode, "forest")
+        compare(spy.count, 8)
+        theme.activate(10)
+        compare(dialog.themeMode, "solarized")
+        compare(spy.count, 9)
+        compare(spy.signalArguments[8][1], "solarized")
     }
 
     function test_motionToggleEmits() {
@@ -271,6 +302,110 @@ TestCase {
         compare(spy.count, 1)
         compare(spy.signalArguments[0][0], "reduceMotion")
         compare(spy.signalArguments[0][1], true)
+    }
+
+    function test_typographyAndInterfaceScaleControlsEmit() {
+        const dialog = make()
+        openDialog(dialog)
+        activateCategory(dialog, "appearance")
+        const spy = makeSpy(dialog, "settingChanged")
+
+        const fontScale = child(dialog, "settings-font-scale")
+        const fontValue = child(dialog, "settings-font-scale-value")
+        scrollTo(dialog, fontScale)
+        fontScale.commit(125)
+        compare(dialog.uiFontScale, 125)
+        compare(fontValue.text, "125%")
+        compare(settingValue(spy, "uiFontScale"), 125)
+
+        const uiScale = child(dialog, "settings-ui-scale")
+        const note = child(dialog, "settings-ui-scale-note")
+        scrollTo(dialog, uiScale)
+        compare(note.visible, false)
+        uiScale.commit(140)
+        compare(dialog.uiScale, 140)
+        compare(settingValue(spy, "uiScale"), 140)
+        compare(note.visible, true)
+        compare(note.text, qsTranslate("AppearancePage", "Restart NekoPic to apply the interface scale."))
+        uiScale.commit(100)
+        compare(dialog.uiScale, 100)
+        compare(note.visible, false)
+
+        // External values are clamped at the dialog boundary.
+        dialog.uiFontScale = 500
+        compare(dialog.uiFontScale, 140)
+        dialog.uiScale = 500
+        compare(dialog.uiScale, 150)
+        dialog.uiScale = 1
+        compare(dialog.uiScale, 80)
+
+        // The family picker opens a searchable system-font list. Pick the
+        // first installed family so the persisted value changes.
+        const picker = child(dialog, "settings-font-family-picker")
+        const button = child(dialog, "settings-font-family")
+        verify(picker !== null && button !== null)
+        mouseClick(button)
+        const popup = child(picker, "settings-font-family-popup")
+        verify(popup !== null)
+        tryVerify(function() { return popup.opened }, 1500)
+        const list = child(picker, "settings-font-family-list")
+        verify(list !== null)
+        verify(list.count > 0)
+        wait(80)
+        if (list.count > 1 && picker.options.length > 1) {
+            const option = list.itemAtIndex(1)
+            verify(option !== null)
+            const family = picker.options[1].family
+            mouseClick(option)
+            tryCompare(dialog, "uiFontFamily", family)
+            compare(settingValue(spy, "uiFontFamily"), family)
+        } else {
+            popup.close()
+        }
+        tryVerify(function() { return !popup.opened }, 1500)
+    }
+
+    function test_shortcutCategoryForwardsSignals() {
+        const service = Qt.createQmlObject(
+            "import QtQuick; QtObject { function keySequence(key, modifiers) { return 'Ctrl+Alt+O' } }",
+            testCase, "shortcutService")
+        const dialog = make({
+            shortcutService: service,
+            shortcuts: ({ open: "Ctrl+Shift+O" })
+        })
+        openDialog(dialog)
+        activateCategory(dialog, "shortcuts")
+
+        const panel = child(dialog, "settings-panel-shortcuts")
+        verify(panel !== null)
+        compare(panel.visible, true)
+        compare(child(dialog, "settings-shortcut-value-open").text, "Ctrl+Shift+O")
+
+        const changeSpy = makeSpy(dialog, "shortcutChangeRequested")
+        const resetSpy = makeSpy(dialog, "shortcutResetRequested")
+        const resetAllSpy = makeSpy(dialog, "shortcutsResetRequested")
+
+        const edit = child(dialog, "settings-shortcut-edit-open")
+        scrollTo(dialog, edit)
+        mouseClick(edit)
+        const popup = child(panel, "shortcut-capture")
+        verify(popup !== null)
+        tryVerify(function() { return popup.opened }, 1500)
+        verify(panel.captureKey(Qt.Key_O, Qt.ControlModifier))
+        compare(changeSpy.count, 1)
+        compare(changeSpy.signalArguments[0][0], "open")
+        compare(changeSpy.signalArguments[0][1], "Ctrl+Alt+O")
+
+        const resetOne = child(dialog, "settings-shortcut-reset-open")
+        scrollTo(dialog, resetOne)
+        mouseClick(resetOne)
+        compare(resetSpy.count, 1)
+        compare(resetSpy.signalArguments[0][0], "open")
+
+        const resetAll = child(dialog, "settings-shortcuts-reset-all")
+        scrollTo(dialog, resetAll)
+        mouseClick(resetAll)
+        compare(resetAllSpy.count, 1)
     }
 
     // ── Editing ─────────────────────────────────────────────────────────────
@@ -561,9 +696,14 @@ TestCase {
         dialog.showCheckerboard = false
         dialog.recoveryEnabled = false
         dialog.startupTool = "brush"
+        dialog.uiFontFamily = "DejaVu Sans"
+        dialog.uiFontScale = 125
+        dialog.uiScale = 120
+        dialog.shortcuts = ({ open: "Ctrl+Shift+O" })
 
         const spy = makeSpy(dialog, "settingChanged")
         const localeSpy = makeSpy(dialog, "localeSelected")
+        const shortcutsResetSpy = makeSpy(dialog, "shortcutsResetRequested")
 
         activateCategory(dialog, "recovery")
         const reset = child(dialog, "settings-reset")
@@ -581,13 +721,20 @@ TestCase {
         compare(dialog.recoveryEnabled, true)
         compare(dialog.startupTool, "adjust")
         compare(dialog.localeId, "zh_CN")
+        compare(dialog.uiFontFamily, "")
+        compare(dialog.uiFontScale, 100)
+        compare(dialog.uiScale, 100)
+        compare(shortcutsResetSpy.count, 1)
         compare(child(dialog, "settings-theme").currentIndex, 2)
         compare(child(dialog, "settings-quality").value, 90)
         compare(child(dialog, "settings-quality-default").checked, true)
+        compare(child(dialog, "settings-font-scale").value, 100)
+        compare(child(dialog, "settings-ui-scale").value, 100)
 
         const keys = ["themeMode", "reduceMotion", "gpuPreviewEnabled", "exportQuality",
                       "jpegBackground", "confirmOnClose", "showCheckerboard",
-                      "recoveryEnabled", "startupTool", "locale"]
+                      "recoveryEnabled", "startupTool", "locale",
+                      "uiFontFamily", "uiFontScale", "uiScale"]
         for (let i = 0; i < keys.length; ++i)
             verify(settingValue(spy, keys[i]) !== undefined, "missing reset signal " + keys[i])
 
@@ -602,6 +749,13 @@ TestCase {
         dialog.busy = true
         compare(child(dialog, "settings-theme").enabled, false)
         compare(child(dialog, "settings-reduce-motion").enabled, false)
+        compare(child(dialog, "settings-font-scale").enabled, false)
+        compare(child(dialog, "settings-ui-scale").enabled, false)
+        compare(child(dialog, "settings-font-family").enabled, false)
+
+        activateCategory(dialog, "shortcuts")
+        compare(child(dialog, "settings-shortcut-edit-open").enabled, false)
+        compare(child(dialog, "settings-shortcuts-reset-all").enabled, false)
 
         activateCategory(dialog, "editing")
         compare(child(dialog, "settings-gpu-preview").enabled, false)
@@ -697,9 +851,14 @@ TestCase {
     function test_compactGeometryKeepsEveryCategoryReachable() {
         const sizes = [[1100, 720], [1440, 900], [860, 600]]
         const checks = {
-            "appearance": ["settings-theme", "settings-reduce-motion"],
+            "appearance": ["settings-theme", "settings-reduce-motion",
+                           "settings-font-family", "settings-font-scale",
+                           "settings-ui-scale"],
             "editing": ["settings-gpu-preview", "settings-checkerboard",
                         "settings-startup-tool-brush"],
+            "shortcuts": ["settings-shortcut-edit-open",
+                          "settings-shortcut-edit-settings",
+                          "settings-shortcuts-reset-all"],
             "export": ["settings-quality", "settings-quality-default",
                        "settings-background-black"],
             "language": ["settings-locale-en", "settings-locale-ja_JP",
@@ -708,7 +867,8 @@ TestCase {
                          "settings-reset"],
             "about": ["settings-shortcuts", "settings-about-formats"]
         }
-        const categoryIds = ["appearance", "editing", "export", "language", "recovery", "about"]
+        const categoryIds = ["appearance", "editing", "shortcuts", "export",
+                             "language", "recovery", "about"]
 
         for (let s = 0; s < sizes.length; ++s) {
             testCase.width = sizes[s][0]
