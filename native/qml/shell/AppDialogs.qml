@@ -80,7 +80,7 @@ Item {
         foregroundColorDialog.open()
     }
 
-    function openSettings() {
+    function openSettings(category) {
         if (root.settingsStore) {
             settingsDialog.themeMode = root.settingsStore.themeMode
             settingsDialog.reduceMotion = root.settingsStore.reduceMotion
@@ -92,12 +92,18 @@ Item {
             settingsDialog.showCheckerboard = root.settingsStore.showCheckerboard
             settingsDialog.recoveryEnabled = root.settingsStore.recoveryEnabled
             settingsDialog.startupTool = root.settingsStore.startupTool
+            settingsDialog.uiFontFamily = root.settingsStore.uiFontFamily
+            settingsDialog.uiFontScale = root.settingsStore.uiFontScale
+            settingsDialog.appliedUiScale = root.settingsStore.uiScale
+            settingsDialog.uiScale = root.settingsStore.uiScale
         } else {
             settingsDialog.themeMode = root.followSystemTheme ? "system"
                                      : root.darkTheme ? "dark" : "light"
             settingsDialog.reduceMotion = root.reduceMotion
             settingsDialog.localeId = root.localeId
         }
+        if (category !== undefined && category !== null && String(category).length > 0)
+            settingsDialog.currentCategory = category
         settingsDialog.open()
     }
 
@@ -318,6 +324,8 @@ Item {
         recoveryCapturedAt: root.recoveryService ? root.recoveryService.capturedAtText : ""
         recoveryImageSize: root.recoveryService ? root.recoveryService.imageSizeText : ""
         formatCapabilities: root.formatInfo
+        shortcuts: root.settingsStore ? root.settingsStore.shortcuts : ({})
+        shortcutService: root.settingsStore
         onSettingChanged: function(key, value) {
             if (!root.settingsStore) return
             root.settingsStore[key] = value
@@ -337,6 +345,18 @@ Item {
         onLocaleSelected: function(id) {
             if (root.settingsStore) root.settingsStore.locale = id
             if (root.languageService) root.languageService.setLanguage(id)
+        }
+        onShortcutChangeRequested: function(key, sequence) {
+            if (root.settingsStore)
+                root.settingsStore.setShortcut(key, sequence)
+        }
+        onShortcutResetRequested: function(key) {
+            if (root.settingsStore)
+                root.settingsStore.resetShortcut(key)
+        }
+        onShortcutsResetRequested: {
+            if (root.settingsStore)
+                root.settingsStore.resetShortcuts()
         }
         onShortcutsRequested: root.openShortcutsDialog()
         onRecoveryDiscardRequested: {

@@ -1,5 +1,7 @@
 #include "settingsmanager.h"
 
+#include <QHash>
+#include <QKeySequence>
 #include <QSettings>
 #include <QStringList>
 
@@ -19,10 +21,19 @@ const auto kConfirmOnCloseKey = QStringLiteral("ui/confirmOnClose");
 const auto kCheckerboardKey = QStringLiteral("ui/showCheckerboard");
 const auto kRecoveryEnabledKey = QStringLiteral("ui/recoveryEnabled");
 const auto kStartupToolKey = QStringLiteral("ui/startupTool");
+const auto kUiFontFamilyKey = QStringLiteral("ui/fontFamily");
+const auto kUiFontScaleKey = QStringLiteral("ui/fontScale");
+const auto kUiScaleKey = QStringLiteral("ui/scale");
+const auto kShortcutPrefix = QStringLiteral("ui/shortcuts/");
 
 const auto kDefaultThemeMode = QStringLiteral("dark");
 const auto kDefaultLocale = QStringLiteral("zh_CN");
 const auto kDefaultStartupTool = QStringLiteral("adjust");
+constexpr int kDefaultScale = 100;
+constexpr int kMinFontScale = 80;
+constexpr int kMaxFontScale = 140;
+constexpr int kMinUiScale = 80;
+constexpr int kMaxUiScale = 150;
 
 const QStringList &supportedLocales()
 {
@@ -63,13 +74,18 @@ bool SettingsManager::confirmOnClose() const { return confirmOnClose_; }
 bool SettingsManager::showCheckerboard() const { return showCheckerboard_; }
 bool SettingsManager::recoveryEnabled() const { return recoveryEnabled_; }
 QString SettingsManager::startupTool() const { return startupTool_; }
+QString SettingsManager::uiFontFamily() const { return uiFontFamily_; }
+int SettingsManager::uiFontScale() const { return uiFontScale_; }
+int SettingsManager::uiScale() const { return uiScale_; }
+QVariantMap SettingsManager::shortcuts() const { return shortcuts_; }
 
 QString SettingsManager::normaliseThemeMode(const QString &mode)
 {
     static const QStringList modes{
         QStringLiteral("system"), QStringLiteral("light"), QStringLiteral("dark"),
         QStringLiteral("midnight"), QStringLiteral("warm"), QStringLiteral("graphite"),
-        QStringLiteral("contrast")
+        QStringLiteral("contrast"), QStringLiteral("nordic"), QStringLiteral("sakura"),
+        QStringLiteral("forest"), QStringLiteral("solarized")
     };
     if (modes.contains(mode))
         return mode;
@@ -100,6 +116,80 @@ QColor SettingsManager::opaqueColor(const QColor &color)
     return result;
 }
 
+int SettingsManager::normaliseFontScale(int percent)
+{
+    return qBound(kMinFontScale, percent, kMaxFontScale);
+}
+
+int SettingsManager::normaliseUiScale(int percent)
+{
+    return qBound(kMinUiScale, percent, kMaxUiScale);
+}
+
+QString SettingsManager::normaliseSequence(const QString &sequence)
+{
+    const auto trimmed = sequence.trimmed();
+    if (trimmed.isEmpty())
+        return {};
+    const QKeySequence parsed = QKeySequence::fromString(trimmed, QKeySequence::PortableText);
+    if (parsed.isEmpty())
+        return {};
+    return parsed.toString(QKeySequence::PortableText);
+}
+
+const QStringList &SettingsManager::shortcutKeys()
+{
+    // Kept in lockstep with the Action ids in Main.qml and the editable
+    // catalogue in ShortcutsPage.qml.
+    static const QStringList keys{
+        QStringLiteral("open"), QStringLiteral("save"), QStringLiteral("saveAs"),
+        QStringLiteral("settings"), QStringLiteral("commandPalette"),
+        QStringLiteral("copy"), QStringLiteral("undo"), QStringLiteral("redo"),
+        QStringLiteral("zoomIn"), QStringLiteral("zoomOut"), QStringLiteral("fit"),
+        QStringLiteral("actual"), QStringLiteral("brush"), QStringLiteral("shape"),
+        QStringLiteral("pan"), QStringLiteral("select"), QStringLiteral("text"),
+        QStringLiteral("eyedropper"), QStringLiteral("crop")
+    };
+    return keys;
+}
+
+QString SettingsManager::defaultShortcut(const QString &key)
+{
+    static const QHash<QString, QString> defaults{
+        {QStringLiteral("open"), QStringLiteral("Ctrl+O")},
+        {QStringLiteral("save"), QStringLiteral("Ctrl+S")},
+        {QStringLiteral("saveAs"), QStringLiteral("Ctrl+Shift+S")},
+        {QStringLiteral("settings"), QStringLiteral("Ctrl+,")},
+        {QStringLiteral("commandPalette"), QStringLiteral("Ctrl+K")},
+        {QStringLiteral("copy"), QStringLiteral("Ctrl+Shift+C")},
+        {QStringLiteral("undo"), QStringLiteral("Ctrl+Z")},
+        {QStringLiteral("redo"), QStringLiteral("Ctrl+Shift+Z")},
+        {QStringLiteral("zoomIn"), QStringLiteral("Ctrl+=")},
+        {QStringLiteral("zoomOut"), QStringLiteral("Ctrl+-")},
+        {QStringLiteral("fit"), QStringLiteral("Ctrl+0")},
+        {QStringLiteral("actual"), QStringLiteral("Ctrl+1")},
+        {QStringLiteral("brush"), QStringLiteral("B")},
+        {QStringLiteral("shape"), QStringLiteral("U")},
+        {QStringLiteral("pan"), QStringLiteral("H")},
+        {QStringLiteral("select"), QStringLiteral("V")},
+        {QStringLiteral("text"), QStringLiteral("T")},
+        {QStringLiteral("eyedropper"), QStringLiteral("I")},
+        {QStringLiteral("crop"), QStringLiteral("C")}
+    };
+    return defaults.value(key);
+}
+
+QString SettingsManager::effectiveShortcut(const QString &key) const
+{
+    const auto it = shortcuts_.constFind(key);
+    if (it != shortcuts_.constEnd()) {
+        const auto stored = it.value().toString();
+        if (!stored.isEmpty())
+            return stored;
+    }
+    return defaultShortcut(key);
+}
+
 void SettingsManager::load()
 {
     QSettings settings;
@@ -128,6 +218,19 @@ void SettingsManager::load()
     recoveryEnabled_ = settings.value(kRecoveryEnabledKey, true).toBool();
     startupTool_ = normaliseStartupTool(
         settings.value(kStartupToolKey, kDefaultStartupTool).toString());
+
+    uiFontFamily_ = settings.value(kUiFontFamilyKey, QString()).toString().trimmed();
+    uiFontScale_ = normaliseFontScale(
+        settings.value(kUiFontScaleKey, kDefaultScale).toInt());
+    uiScale_ = normaliseUiScale(settings.value(kUiScaleKey, kDefaultScale).toInt());
+
+    shortcuts_.clear();
+    for (const auto &key : shortcutKeys()) {
+        const auto stored = settings.value(kShortcutPrefix + key).toString();
+        const auto normalised = normaliseSequence(stored);
+        if (!normalised.isEmpty())
+            shortcuts_.insert(key, normalised);
+    }
 }
 
 void SettingsManager::setThemeMode(const QString &mode)
@@ -235,6 +338,114 @@ void SettingsManager::setStartupTool(const QString &tool)
     emit changed();
 }
 
+void SettingsManager::setUiFontFamily(const QString &family)
+{
+    const auto normalised = family.trimmed();
+    if (normalised == uiFontFamily_)
+        return;
+    uiFontFamily_ = normalised;
+    QSettings().setValue(kUiFontFamilyKey, uiFontFamily_);
+    emit uiFontFamilyChanged();
+    emit changed();
+}
+
+void SettingsManager::setUiFontScale(int percent)
+{
+    const auto normalised = normaliseFontScale(percent);
+    if (normalised == uiFontScale_)
+        return;
+    uiFontScale_ = normalised;
+    QSettings().setValue(kUiFontScaleKey, uiFontScale_);
+    emit uiFontScaleChanged();
+    emit changed();
+}
+
+void SettingsManager::setUiScale(int percent)
+{
+    const auto normalised = normaliseUiScale(percent);
+    if (normalised == uiScale_)
+        return;
+    uiScale_ = normalised;
+    QSettings().setValue(kUiScaleKey, uiScale_);
+    emit uiScaleChanged();
+    emit changed();
+}
+
+QString SettingsManager::shortcutFor(const QString &key, const QString &fallback) const
+{
+    const auto it = shortcuts_.constFind(key);
+    if (it == shortcuts_.constEnd())
+        return fallback;
+    const auto stored = it.value().toString();
+    return stored.isEmpty() ? fallback : stored;
+}
+
+bool SettingsManager::setShortcut(const QString &key, const QString &sequence)
+{
+    if (!shortcutKeys().contains(key))
+        return false;
+
+    const auto normalised = normaliseSequence(sequence);
+    if (normalised.isEmpty())
+        return resetShortcut(key);
+
+    // Setting an action back to its built-in default should not leave a
+    // redundant override behind.
+    if (normalised == defaultShortcut(key))
+        return resetShortcut(key);
+
+    for (const auto &other : shortcutKeys()) {
+        if (other == key)
+            continue;
+        if (effectiveShortcut(other).compare(normalised, Qt::CaseInsensitive) == 0)
+            return false;
+    }
+
+    if (shortcuts_.value(key).toString() == normalised)
+        return true;
+
+    shortcuts_.insert(key, normalised);
+    QSettings().setValue(kShortcutPrefix + key, normalised);
+    emit shortcutsChanged();
+    emit changed();
+    return true;
+}
+
+bool SettingsManager::resetShortcut(const QString &key)
+{
+    if (!shortcutKeys().contains(key))
+        return false;
+    if (!shortcuts_.contains(key))
+        return true;
+
+    shortcuts_.remove(key);
+    QSettings().remove(kShortcutPrefix + key);
+    emit shortcutsChanged();
+    emit changed();
+    return true;
+}
+
+void SettingsManager::resetShortcuts()
+{
+    if (shortcuts_.isEmpty())
+        return;
+
+    shortcuts_.clear();
+    QSettings settings;
+    for (const auto &key : shortcutKeys())
+        settings.remove(kShortcutPrefix + key);
+    emit shortcutsChanged();
+    emit changed();
+}
+
+QString SettingsManager::keySequence(int key, int modifiers) const
+{
+    if (key <= 0)
+        return {};
+    const QKeySequence sequence(key | modifiers);
+    return sequence.toString(QKeySequence::PortableText);
+}
+
 void SettingsManager::resetToDefaults()
 {
     const bool themeChanged = themeMode_ != kDefaultThemeMode;
@@ -247,6 +458,10 @@ void SettingsManager::resetToDefaults()
     const bool checkerboardChanged = !showCheckerboard_;
     const bool recoveryChanged = !recoveryEnabled_;
     const bool startupPrefChanged = startupTool_ != kDefaultStartupTool;
+    const bool fontFamilyChanged = !uiFontFamily_.isEmpty();
+    const bool fontScaleChanged = uiFontScale_ != kDefaultScale;
+    const bool uiScaleChangedValue = uiScale_ != kDefaultScale;
+    const bool shortcutsChangedValue = !shortcuts_.isEmpty();
 
     themeMode_ = kDefaultThemeMode;
     reduceMotion_ = false;
@@ -258,6 +473,10 @@ void SettingsManager::resetToDefaults()
     showCheckerboard_ = true;
     recoveryEnabled_ = true;
     startupTool_ = kDefaultStartupTool;
+    uiFontFamily_.clear();
+    uiFontScale_ = kDefaultScale;
+    uiScale_ = kDefaultScale;
+    shortcuts_.clear();
 
     if (themeChanged) emit themeModeChanged();
     if (motionChanged) emit reduceMotionChanged();
@@ -269,6 +488,10 @@ void SettingsManager::resetToDefaults()
     if (checkerboardChanged) emit showCheckerboardChanged();
     if (recoveryChanged) emit recoveryEnabledChanged();
     if (startupPrefChanged) emit startupToolChanged();
+    if (fontFamilyChanged) emit uiFontFamilyChanged();
+    if (fontScaleChanged) emit uiFontScaleChanged();
+    if (uiScaleChangedValue) emit uiScaleChanged();
+    if (shortcutsChangedValue) emit shortcutsChanged();
 
     // Persist defaults even when the in-memory values already matched, and
     // discard the legacy key so a future launch cannot resurrect it.
@@ -283,11 +506,17 @@ void SettingsManager::resetToDefaults()
     settings.setValue(kCheckerboardKey, showCheckerboard_);
     settings.setValue(kRecoveryEnabledKey, recoveryEnabled_);
     settings.setValue(kStartupToolKey, startupTool_);
+    settings.setValue(kUiFontFamilyKey, uiFontFamily_);
+    settings.setValue(kUiFontScaleKey, uiFontScale_);
+    settings.setValue(kUiScaleKey, uiScale_);
+    for (const auto &key : shortcutKeys())
+        settings.remove(kShortcutPrefix + key);
     settings.remove(kLegacyDarkThemeKey);
 
     if (themeChanged || motionChanged || gpuChanged || qualityChanged || backgroundChanged
         || localeChangedValue || closeChanged || checkerboardChanged || recoveryChanged
-        || startupPrefChanged) {
+        || startupPrefChanged || fontFamilyChanged || fontScaleChanged
+        || uiScaleChangedValue || shortcutsChangedValue) {
         emit changed();
     }
 }

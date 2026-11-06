@@ -36,6 +36,10 @@ private slots:
         QCOMPARE(settings.showCheckerboard(), true);
         QCOMPARE(settings.recoveryEnabled(), true);
         QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
+        QCOMPARE(settings.uiFontFamily(), QString());
+        QCOMPARE(settings.uiFontScale(), 100);
+        QCOMPARE(settings.uiScale(), 100);
+        QVERIFY(settings.shortcuts().isEmpty());
     }
 
     void validatesThemeMode()
@@ -50,7 +54,9 @@ private slots:
         QCOMPARE(settings.themeMode(), QStringLiteral("dark"));
 
         for (const auto &mode : {QStringLiteral("midnight"), QStringLiteral("warm"),
-                                 QStringLiteral("graphite"), QStringLiteral("contrast")}) {
+                                 QStringLiteral("graphite"), QStringLiteral("contrast"),
+                                 QStringLiteral("nordic"), QStringLiteral("sakura"),
+                                 QStringLiteral("forest"), QStringLiteral("solarized")}) {
             settings.setThemeMode(mode);
             QCOMPARE(settings.themeMode(), mode);
         }
@@ -148,6 +154,107 @@ private slots:
                  QStringLiteral("adjust"));
     }
 
+    void clampsTypographyAndInterfaceScales()
+    {
+        SettingsManager settings;
+
+        settings.setUiFontScale(10);
+        QCOMPARE(settings.uiFontScale(), 80);
+        settings.setUiFontScale(200);
+        QCOMPARE(settings.uiFontScale(), 140);
+        QCOMPARE(QSettings().value(QStringLiteral("ui/fontScale")).toInt(), 140);
+
+        settings.setUiScale(10);
+        QCOMPARE(settings.uiScale(), 80);
+        settings.setUiScale(500);
+        QCOMPARE(settings.uiScale(), 150);
+        QCOMPARE(QSettings().value(QStringLiteral("ui/scale")).toInt(), 150);
+
+        settings.setUiFontFamily(QStringLiteral("  Inter  "));
+        QCOMPARE(settings.uiFontFamily(), QStringLiteral("Inter"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/fontFamily")).toString(),
+                 QStringLiteral("Inter"));
+        settings.setUiFontFamily(QString());
+        QCOMPARE(settings.uiFontFamily(), QString());
+    }
+
+    void shortcutOverridesRoundTripAndValidation()
+    {
+        SettingsManager settings;
+        QSignalSpy changed(&settings, &SettingsManager::changed);
+        QSignalSpy shortcuts(&settings, &SettingsManager::shortcutsChanged);
+
+        QCOMPARE(settings.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+O"));
+        QVERIFY(settings.setShortcut(QStringLiteral("open"), QStringLiteral("Ctrl+Shift+O")));
+        QCOMPARE(settings.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+Shift+O"));
+        QCOMPARE(settings.shortcuts().value(QStringLiteral("open")).toString(),
+                 QStringLiteral("Ctrl+Shift+O"));
+        QCOMPARE(QSettings().value(QStringLiteral("ui/shortcuts/open")).toString(),
+                 QStringLiteral("Ctrl+Shift+O"));
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(shortcuts.count(), 1);
+
+        // A sequence used by another action's built-in key is rejected.
+        QVERIFY(!settings.setShortcut(QStringLiteral("open"), QStringLiteral("Ctrl+S")));
+        QCOMPARE(settings.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+Shift+O"));
+
+        // Duplicates between overrides are rejected too.
+        QVERIFY(!settings.setShortcut(QStringLiteral("save"), QStringLiteral("Ctrl+Shift+O")));
+        QVERIFY(!settings.shortcuts().contains(QStringLiteral("save")));
+
+        // Unknown action keys never persist.
+        QVERIFY(!settings.setShortcut(QStringLiteral("neko"), QStringLiteral("Ctrl+P")));
+
+        // An empty sequence is the per-action reset path used by Delete.
+        QVERIFY(settings.setShortcut(QStringLiteral("open"), QString()));
+        QCOMPARE(settings.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+O"));
+        QVERIFY(!settings.shortcuts().contains(QStringLiteral("open")));
+        QVERIFY(!QSettings().contains(QStringLiteral("ui/shortcuts/open")));
+
+        // Setting the built-in key explicitly removes a redundant override.
+        QVERIFY(settings.setShortcut(QStringLiteral("save"), QStringLiteral("Ctrl+S")));
+        QVERIFY(!settings.shortcuts().contains(QStringLiteral("save")));
+
+        QVERIFY(!settings.resetShortcut(QStringLiteral("neko")));
+        QVERIFY(settings.resetShortcut(QStringLiteral("save")));
+    }
+
+    void resetShortcutsClearsEveryOverride()
+    {
+        SettingsManager settings;
+        QVERIFY(settings.setShortcut(QStringLiteral("open"), QStringLiteral("Ctrl+Shift+O")));
+        QVERIFY(settings.setShortcut(QStringLiteral("save"), QStringLiteral("Ctrl+Alt+S")));
+
+        QSignalSpy shortcuts(&settings, &SettingsManager::shortcutsChanged);
+        settings.resetShortcuts();
+        QVERIFY(settings.shortcuts().isEmpty());
+        QCOMPARE(shortcuts.count(), 1);
+        QCOMPARE(settings.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+O"));
+        QVERIFY(!QSettings().contains(QStringLiteral("ui/shortcuts/open")));
+        QVERIFY(!QSettings().contains(QStringLiteral("ui/shortcuts/save")));
+
+        settings.resetShortcuts();
+        QCOMPARE(shortcuts.count(), 1);
+    }
+
+    void keySequenceUsesPortableText()
+    {
+        SettingsManager settings;
+        QCOMPARE(settings.keySequence(Qt::Key_O, Qt::ControlModifier),
+                 QStringLiteral("Ctrl+O"));
+        QCOMPARE(settings.keySequence(Qt::Key_S,
+                                      Qt::ControlModifier | Qt::ShiftModifier),
+                 QStringLiteral("Ctrl+Shift+S"));
+        QCOMPARE(settings.keySequence(Qt::Key_F1, Qt::NoModifier),
+                 QStringLiteral("F1"));
+        QCOMPARE(settings.keySequence(0, Qt::NoModifier), QString());
+    }
+
     void persistsAcrossInstances()
     {
         {
@@ -162,6 +269,11 @@ private slots:
             settings.setShowCheckerboard(false);
             settings.setRecoveryEnabled(false);
             settings.setStartupTool(QStringLiteral("brush"));
+            settings.setUiFontFamily(QStringLiteral("DejaVu Sans"));
+            settings.setUiFontScale(125);
+            settings.setUiScale(115);
+            QVERIFY(settings.setShortcut(QStringLiteral("open"),
+                                         QStringLiteral("Ctrl+Shift+O")));
         }
 
         SettingsManager restored;
@@ -178,6 +290,11 @@ private slots:
         QCOMPARE(restored.showCheckerboard(), false);
         QCOMPARE(restored.recoveryEnabled(), false);
         QCOMPARE(restored.startupTool(), QStringLiteral("brush"));
+        QCOMPARE(restored.uiFontFamily(), QStringLiteral("DejaVu Sans"));
+        QCOMPARE(restored.uiFontScale(), 125);
+        QCOMPARE(restored.uiScale(), 115);
+        QCOMPARE(restored.shortcutFor(QStringLiteral("open"), QStringLiteral("Ctrl+O")),
+                 QStringLiteral("Ctrl+Shift+O"));
     }
 
     void migratesLegacyDarkTheme_data()
@@ -224,6 +341,10 @@ private slots:
         settings.setShowCheckerboard(false);
         settings.setRecoveryEnabled(false);
         settings.setStartupTool(QStringLiteral("brush"));
+        settings.setUiFontFamily(QStringLiteral("DejaVu Sans"));
+        settings.setUiFontScale(125);
+        settings.setUiScale(115);
+        QVERIFY(settings.setShortcut(QStringLiteral("open"), QStringLiteral("Ctrl+Shift+O")));
 
         QSignalSpy changed(&settings, &SettingsManager::changed);
         QSignalSpy theme(&settings, &SettingsManager::themeModeChanged);
@@ -236,6 +357,10 @@ private slots:
         QSignalSpy checkerboard(&settings, &SettingsManager::showCheckerboardChanged);
         QSignalSpy recovery(&settings, &SettingsManager::recoveryEnabledChanged);
         QSignalSpy startupTool(&settings, &SettingsManager::startupToolChanged);
+        QSignalSpy fontFamily(&settings, &SettingsManager::uiFontFamilyChanged);
+        QSignalSpy fontScale(&settings, &SettingsManager::uiFontScaleChanged);
+        QSignalSpy uiScale(&settings, &SettingsManager::uiScaleChanged);
+        QSignalSpy shortcuts(&settings, &SettingsManager::shortcutsChanged);
 
         settings.resetToDefaults();
 
@@ -249,6 +374,10 @@ private slots:
         QCOMPARE(settings.showCheckerboard(), true);
         QCOMPARE(settings.recoveryEnabled(), true);
         QCOMPARE(settings.startupTool(), QStringLiteral("adjust"));
+        QCOMPARE(settings.uiFontFamily(), QString());
+        QCOMPARE(settings.uiFontScale(), 100);
+        QCOMPARE(settings.uiScale(), 100);
+        QVERIFY(settings.shortcuts().isEmpty());
 
         QCOMPARE(changed.count(), 1);
         QCOMPARE(theme.count(), 1);
@@ -261,6 +390,10 @@ private slots:
         QCOMPARE(checkerboard.count(), 1);
         QCOMPARE(recovery.count(), 1);
         QCOMPARE(startupTool.count(), 1);
+        QCOMPARE(fontFamily.count(), 1);
+        QCOMPARE(fontScale.count(), 1);
+        QCOMPARE(uiScale.count(), 1);
+        QCOMPARE(shortcuts.count(), 1);
 
         SettingsManager restored;
         QCOMPARE(restored.themeMode(), QStringLiteral("dark"));
@@ -273,6 +406,10 @@ private slots:
         QCOMPARE(restored.showCheckerboard(), true);
         QCOMPARE(restored.recoveryEnabled(), true);
         QCOMPARE(restored.startupTool(), QStringLiteral("adjust"));
+        QCOMPARE(restored.uiFontFamily(), QString());
+        QCOMPARE(restored.uiFontScale(), 100);
+        QCOMPARE(restored.uiScale(), 100);
+        QVERIFY(restored.shortcuts().isEmpty());
     }
 
     void changedOnlyWhenValueDiffers()

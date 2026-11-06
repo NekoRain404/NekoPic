@@ -21,7 +21,7 @@ QtObject {
     /*!
         Optional palette id. Empty keeps the original light/dark pair so older
         tests and integrations that only toggle `dark` remain valid. Known ids:
-        midnight, warm, graphite, contrast.
+        midnight, warm, graphite, contrast, nordic, sakura, forest, solarized.
     */
     property string themeId: ""
     /*! When true, Motion.duration() collapses to zero. */
@@ -71,6 +71,50 @@ QtObject {
             danger: "#ff8f88", success: "#8fe0a8", warning: "#ffd166",
             focusRing: "#ffffff", scrim: "#e6000000", shadowColor: "#000000",
             controlKnob: "#ffffff", contrastInk: "#000000", contrastPaper: "#ffffff"
+        },
+        nordic: {
+            background: "#e8edf2", canvas: "#dde4eb", panel: "#f2f6f9",
+            surface: "#f8fbfd", surfaceRaised: "#ffffff", hover: "#dce5ee",
+            pressed: "#ced9e4", textPrimary: "#2b3a48", textSecondary: "#526575",
+            textTertiary: "#6b7d8c", border: "#c3d0dc", separator: "#d7e0e8",
+            accent: "#3f6f8f", accentHover: "#4f82a5", accentPressed: "#335d79",
+            accentSoft: "#203f6f8f", accentInk: "#f7fbfd", selection: "#263f6f8f",
+            danger: "#a34e4e", success: "#4d7a62", warning: "#8a6928",
+            focusRing: "#3f6f8f", scrim: "#b0394652", shadowColor: "#2b3a48",
+            controlKnob: "#ffffff", contrastInk: "#1f2b35", contrastPaper: "#f6fbfe"
+        },
+        sakura: {
+            background: "#f7ecef", canvas: "#f0e0e5", panel: "#fcf5f7",
+            surface: "#fffafb", surfaceRaised: "#ffffff", hover: "#f3e2e8",
+            pressed: "#e8d2da", textPrimary: "#43313a", textSecondary: "#745c68",
+            textTertiary: "#8d7380", border: "#e2cbd4", separator: "#eedde3",
+            accent: "#b25a75", accentHover: "#c56d88", accentPressed: "#974862",
+            accentSoft: "#1fb25a75", accentInk: "#fff8fa", selection: "#26b25a75",
+            danger: "#a84e50", success: "#5d7a60", warning: "#8f692b",
+            focusRing: "#b25a75", scrim: "#b0432f37", shadowColor: "#4a3038",
+            controlKnob: "#ffffff", contrastInk: "#3a2730", contrastPaper: "#fff8fa"
+        },
+        forest: {
+            background: "#101a14", canvas: "#0b120e", panel: "#16221b",
+            surface: "#1b2a21", surfaceRaised: "#23352a", hover: "#2b4033",
+            pressed: "#354d3e", textPrimary: "#e3f0e6", textSecondary: "#a4bdaa",
+            textTertiary: "#819a88", border: "#33493b", separator: "#24352a",
+            accent: "#8fcaa5", accentHover: "#a8ddb9", accentPressed: "#76b58e",
+            accentSoft: "#228fcaa5", accentInk: "#102019", selection: "#338fcaa5",
+            danger: "#dc8b83", success: "#90c4a0", warning: "#d9bd82",
+            focusRing: "#a8ddb9", scrim: "#d0060d08", shadowColor: "#000000",
+            controlKnob: "#f2f7f3", contrastInk: "#0c1610", contrastPaper: "#eff8f1"
+        },
+        solarized: {
+            background: "#1c1a15", canvas: "#15130f", panel: "#24211a",
+            surface: "#2a261e", surfaceRaised: "#332e24", hover: "#3d372b",
+            pressed: "#494234", textPrimary: "#eee4cf", textSecondary: "#c2b49a",
+            textTertiary: "#a3957d", border: "#4a4233", separator: "#333026",
+            accent: "#d6a85f", accentHover: "#e5bb77", accentPressed: "#c2934b",
+            accentSoft: "#26d6a85f", accentInk: "#241d10", selection: "#3ad6a85f",
+            danger: "#d98a7c", success: "#a8b985", warning: "#d8b25e",
+            focusRing: "#e5bb77", scrim: "#d00d0b08", shadowColor: "#000000",
+            controlKnob: "#f5eeda", contrastInk: "#1a160f", contrastPaper: "#f7f0de"
         }
     })
     readonly property var _palette: _palettes[themeId] || null
@@ -148,7 +192,11 @@ QtObject {
         { id: "midnight", label: qsTr("Midnight"), dark: true },
         { id: "warm", label: qsTr("Warm paper"), dark: false },
         { id: "graphite", label: qsTr("Graphite"), dark: true },
-        { id: "contrast", label: qsTr("High contrast"), dark: true }
+        { id: "contrast", label: qsTr("High contrast"), dark: true },
+        { id: "nordic", label: qsTr("Nordic"), dark: false },
+        { id: "sakura", label: qsTr("Sakura"), dark: false },
+        { id: "forest", label: qsTr("Forest"), dark: true },
+        { id: "solarized", label: qsTr("Solarized"), dark: true }
     ]
 
     /*! Returns dark or light ink for text placed on an arbitrary colour. */
@@ -181,12 +229,15 @@ QtObject {
     readonly property int radiusPill: 999
 
     // ── Type scale ──────────────────────────────────────────────────────────
-    readonly property int fontCaption: 10
-    readonly property int fontSmall: 11
-    readonly property int fontBody: 12
-    readonly property int fontTitle: 15
-    readonly property int fontHeadline: 19
-    readonly property int fontDisplay: 24
+    // Writable so Main can apply the persisted UI text size live. Keeping the
+    // scale here lets every existing component follow without per-file edits.
+    property real fontScale: 1.0
+    readonly property int fontCaption: Math.round(10 * fontScale)
+    readonly property int fontSmall: Math.round(11 * fontScale)
+    readonly property int fontBody: Math.round(12 * fontScale)
+    readonly property int fontTitle: Math.round(15 * fontScale)
+    readonly property int fontHeadline: Math.round(19 * fontScale)
+    readonly property int fontDisplay: Math.round(24 * fontScale)
 
     readonly property int fontWeightRegular: Font.Normal
     readonly property int fontWeightMedium: Font.Medium
