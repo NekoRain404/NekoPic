@@ -291,6 +291,8 @@ Item {
             _mouseFocusRequest = true
             forceActiveFocus(Qt.OtherFocusReason)
             Qt.callLater(function() { _mouseFocusRequest = false })
+            if (usable)
+                _sampleAt((imageWidth - 1) / 2, (imageHeight - 1) / 2)
         }
     }
     onUsableChanged: if (!usable) reset()
