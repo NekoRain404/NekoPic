@@ -292,10 +292,15 @@ Item {
             forceActiveFocus(Qt.OtherFocusReason)
             Qt.callLater(function() { _mouseFocusRequest = false })
             if (usable)
-                _sampleAt((imageWidth - 1) / 2, (imageHeight - 1) / 2)
+                _sampleAt((imageWidth - 1) / 2, (imageHeight - 1) / 2, true)
         }
     }
-    onUsableChanged: if (!usable) reset()
+    onUsableChanged: {
+        if (!usable)
+            reset()
+        else if (active)
+            _sampleAt((imageWidth - 1) / 2, (imageHeight - 1) / 2, true)
+    }
     onImageWidthChanged: if (active) reset()
     onImageHeightChanged: if (active) reset()
 
