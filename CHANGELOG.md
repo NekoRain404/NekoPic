@@ -8,6 +8,16 @@ All notable changes to NekoPic are recorded here. The format follows
 
 ### Added
 
+- Themed `NekoMenu` / `NekoMenuItem` / `NekoMenuSeparator` / `NekoComboBox`
+  design-system components; the menu bar is reorganized into File, Edit,
+  Image, Tools, Adjust, View and Help.
+- UI font family, UI text scale and whole-interface scale settings; interface
+  scale applies on the next launch. Shortcuts are now an independent, editable
+  settings category with conflict detection and reset.
+- Four more palettes: Nordic, Sakura, Forest and Solarized (11 theme modes
+  including System).
+- Live eyedropper colour inspector with swatch, HEX/RGB/HSL, position, copy and
+  click-to-set-foreground; samples the image centre when the tool activates.
 - CI workflow for configure/build/C++/QML tests and an ASan/UBSan job.
 - Window icon embedded in the executable for X11/AppImage.
 - Japanese and German desktop-entry names, comments and keywords.

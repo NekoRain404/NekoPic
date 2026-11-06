@@ -127,3 +127,17 @@
 - **仍未完成**：项目许可证未选择（AppStream/RPM 使用 `LicenseRef-proprietary`
   占位）；AppStream 缺少稳定 HTTPS 截图和主页；RPM/DEB 依赖名未在
   Fedora/Debian 目标机验证；Main.qml 仍超过体积目标；恢复快照仍为扁平化图像。
+
+## 9. 2026-11-06 菜单、字体、快捷键与吸管检查器
+
+- **菜单系统**：新增 `NekoMenu` / `NekoMenuItem` / `NekoMenuSeparator` /
+  `NekoComboBox`，替换顶部菜单、变换菜单和文本对话框的原始控件；一级菜单
+  扩展为 文件 / 编辑 / 图像 / 工具 / 调整 / 视图 / 帮助，最近文件、主题、
+  语言和关于各有归位。
+- **设置扩展**：新增 UI 字体族、UI 字号（80–140%）、界面缩放（80–150%，
+  下次启动生效）；快捷键成为独立设置页，可捕获、冲突检测、单项/全部重置。
+- **主题**：在原有 7 个模式上新增 Nordic、Sakura、Forest、Solarized，共
+  11 个可选模式（含系统）。
+- **吸管**：右侧新增实时色彩检查器，显示色块、HEX/RGB/HSL、采样坐标、复制
+  按钮；激活时采样图片中心，点击写入共享前景色。
+- 测试：C++ 29/29；QML offscreen 422 passed；RHI 424 passed；ASan 29/29。
