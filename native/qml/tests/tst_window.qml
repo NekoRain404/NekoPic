@@ -603,9 +603,9 @@ TestCase {
             verify(canvas !== null)
             const tools = ["select", "pan", "adjust", "filters", "brush",
                            "text", "shapes", "mosaic", "eye", "crop"]
-            const panelNames = ["layerPanel", "toolInfoPanel", "inspector",
-                                "filtersToolPanel", "brushPanel", "textPanel",
-                                "shapePanel", "mosaicPanel", "cropPanel"]
+            const panelNames = ["layerPanel", "toolInfoPanel", "eyedropperPanel",
+                                "inspector", "filtersToolPanel", "brushPanel",
+                                "textPanel", "shapePanel", "mosaicPanel", "cropPanel"]
             let expectedPanelWidth = -1
             let expectedCanvasWidth = -1
 

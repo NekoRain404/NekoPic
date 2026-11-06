@@ -79,6 +79,7 @@ Item {
     signal cropApplyRequested(rect area)
     signal cropCancelled()
     signal colorPicked(color value)
+    signal colorSampled(color value, real imageX, real imageY)
     signal eyedropperCancelled()
     signal textPointSelected(real imageX, real imageY)
     signal textCancelled()
@@ -294,6 +295,9 @@ Item {
                         imageUrl: root.gpuPreviewing ? root.baseImageUrl : root.imageUrl
                         sampler: root.colorSampler
                         onColorPicked: function(value) { root.colorPicked(value) }
+                        onSampled: function(value, imageX, imageY) {
+                            root.colorSampled(value, imageX, imageY)
+                        }
                         onCancelled: root.eyedropperCancelled()
                     }
                     // Live object drag: the base crop covers the old object

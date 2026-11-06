@@ -84,6 +84,10 @@ ApplicationWindow {
     }
     /*! Objects currently in the document, refreshed from documentChanged. */
     property int objectCount: 0
+    // Live eyedropper sample shown in the right-hand colour inspector.
+    property color eyedropperColor: "#eeb99a"
+    property bool eyedropperHasSample: false
+    property point eyedropperPosition: Qt.point(0, 0)
     property bool _syncingForeground: false
     // True from drag start until the asynchronous object move commits, so the
     // live crop survives exactly until the new document image is available.
@@ -663,6 +667,14 @@ ApplicationWindow {
                 onMovePreviewSettled: window._awaitingMovePreview = false
                 onRecentOpenRequested: function(url) { window.requestOpen(url) }
                 onOpenDialogRequested: if (!editor.busy) dialogs.openOpenDialog()
+                onForegroundColorRequested: function(value) {
+                    window.foregroundColor = value
+                }
+                onColorSampleChanged: function(value, imageX, imageY) {
+                    window.eyedropperColor = value
+                    window.eyedropperHasSample = true
+                    window.eyedropperPosition = Qt.point(imageX, imageY)
+                }
             }
             Rectangle { Layout.fillHeight: true; Layout.preferredWidth: 1; color: theme.border }
             Inspector {
@@ -824,13 +836,21 @@ ApplicationWindow {
             }
             ToolInfoPanel {
                 objectName: "toolInfoPanel"
-                visible: window.activeTool === "pan" || window.activeTool === "eye"
+                visible: window.activeTool === "pan"
                 Layout.preferredWidth: window.toolPanelWidth
-                title: window.toolLabel(window.activeTool)
+                title: window.toolLabel("pan")
                 hint: window.activeToolHint
-                iconName: window.activeTool
-                shortcut: window.activeTool === "pan" ? "H" : "I"
+                iconName: "pan"
+                shortcut: "H"
                 shortcutLabel: qsTr("Keyboard shortcuts")
+            }
+            EyedropperPanel {
+                objectName: "eyedropperPanel"
+                visible: window.activeTool === "eye"
+                Layout.preferredWidth: window.toolPanelWidth
+                colorValue: window.eyedropperColor
+                hasSample: window.eyedropperHasSample
+                samplePosition: window.eyedropperPosition
             }
         }
         StatusBar {

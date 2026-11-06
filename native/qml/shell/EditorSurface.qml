@@ -43,6 +43,8 @@ EditorCanvas {
     signal movePreviewSettled()
     signal recentOpenRequested(url url)
     signal openDialogRequested()
+    signal foregroundColorRequested(color value)
+    signal colorSampleChanged(color value, real imageX, real imageY)
 
     hasImage: editorModel ? editorModel.hasImage : false
     imageUrl: editorModel ? editorModel.imageUrl : ""
@@ -180,6 +182,11 @@ EditorCanvas {
     colorSampler: function(x, y) { return editorModel ? editorModel.colorAt(x, y) : "transparent" }
     onColorPicked: function(value) {
         surface.statusRequested(qsTranslate("Main", "Picked %1").arg(value.toString()))
+        surface.foregroundColorRequested(value)
+        surface.colorSampleChanged(value, samplePosition.x, samplePosition.y)
+    }
+    onColorSampled: function(value, imageX, imageY) {
+        surface.colorSampleChanged(value, imageX, imageY)
     }
     onEyedropperCancelled: surface.toolChangeRequested("adjust")
 
