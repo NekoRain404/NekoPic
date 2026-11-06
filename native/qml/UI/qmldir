@@ -14,3 +14,7 @@ NekoSectionHeader 1.0 NekoSectionHeader.qml
 NekoScrollBar 1.0 NekoScrollBar.qml
 NekoToolTip 1.0 NekoToolTip.qml
 NekoDialog 1.0 NekoDialog.qml
+NekoMenu 1.0 NekoMenu.qml
+NekoMenuItem 1.0 NekoMenuItem.qml
+NekoMenuSeparator 1.0 NekoMenuSeparator.qml
+NekoComboBox 1.0 NekoComboBox.qml

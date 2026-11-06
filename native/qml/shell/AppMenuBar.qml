@@ -9,6 +9,9 @@ import "../UI"
     The shell supplies its Action objects and menu state; the component never
     reaches into window ids. Static labels use the original "Main" translation
     context so moving the menus does not require catalogue changes.
+
+    Every popup is a NekoMenu, so menus, submenus and their rows share the
+    design system surface, spacing, shortcut labels and checkmarks.
 */
 MenuBar {
     id: bar
@@ -17,6 +20,7 @@ MenuBar {
     property bool followSystemTheme: false
     property bool darkTheme: true
     property bool reduceMotion: false
+    property bool hasImage: true
     property var recentEntries: []
     property bool busy: false
     property var availableLocales: []
@@ -28,8 +32,50 @@ MenuBar {
     signal localeSelected(string id)
     signal recentRequested(url url)
     signal clearRecentRequested()
+    /*! Tool selected from a menu without a shared Action. */
+    signal toolRequested(string tool)
+    /*! Auto enhance requested from the Adjust menu. */
+    signal autoEnhanceRequested()
+    /*! About requested from the Help menu. */
+    signal aboutRequested()
 
     background: Rectangle { color: Theme.background }
+
+    delegate: MenuBarItem {
+        id: barItem
+
+        implicitHeight: 30
+        leftPadding: Theme.spacingSm + Theme.spacingXs
+        rightPadding: Theme.spacingSm + Theme.spacingXs
+        hoverEnabled: true
+
+        Accessible.role: Accessible.MenuItem
+        Accessible.name: barItem.text
+
+        background: Rectangle {
+            radius: Theme.radiusXs
+            color: barItem.down ? Theme.pressed
+                 : barItem.highlighted || barItem.hovered ? Theme.hover
+                 : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: Motion.duration(Motion.fast)
+                    easing.type: Motion.decelerateEasing
+                }
+            }
+        }
+
+        contentItem: Text {
+            text: barItem.text
+            color: barItem.highlighted || barItem.hovered
+                   ? Theme.textPrimary : Theme.textSecondary
+            font.pixelSize: Theme.fontSmall
+            font.weight: barItem.highlighted
+                         ? Theme.fontWeightMedium : Theme.fontWeightRegular
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
 
     contentItem: RowLayout {
         spacing: 0
@@ -74,93 +120,145 @@ MenuBar {
         }
     }
 
-    Menu {
+    NekoMenu {
+        objectName: "menu-file"
         title: qsTranslate("Main", "File")
-        MenuItem { action: bar.actions.open }
-        Menu {
+        NekoMenuItem { action: bar.actions.open }
+        NekoMenu {
             objectName: "recentMenu"
             title: qsTranslate("Main", "Open recent")
             enabled: bar.recentEntries.length > 0 && !bar.busy
             Repeater {
                 model: bar.recentEntries
-                MenuItem {
+                NekoMenuItem {
                     required property var modelData
                     text: modelData.name
                     enabled: !bar.busy
                     onTriggered: bar.recentRequested(modelData.url)
                 }
             }
-            MenuSeparator {}
-            MenuItem {
+            NekoMenuSeparator {}
+            NekoMenuItem {
                 text: qsTranslate("Main", "Clear recent files")
                 enabled: bar.recentEntries.length > 0 && !bar.busy
                 onTriggered: bar.clearRecentRequested()
             }
         }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.save }
-        MenuItem { action: bar.actions.saveAs }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.save }
+        NekoMenuItem { action: bar.actions.saveAs }
     }
 
-    Menu {
+    NekoMenu {
+        objectName: "menu-edit"
         title: qsTranslate("Main", "Edit")
-        MenuItem { action: bar.actions.undo }
-        MenuItem { action: bar.actions.redo }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.copy }
+        NekoMenuItem { action: bar.actions.undo }
+        NekoMenuItem { action: bar.actions.redo }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.copy }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.settings }
     }
 
-    Menu {
+    NekoMenu {
+        objectName: "menu-image"
         title: qsTranslate("Main", "Image")
-        MenuItem { action: bar.actions.rotateLeft }
-        MenuItem { action: bar.actions.rotateRight }
-        MenuItem { action: bar.actions.flipHorizontal }
-        MenuItem { action: bar.actions.flipVertical }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.select }
-        MenuItem { action: bar.actions.brush }
-        MenuItem { action: bar.actions.shape }
-        MenuItem { action: bar.actions.crop }
-        MenuItem { action: bar.actions.text }
-        MenuItem { action: bar.actions.eyedropper }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.resizeImage }
-        MenuItem { action: bar.actions.canvasSize }
+        NekoMenuItem { action: bar.actions.rotateLeft }
+        NekoMenuItem { action: bar.actions.rotateRight }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.flipHorizontal }
+        NekoMenuItem { action: bar.actions.flipVertical }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.resizeImage }
+        NekoMenuItem { action: bar.actions.canvasSize }
     }
 
-    Menu {
+    NekoMenu {
+        objectName: "menu-tools"
+        title: qsTranslate("Main", "Tools")
+        NekoMenuItem { action: bar.actions.select }
+        NekoMenuItem { action: bar.actions.pan }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.brush }
+        NekoMenuItem { action: bar.actions.text }
+        NekoMenuItem { action: bar.actions.shape }
+        NekoMenuItem {
+            objectName: "menu-mosaic"
+            text: qsTranslate("Main", "Mosaic")
+            enabled: bar.hasImage && !bar.busy
+            onTriggered: bar.toolRequested("mosaic")
+        }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.eyedropper }
+        NekoMenuItem { action: bar.actions.crop }
+    }
+
+    NekoMenu {
+        objectName: "menu-adjust"
+        title: qsTranslate("Main", "Adjust")
+        NekoMenuItem {
+            objectName: "menu-adjust-colour"
+            text: qsTranslate("Main", "Adjust")
+            enabled: bar.hasImage && !bar.busy
+            onTriggered: bar.toolRequested("adjust")
+        }
+        NekoMenuItem {
+            objectName: "menu-adjust-filters"
+            text: qsTranslate("Main", "Filters")
+            enabled: bar.hasImage && !bar.busy
+            onTriggered: bar.toolRequested("filters")
+        }
+        NekoMenuSeparator {}
+        NekoMenuItem {
+            objectName: "menu-adjust-auto-enhance"
+            text: qsTranslate("Main", "Auto enhance")
+            enabled: bar.hasImage && !bar.busy
+            onTriggered: bar.autoEnhanceRequested()
+        }
+    }
+
+    NekoMenu {
+        objectName: "menu-view"
         title: qsTranslate("Main", "View")
-        MenuItem { action: bar.actions.zoomIn }
-        MenuItem { action: bar.actions.zoomOut }
-        MenuItem { action: bar.actions.fit }
-        MenuItem { action: bar.actions.actual }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.commandPalette }
-        MenuSeparator {}
-        MenuItem {
-            text: qsTranslate("Main", "Follow system theme")
-            checkable: true
-            checked: bar.followSystemTheme
-            onTriggered: bar.followSystemThemeToggled(checked)
+        NekoMenuItem { action: bar.actions.zoomIn }
+        NekoMenuItem { action: bar.actions.zoomOut }
+        NekoMenuItem { action: bar.actions.fit }
+        NekoMenuItem { action: bar.actions.actual }
+        NekoMenuSeparator {}
+        NekoMenuItem { action: bar.actions.commandPalette }
+        NekoMenuSeparator {}
+        NekoMenu {
+            objectName: "themeMenu"
+            title: qsTranslate("Main", "Theme")
+            NekoMenuItem {
+                objectName: "menu-theme-follow-system"
+                text: qsTranslate("Main", "Follow system theme")
+                checkable: true
+                checked: bar.followSystemTheme
+                onTriggered: bar.followSystemThemeToggled(checked)
+            }
+            NekoMenuItem {
+                objectName: "menu-theme-dark"
+                text: qsTranslate("Main", "Dark theme")
+                checkable: true
+                checked: bar.darkTheme
+                enabled: !bar.followSystemTheme
+                onTriggered: bar.darkThemeToggled(checked)
+            }
+            NekoMenuItem {
+                objectName: "menu-theme-reduce-motion"
+                text: qsTranslate("Main", "Reduce motion")
+                checkable: true
+                checked: bar.reduceMotion
+                onTriggered: bar.reduceMotionToggled(checked)
+            }
         }
-        MenuItem {
-            text: qsTranslate("Main", "Dark theme")
-            checkable: true
-            checked: bar.darkTheme
-            enabled: !bar.followSystemTheme
-            onTriggered: bar.darkThemeToggled(checked)
-        }
-        MenuItem {
-            text: qsTranslate("Main", "Reduce motion")
-            checkable: true
-            checked: bar.reduceMotion
-            onTriggered: bar.reduceMotionToggled(checked)
-        }
-        Menu {
+        NekoMenu {
+            objectName: "languageMenu"
             title: qsTranslate("Main", "Language")
             Repeater {
                 model: bar.availableLocales
-                MenuItem {
+                NekoMenuItem {
                     required property var modelData
                     text: modelData.nativeName
                     checkable: true
@@ -169,7 +267,17 @@ MenuBar {
                 }
             }
         }
-        MenuSeparator {}
-        MenuItem { action: bar.actions.settings }
+    }
+
+    NekoMenu {
+        objectName: "menu-help"
+        title: qsTranslate("Main", "Help")
+        NekoMenuItem { action: bar.actions.shortcuts }
+        NekoMenuSeparator {}
+        NekoMenuItem {
+            objectName: "menu-about"
+            text: qsTranslate("Main", "About NekoPic")
+            onTriggered: bar.aboutRequested()
+        }
     }
 }

@@ -2509,6 +2509,10 @@
         <source>Local editing</source>
         <translation>Lokale Bearbeitung</translation>
     </message>
+    <message>
+        <source>Theme</source>
+        <translation>Design</translation>
+    </message>
 </context>
 <context>
     <name>MosaicPanel</name>

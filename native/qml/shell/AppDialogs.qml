@@ -64,6 +64,10 @@ Item {
         if (!shortcutsDialog.opened)
             shortcutsDialog.open()
     }
+    function openAboutDialog() {
+        if (!aboutDialog.opened)
+            aboutDialog.open()
+    }
     function showError() {
         if (root.editorModel && root.editorModel.errorMessage.length > 0)
             errorDialog.open()
@@ -155,14 +159,14 @@ Item {
         onRejected: root.saveBeforeCancelled()
     }
 
-    Menu {
+    NekoMenu {
         id: transformMenu
         objectName: "transformMenu"
-        MenuItem { objectName: "transform-rotate-left"; action: root.actions.rotateLeft }
-        MenuItem { objectName: "transform-rotate-right"; action: root.actions.rotateRight }
-        MenuSeparator { }
-        MenuItem { objectName: "transform-flip-horizontal"; action: root.actions.flipHorizontal }
-        MenuItem { objectName: "transform-flip-vertical"; action: root.actions.flipVertical }
+        NekoMenuItem { objectName: "transform-rotate-left"; action: root.actions.rotateLeft }
+        NekoMenuItem { objectName: "transform-rotate-right"; action: root.actions.rotateRight }
+        NekoMenuSeparator { }
+        NekoMenuItem { objectName: "transform-flip-horizontal"; action: root.actions.flipHorizontal }
+        NekoMenuItem { objectName: "transform-flip-vertical"; action: root.actions.flipVertical }
     }
 
     ColorDialog {
