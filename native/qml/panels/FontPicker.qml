@@ -143,7 +143,6 @@ Item {
         Accessible.role: Accessible.ComboBox
         Accessible.name: root.accessibleName
         Accessible.description: root.accessibleDescription
-        Accessible.expanded: root.popupVisible
         Accessible.onPressAction: root.togglePicker()
 
         Keys.onDownPressed: function(event) {

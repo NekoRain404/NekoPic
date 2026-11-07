@@ -38,7 +38,6 @@ ComboBox {
     Accessible.role: Accessible.ComboBox
     Accessible.name: accessibleName.length > 0 ? accessibleName : displayText
     Accessible.description: accessibleDescription
-    Accessible.expanded: popup.visible
 
     contentItem: Text {
         objectName: "neko-combo-content"

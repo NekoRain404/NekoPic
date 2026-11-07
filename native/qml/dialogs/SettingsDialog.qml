@@ -420,6 +420,14 @@ NekoDialog {
                         root._activateCategory(modelData.id)
                         categoryButton.forceActiveFocus()
                     }
+                    Keys.onReturnPressed: {
+                        root._activateCategory(modelData.id)
+                        categoryButton.forceActiveFocus()
+                    }
+                    Keys.onEnterPressed: {
+                        root._activateCategory(modelData.id)
+                        categoryButton.forceActiveFocus()
+                    }
 
                     background: Rectangle {
                         radius: Theme.radiusSm
