@@ -271,6 +271,8 @@ ColumnLayout {
     GridLayout {
         objectName: "filter-grid"
         Layout.fillWidth: true
+        Layout.minimumWidth: 0
+        Layout.maximumWidth: root.width
         // Three columns keep each preview comfortably above the 64 px tile
         // minimum at both 260 px and 292 px panel widths. Tiles must be
         // allowed to shrink below their implicit width; otherwise the grid
