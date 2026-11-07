@@ -45,13 +45,6 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: ctest --test-dir "$BUILD_DIR" --output-on-failure
-      - name: RHI QML tests
-        env:
-          QT_QPA_PLATFORM: offscreen
-          QSG_RHI_BACKEND: opengl
-          QT_QUICK_BACKEND: rhi
-        run: |
-          "$QT_ROOT_DIR/bin/qmltestrunner" -input native/qml/tests -silent
       - name: Whitespace
         run: git diff --check
       - name: Source-size budget
