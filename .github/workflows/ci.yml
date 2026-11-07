@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
             libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
-            libwayland-dev libxcb1-dev
+            libwayland-dev libxcb1-dev qt6-l10n-tools qt6-tools-dev-tools
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -35,7 +35,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtshadertools qttools
+          modules: qtshadertools
           cache: true
       - name: Configure
         run: cmake -S native -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DNEKOPIC_BUILD_QML_TESTS=ON
@@ -70,7 +70,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
             libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
-            libwayland-dev libxcb1-dev
+            libwayland-dev libxcb1-dev qt6-l10n-tools qt6-tools-dev-tools
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -78,7 +78,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtshadertools qttools
+          modules: qtshadertools
           cache: true
       - name: Configure sanitizers
         run: |
@@ -108,7 +108,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
             libgl1-mesa-dev libxkbcommon-dev libfontconfig1-dev \
-            libwayland-dev libxcb1-dev dpkg-dev
+            libwayland-dev libxcb1-dev qt6-l10n-tools qt6-tools-dev-tools dpkg-dev
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -116,7 +116,7 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtshadertools qttools
+          modules: qtshadertools
           cache: true
       - name: Build TGZ and DEB
         run: ./scripts/package.sh --no-tests --generators "TGZ;DEB"
