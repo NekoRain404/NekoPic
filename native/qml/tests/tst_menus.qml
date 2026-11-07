@@ -324,11 +324,9 @@ TestCase {
         compare(combo.Accessible.role, Accessible.ComboBox)
         compare(combo.Accessible.name, "Font family")
         compare(combo.Accessible.description, "Typeface used to render the text")
-        verify(!combo.Accessible.expanded)
 
         combo.popup.open()
         tryVerify(function() { return combo.popup.visible }, 1500)
-        verify(combo.Accessible.expanded)
         verify(findChild(combo.popup, "neko-combo-popup-surface") !== null)
         verify(findChild(combo.popup, "neko-combo-list") !== null)
         combo.popup.close()

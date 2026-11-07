@@ -39,7 +39,42 @@ MenuBar {
     /*! About requested from the Help menu. */
     signal aboutRequested()
 
-    background: Rectangle { color: Theme.background }
+    // Default MenuBar content is used deliberately: a custom Repeater over
+    // contentModel triggers a Qt 6.8 QQuickMenuBar reorder recursion. The logo
+    // lives in the left padding of the background instead.
+    leftPadding: 88
+    rightPadding: Theme.spacingMd
+    background: Rectangle {
+        color: Theme.background
+
+        Row {
+            anchors.left: parent.left
+            anchors.leftMargin: 14
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 7
+
+            Rectangle {
+                width: 21
+                height: 21
+                radius: 5
+                color: Theme.accent
+                NekoIcon {
+                    anchors.centerIn: parent
+                    width: 17
+                    height: 17
+                    name: "logo"
+                    color: Theme.accentInk
+                }
+            }
+            Label {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "NekoPic"
+                color: Theme.textPrimary
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+            }
+        }
+    }
 
     delegate: MenuBarItem {
         id: barItem
@@ -74,49 +109,6 @@ MenuBar {
             font.weight: barItem.highlighted
                          ? Theme.fontWeightMedium : Theme.fontWeightRegular
             verticalAlignment: Text.AlignVCenter
-        }
-    }
-
-    contentItem: RowLayout {
-        spacing: 0
-        RowLayout {
-            Layout.leftMargin: 14
-            Layout.rightMargin: 12
-            spacing: 7
-            Rectangle {
-                width: 21
-                height: 21
-                radius: 5
-                color: Theme.accent
-                NekoIcon {
-                    anchors.centerIn: parent
-                    width: 17
-                    height: 17
-                    name: "logo"
-                    color: Theme.accentInk
-                }
-            }
-            Label {
-                text: "NekoPic"
-                color: Theme.textPrimary
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-            }
-        }
-        Repeater { model: bar.contentModel }
-        Item { Layout.fillWidth: true }
-        Rectangle {
-            width: 5
-            height: 5
-            radius: 3
-            color: "#99b4a3"
-        }
-        Label {
-            Layout.leftMargin: 7
-            Layout.rightMargin: 17
-            text: qsTranslate("Main", "Local editing")
-            color: Theme.textSecondary
-            font.pixelSize: 10
         }
     }
 
