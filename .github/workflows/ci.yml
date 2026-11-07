@@ -35,7 +35,6 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtquickcontrols2
           cache: true
       - name: Configure
         run: cmake -S native -B "$BUILD_DIR" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DNEKOPIC_BUILD_QML_TESTS=ON
@@ -78,7 +77,6 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtquickcontrols2
           cache: true
       - name: Configure sanitizers
         run: |
@@ -116,7 +114,6 @@ jobs:
         with:
           version: ${{ env.QT_VERSION }}
           setup-python: false
-          modules: qtquickcontrols2
           cache: true
       - name: Build TGZ and DEB
         run: ./scripts/package.sh --no-tests --generators "TGZ;DEB"
